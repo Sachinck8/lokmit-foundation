@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: lokmit-foundation-backend
+
+  # Database credentials are supplied through environment variables only.
+  # The defaults are non-secret local-development conveniences.
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/lokmit_foundation}
+    username: ${DB_USERNAME:lokmit_app}
+    password: ${DB_PASSWORD:}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    org.flywaydb: info
+    org.hibernate.SQL: warn
