@@ -31,6 +31,14 @@ management:
     health:
       show-details: when-authorized
 
+# OpenAPI / Swagger UI documentation
+springdoc:
+  api-docs:
+    path: /api/v1/api-docs
+  swagger-ui:
+    path: /api/v1/swagger-ui.html
+  packages-to-scan: com.lokmit.foundation
+
 logging:
   level:
     org.flywaydb: info

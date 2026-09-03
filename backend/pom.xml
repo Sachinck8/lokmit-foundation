@@ -46,6 +46,17 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- OpenAPI / Swagger UI documentation -->
+        <!-- 2.8.x is the version line compatible with Spring Boot 3.x.        -->
+        <!-- springdoc 3.x targets Spring Boot 4 and pulls Boot 4 autoconfigs   -->
+        <!-- onto this classpath, causing duplicate ErrorMvcAutoConfiguration   -->
+        <!-- beans at startup (BeanDefinitionOverrideException).                -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.8.13</version>
+        </dependency>
+
         <!-- PostgreSQL driver -->
         <dependency>
             <groupId>org.postgresql</groupId>

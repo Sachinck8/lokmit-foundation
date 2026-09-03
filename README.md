@@ -4,7 +4,7 @@ Website and digital platform for **LOKMIT FOUNDATION** — built as a
 Corporate Consultancy + Skill Development + Project Advisory + Employment +
 Job Portal + Knowledge Platform.
 
-> **Status: Phase 1 — project skeleton only.**
+> **Status: Phase 2 — backend foundation complete.**
 > No business entities, authentication, modules, or admin panel implemented yet.
 > See Phase 0 architecture plan for the full roadmap.
 
@@ -28,6 +28,7 @@ Job Portal + Knowledge Platform.
 |-----------|------------|
 | Language  | Java 21 (backend), JavaScript (frontend) |
 | Backend   | Spring Boot 3.5.x, Spring Web, Spring Data JPA, Bean Validation, Actuator |
+| API docs  | springdoc-openapi (Swagger UI / OpenAPI 3) |
 | Database  | PostgreSQL, Flyway (database migrations) |
 | Build     | Maven (backend), Vite (frontend) |
 | Frontend  | React, React Router, Axios |
@@ -102,7 +103,7 @@ Secrets and environment-specific values are never hard-coded.
 ```powershell
 cd backend
 
-# 1. Compile + run tests (Phase 1: no tests yet)
+# 1. Compile + run tests
 mvn clean verify
 
 # 2. Run the application (loads backend/.env into the process environment)
@@ -134,6 +135,23 @@ Expected response:
 
 Actuator health is also available at `http://localhost:8080/actuator/health`.
 
+## API Documentation (Swagger / OpenAPI)
+
+The backend generates OpenAPI 3 documentation automatically:
+
+- JSON spec: `http://localhost:8080/api/v1/api-docs`
+- Swagger UI: `http://localhost:8080/api/v1/swagger-ui.html`
+
+## API Response & Error Handling
+
+- Business endpoints wrap responses in a standard envelope
+  (`ApiResponse<T>`): `{ success, message, data, errors, timestamp }`.
+- Paginated lists use `PageResponse<T>`: `{ items, page, size, totalItems, totalPages }`
+  with `page` (0-based) and `size` (default 20, max 100) query parameters.
+- Errors are mapped centrally by `GlobalExceptionHandler` to stable status
+  codes and machine-readable error codes (see `docs/CONVENTIONS.md`).
+- `GET /api/v1/health` intentionally keeps its simple operational payload.
+
 ## Frontend Setup & Run
 
 ```powershell
@@ -153,14 +171,24 @@ The dev server runs on `http://localhost:5173` and **proxies `/api` to the
 backend on `http://localhost:8080`**, so no CORS configuration is needed in
 development.
 
-## Validation Checklist (Phase 1)
+## Validation Checklist
+
+Phase 1 (project skeleton):
 
 - [x] Repo layout: `backend/`, `frontend/`, `docs/`, `.gitignore`, `README.md`
 - [x] Backend compiles (`mvn clean verify`)
 - [x] Health endpoint `GET /api/v1/health`
-- [ ] PostgreSQL connection + Flyway migration verified (requires the database
-      and role created above)
+- [x] PostgreSQL connection + Flyway migration verified
 - [x] Frontend installs and builds (`npm install`, `npm run build`)
+
+Phase 2 (backend foundation):
+
+- [x] Standard API response envelope (`ApiResponse<T>`, `ApiError`)
+- [x] Global exception handling with stable error codes
+- [x] Standard pagination support (`PageParams`, `PageResponse<T>`)
+- [x] OpenAPI / Swagger documentation (`/api/v1/api-docs`, `/api/v1/swagger-ui.html`)
+- [x] Foundation unit + web-slice tests (`mvn clean verify`)
+- [x] Health endpoint regression test
 
 ## Conventions & Docs
 
