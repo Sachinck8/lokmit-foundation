@@ -190,8 +190,20 @@ Phase 2 (backend foundation):
 - [x] Foundation unit + web-slice tests (`mvn clean verify`)
 - [x] Health endpoint regression test
 
+Phase 3 (database & migrations):
+
+- [x] Full MVP schema: 41 domain tables across V2–V8 (identity, CMS, services,
+      projects, content, communication, employment)
+- [x] Primary keys, foreign keys, unique constraints, CHECK constraints,
+      indexes, NOT NULL constraints with consistent naming (`docs/DATABASE.md`)
+- [x] Seed data: roles, permissions, grants, bootstrap admin (no credential)
+- [x] Flyway migration verified from a clean database (integration test +
+      clean-database runtime check)
+- [x] Database documentation with ERD (`docs/DATABASE.md`)
+
 ## Conventions & Docs
 
 - `docs/CONVENTIONS.md` — coding, REST, migration, naming and Git rules.
+- `docs/DATABASE.md` — database schema reference, naming conventions and ERD.
 - Phase 0 architecture and requirements plan (see git history / project archive).
 - Future ADRs (architecture decision records) under `docs/adr/`.

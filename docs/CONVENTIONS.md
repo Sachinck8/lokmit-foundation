@@ -83,6 +83,7 @@ and take effect from Phase 1 onward.
   published migration.
 - **Migrations are immutable once committed.** Corrections go in a new
   migration.
+- Schema design, naming conventions, and ERD: see `docs/DATABASE.md`.
 - For future phases: `R__` repeatable migrations are allowed only for
   genuinely idempotent data views/reference seed data.
 
