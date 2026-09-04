@@ -74,6 +74,24 @@ PostgreSQL is unreachable) applies the full migration chain to a throwaway
 schema `lokmit_it`, asserts all 41 tables exist, asserts history rows
 `V1..V8` succeeded, and verifies a second migrate run is a no-op.
 
+## Authentication Schema (Phase 4)
+
+The identity schema (`V2__identity_schema.sql`) is used for authentication:
+
+- **users** - Stores user accounts with BCrypt-hashed passwords. The bootstrap
+  admin ships with `password_hash NULL` until Phase 4 provisions a credential.
+- **roles** - Role definitions (SUPER_ADMIN, ADMIN, EDITOR, MODERATOR, etc.)
+- **permissions** - Granular permissions (content:manage, users:manage, etc.)
+- **role_permissions** - Many-to-many join between roles and permissions
+- **user_roles** - Many-to-many join between users and roles
+- **refresh_tokens** - Stores SHA-256 hashes of refresh tokens (never the raw token)
+
+Security features:
+- Passwords are hashed with BCrypt (never stored in plaintext)
+- Refresh tokens are hashed with SHA-256 before storage
+- Only token hashes are stored in the database
+- User status (ACTIVE/LOCKED/SUSPENDED/DELETED) controls authentication
+
 ## ER Diagram
 
 ```mermaid

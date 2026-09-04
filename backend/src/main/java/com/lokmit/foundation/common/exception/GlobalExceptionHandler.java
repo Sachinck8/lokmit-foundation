@@ -3,10 +3,16 @@ package com.lokmit.foundation.common.exception;
 import com.lokmit.foundation.common.api.ApiError;
 import com.lokmit.foundation.common.api.ApiResponse;
 import com.lokmit.foundation.common.api.ErrorCodes;
+import com.lokmit.foundation.security.exception.AuthenticationFailedException;
+import com.lokmit.foundation.security.exception.TokenException;
+import com.lokmit.foundation.security.exception.UserAccountException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -44,6 +50,39 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiResponse<Void>> handleConflict(ConflictException ex) {
         return build(HttpStatus.CONFLICT, ErrorCodes.CONFLICT, ex.getMessage());
+    }
+
+    // Phase 4: Authentication & Authorization exception handlers
+
+    @ExceptionHandler(AuthenticationFailedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthenticationFailed(AuthenticationFailedException ex) {
+        return build(HttpStatus.UNAUTHORIZED, ErrorCodes.INVALID_CREDENTIALS, ex.getMessage());
+    }
+
+    @ExceptionHandler(UserAccountException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUserAccountException(UserAccountException ex) {
+        String code = switch (ex.getStatus()) {
+            case "LOCKED" -> ErrorCodes.USER_LOCKED;
+            case "SUSPENDED" -> ErrorCodes.USER_SUSPENDED;
+            default -> ErrorCodes.BAD_REQUEST;
+        };
+        return build(HttpStatus.UNAUTHORIZED, code, ex.getMessage());
+    }
+
+    @ExceptionHandler(TokenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTokenException(TokenException ex) {
+        String code = ex.getMessage().contains("expired") ? ErrorCodes.EXPIRED_TOKEN : ErrorCodes.INVALID_TOKEN;
+        return build(HttpStatus.UNAUTHORIZED, code, ex.getMessage());
+    }
+
+    @ExceptionHandler({AuthenticationException.class, BadCredentialsException.class})
+    public ResponseEntity<ApiResponse<Void>> handleSpringAuthentication(Exception ex) {
+        return build(HttpStatus.UNAUTHORIZED, ErrorCodes.UNAUTHORIZED, "Authentication required");
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
+        return build(HttpStatus.FORBIDDEN, ErrorCodes.FORBIDDEN, "Access denied");
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})

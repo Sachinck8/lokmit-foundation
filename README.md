@@ -4,8 +4,8 @@ Website and digital platform for **LOKMIT FOUNDATION** — built as a
 Corporate Consultancy + Skill Development + Project Advisory + Employment +
 Job Portal + Knowledge Platform.
 
-> **Status: Phase 2 — backend foundation complete.**
-> No business entities, authentication, modules, or admin panel implemented yet.
+> **Status: Phase 4 — authentication & authorization complete.**
+> Foundation security layer implemented with JWT, BCrypt, RBAC, and refresh tokens.
 > See Phase 0 architecture plan for the full roadmap.
 
 ---
@@ -90,6 +90,10 @@ Secrets and environment-specific values are never hard-coded.
 | `DB_USERNAME` | backend | Database role (`lokmit_app`) |
 | `DB_PASSWORD` | backend | Password for the database role |
 | `SERVER_PORT` | backend | HTTP port (default `8080`) |
+| `JWT_SECRET` | backend | Secret key for signing JWTs (min 32 bytes) |
+| `JWT_ACCESS_TOKEN_EXPIRATION` | backend | Access token expiration in ms (default `900000` = 15 min) |
+| `JWT_REFRESH_TOKEN_EXPIRATION` | backend | Refresh token expiration in ms (default `604800000` = 7 days) |
+| `BOOTSTRAP_ADMIN_PASSWORD` | backend | Initial admin password (only used if password_hash is NULL) |
 | `VITE_API_BASE_URL` | frontend | Backend API base path (default `/api/v1`) |
 
 - **`.env.example` files** (root, `backend/`, `frontend/`) document the variables
@@ -200,6 +204,23 @@ Phase 3 (database & migrations):
 - [x] Flyway migration verified from a clean database (integration test +
       clean-database runtime check)
 - [x] Database documentation with ERD (`docs/DATABASE.md`)
+
+Phase 4 (authentication & authorization):
+
+- [x] Email/password authentication with BCrypt password hashing
+- [x] JWT access tokens (HS256, configurable secret and expiration)
+- [x] Refresh tokens with rotation and revocation (SHA-256 hashed storage)
+- [x] Spring Security with stateless JWT authentication
+- [x] Role-based authorization (ROLE_SUPER_ADMIN, ROLE_ADMIN, etc.)
+- [x] Permission-based authorization (content:manage, users:manage, etc.)
+- [x] POST /api/v1/auth/login - Authenticate and receive tokens
+- [x] POST /api/v1/auth/refresh - Refresh access token with rotation
+- [x] POST /api/v1/auth/logout - Revoke refresh token
+- [x] GET /api/v1/auth/me - Get current user profile
+- [x] Bootstrap admin credential provisioning via BOOTSTRAP_ADMIN_PASSWORD
+- [x] Comprehensive test suite (JWT, password, auth, authorization)
+- [x] Swagger/OpenAPI bearer authentication documentation
+- [x] Environment-based security configuration
 
 ## Conventions & Docs
 

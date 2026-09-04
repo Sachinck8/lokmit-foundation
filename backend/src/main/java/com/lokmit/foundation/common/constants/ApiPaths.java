@@ -11,6 +11,13 @@ public final class ApiPaths {
     /** Public health check (unauthenticated). */
     public static final String HEALTH = API_V1 + "/health";
 
+    /** Authentication endpoints. */
+    public static final String AUTH = API_V1 + "/auth";
+    public static final String AUTH_LOGIN = AUTH + "/login";
+    public static final String AUTH_REFRESH = AUTH + "/refresh";
+    public static final String AUTH_LOGOUT = AUTH + "/logout";
+    public static final String AUTH_ME = AUTH + "/me";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

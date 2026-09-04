@@ -39,7 +39,23 @@ springdoc:
     path: /api/v1/swagger-ui.html
   packages-to-scan: com.lokmit.foundation
 
+# Application security configuration
+app:
+  security:
+    jwt:
+      # Secret key for signing JWTs - MUST be set in production via JWT_SECRET env var
+      secret: ${JWT_SECRET:}
+      # Access token expiration in milliseconds (default: 15 minutes)
+      access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:900000}
+      # Refresh token expiration in milliseconds (default: 7 days)
+      refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}
+    # Bootstrap admin password - set via BOOTSTRAP_ADMIN_PASSWORD env var
+    # Only used when admin password_hash is NULL
+    bootstrap:
+      admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+
 logging:
   level:
     org.flywaydb: info
     org.hibernate.SQL: warn
+    com.lokmit.foundation.security: debug

@@ -102,7 +102,9 @@ and take effect from Phase 1 onward.
 
 - **Never commit secrets** (database passwords, JWT keys, API keys, tokens).
 - Express config via variables: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`,
-  `SERVER_PORT`, later `JWT_*`, `MAIL_*`, `STORAGE_*`.
+  `SERVER_PORT`, `JWT_SECRET`, `JWT_ACCESS_TOKEN_EXPIRATION`,
+  `JWT_REFRESH_TOKEN_EXPIRATION`, `BOOTSTRAP_ADMIN_PASSWORD`,
+  later `MAIL_*`, `STORAGE_*`.
 - `application.yml` reads them with safe, non-secret defaults:
   `${DB_USERNAME:lokmit_app}`, `${DB_PASSWORD:}` etc.
 - `.env.example` files contain placeholders only and are committed.
