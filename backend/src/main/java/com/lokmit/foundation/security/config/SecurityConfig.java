@@ -5,10 +5,13 @@ import com.lokmit.foundation.common.api.ErrorCodes;
 import com.lokmit.foundation.common.api.ApiResponse;
 import com.lokmit.foundation.common.api.ApiError;
 import com.lokmit.foundation.security.filter.JwtAuthenticationFilter;
+import com.lokmit.foundation.security.service.CustomUserDetailsService;
+import com.lokmit.foundation.security.service.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -29,6 +32,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@EnableConfigurationProperties(JwtConfig.class)
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -49,6 +53,24 @@ public class SecurityConfig {
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, ObjectMapper objectMapper) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.objectMapper = objectMapper;
+    }
+
+    /**
+     * Explicitly constructs the JWT authentication filter here instead of
+     * annotating the filter class with {@code @Component}. As a plain
+     * {@code @Component} implementing {@code Filter}, it would be picked up by
+     * {@code @WebMvcTest} slices that cannot supply its service-layer
+     * dependencies, breaking those test contexts.
+     *
+     * <p>Declared {@code static} because this configuration class
+     * constructor-injects the filter bean; a static {@code @Bean} method can
+     * be invoked without an instance of this class, avoiding a bean-creation
+     * cycle.</p>
+     */
+    @Bean
+    public static JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider,
+                                                                  CustomUserDetailsService userDetailsService) {
+        return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService);
     }
 
     @Bean

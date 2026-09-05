@@ -1,9 +1,11 @@
 package com.lokmit.foundation.security.controller;
 
 import com.lokmit.foundation.common.constants.ApiPaths;
+import com.lokmit.foundation.security.config.JwtConfig;
 import com.lokmit.foundation.security.dto.LoginRequest;
 import com.lokmit.foundation.security.dto.RefreshTokenRequest;
 import com.lokmit.foundation.security.service.AuthService;
+import com.lokmit.foundation.security.service.CustomUserDetailsService;
 import com.lokmit.foundation.security.service.JwtTokenProvider;
 import com.lokmit.foundation.security.util.SecurityUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,7 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.bean.MockBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -23,7 +26,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Test isolation for AuthController.
+ *
+ * <p>Web-layer test that uses @AutoConfigureMockMvc(addFilters = false) to
+ * bypass the Spring Security filter chain.  The controller under test depends
+ * only on AuthService and SecurityUtils, both of which are @MockBean'd.</p>
+ */
 @WebMvcTest(controllers = AuthController.class)
+@Import(JwtConfig.class)
 @AutoConfigureMockMvc(addFilters = false)
 class AuthControllerTest {
 
@@ -39,8 +50,15 @@ class AuthControllerTest {
     @MockBean
     private SecurityUtils securityUtils;
 
+    // JwtAuthenticationFilter extends OncePerRequestFilter (a Filter), which
+    // @WebMvcTest picks up automatically. It needs JwtTokenProvider and
+    // CustomUserDetailsService, neither of which are @Service beans that
+    // @WebMvcTest would scan. Provide mocks to satisfy its constructor.
     @MockBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockBean
+    private CustomUserDetailsService customUserDetailsService;
 
     @Test
     void login_shouldReturn200WithTokens() throws Exception {
@@ -141,8 +159,14 @@ class AuthControllerTest {
 
     @Test
     void me_shouldReturn401WithoutAuth() throws Exception {
+        // Explicit arrangement: no authenticated user in the security context.
+        // The explicit null stub keeps this test deterministic regardless of
+        // Mockito default-answer behavior or test execution order.
+        when(securityUtils.getCurrentUserId()).thenReturn(null);
+
         mockMvc.perform(get(ApiPaths.AUTH_ME))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false));
     }
 
     @Test

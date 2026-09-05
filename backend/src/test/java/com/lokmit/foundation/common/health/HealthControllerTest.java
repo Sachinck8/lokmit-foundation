@@ -3,6 +3,7 @@ package com.lokmit.foundation.common.health;
 import com.lokmit.foundation.common.constants.ApiPaths;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -12,8 +13,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Guards the Phase 1 health contract so later phases cannot break it silently.
+ *
+ * <p>Security filters are disabled: this slice exercises controller behavior,
+ * not the security chain. Spring Security has been on the classpath since
+ * Phase 4, so the default security auto-configuration would otherwise reject
+ * these requests with 401.</p>
  */
 @WebMvcTest(controllers = HealthController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class HealthControllerTest {
 
     @Autowired
