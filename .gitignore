@@ -28,7 +28,9 @@ frontend/.vite/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
 # --- Logs ---
 logs/
-*.logai-current-changes-backup.patch
+*.log
+
+# --- AI backup ---
+ai-current-changes-backup.patch
