@@ -1,0 +1,11 @@
+.events-page__note {
+  padding: var(--spacing-8) 0;
+  text-align: center;
+}
+
+.events-page__note-text {
+  max-width: 520px;
+  margin: 0 auto;
+  color: var(--color-text-light);
+  line-height: var(--line-height-relaxed);
+}

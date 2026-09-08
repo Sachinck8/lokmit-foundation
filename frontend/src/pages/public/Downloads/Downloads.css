@@ -1,0 +1,42 @@
+.downloads-page__categories {
+  padding: var(--spacing-8) 0;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.downloads-page__categories-title {
+  margin: 0 0 var(--spacing-5);
+  font-size: clamp(1.4rem, 2.6vw, 1.75rem);
+  text-align: center;
+  color: var(--color-text);
+}
+
+.downloads-page__categories-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  justify-content: center;
+}
+
+.downloads__category-tag {
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-light);
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-full);
+  font-size: 0.9rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.downloads-page__note {
+  padding: var(--spacing-6) 0;
+}
+
+.downloads-page__note-text {
+  color: var(--color-text-light);
+  max-width: 620px;
+  margin: 0 auto;
+  text-align: center;
+  line-height: var(--line-height-relaxed);
+}

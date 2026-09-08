@@ -1,0 +1,7 @@
+.projects-page__note {
+  color: var(--color-text-light);
+  max-width: 620px;
+  margin: var(--spacing-6) auto 0;
+  text-align: center;
+  line-height: var(--line-height-relaxed);
+}

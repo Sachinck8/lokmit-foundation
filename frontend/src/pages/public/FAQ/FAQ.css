@@ -1,0 +1,23 @@
+.faq-page__categories {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-10);
+  padding: var(--spacing-8) 0;
+}
+
+.faq-page__category {
+  padding-top: var(--spacing-6);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.faq-page__category:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.faq-page__category-title {
+  margin: 0 0 var(--spacing-5);
+  font-size: clamp(1.3rem, 2.4vw, 1.6rem);
+  text-align: center;
+  color: var(--color-primary-dark);
+}

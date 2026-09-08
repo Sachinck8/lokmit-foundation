@@ -1,34 +1,184 @@
-.home__title {
-  margin: 0 0 12px;
-  color: var(--color-primary);
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: var(--section-spacing);
 }
 
-.home__intro {
-  color: var(--color-text);
-  margin: 0 0 24px;
+.home__working-model-note {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.82);
+  margin: var(--spacing-5) auto var(--spacing-6);
+  max-width: 520px;
+  line-height: var(--line-height-relaxed);
 }
 
-.home__status {
-  display: inline-block;
-  padding: 8px 14px;
-  border-radius: 6px;
-  font-size: 0.9rem;
+.home__working-model-cta {
+  display: flex;
+  justify-content: center;
+}
+
+.home__section-title {
+  margin: 0 0 var(--spacing-4);
+  font-size: clamp(1.5rem, 2.8vw, 1.9rem);
+  text-align: center;
+}
+
+.home__section-subtitle {
+  margin: 0 0 var(--spacing-6);
+  color: var(--color-text-light);
+  text-align: center;
+  max-width: 620px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: var(--line-height-relaxed);
+}
+
+.home__services {
+  background: var(--color-surface);
+}
+
+.home__services-grid {
+  display: grid;
+  gap: var(--spacing-5);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  margin-bottom: var(--spacing-7);
+}
+
+.home__service-card {
+  background: var(--color-bg-alt);
   border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  height: 100%;
 }
 
-.home__status--checking {
-  color: var(--color-muted);
-  background-color: var(--color-bg);
+.home__service-card-title {
+  margin: 0 0 var(--spacing-3);
+  font-size: clamp(1.05rem, 1.5vw, 1.2rem);
+  color: var(--color-primary-dark);
 }
 
-.home__status--ok {
-  color: #14532d;
-  background-color: #dcfce7;
-  border-color: #86efac;
+.home__service-card-text {
+  margin: 0 0 var(--spacing-4);
+  color: var(--color-text-light);
+  font-size: 0.95rem;
+  line-height: var(--line-height-relaxed);
 }
 
-.home__status--error {
-  color: #7f1d1d;
-  background-color: #fee2e2;
-  border-color: #fca5a5;
+.home__service-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: gap var(--transition-fast), color var(--transition-fast);
+}
+
+.home__service-card-link svg {
+  width: 16px;
+  height: 16px;
+  transition: transform var(--transition-fast);
+}
+
+.home__service-card-link:hover {
+  gap: var(--spacing-3);
+  color: var(--color-primary-dark);
+}
+
+.home__service-card-link:hover svg {
+  transform: translateX(3px);
+}
+
+.home__services-cta {
+  display: flex;
+  justify-content: center;
+}
+
+.home__expertise {
+  background: var(--color-bg-alt);
+}
+
+.home__expertise-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  justify-content: center;
+  margin-bottom: var(--spacing-7);
+}
+
+.home__expertise-tag {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-full);
+  font-size: 0.9rem;
+  font-weight: var(--font-weight-medium);
+  text-align: center;
+}
+
+.home__expertise-cta {
+  display: flex;
+  justify-content: center;
+}
+
+.home__why-choose {
+  background: var(--color-surface);
+}
+
+.home__why-grid {
+  display: grid;
+  gap: var(--spacing-3);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.home__why-item {
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: flex-start;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--color-bg-alt);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.home__why-check {
+  width: 18px;
+  height: 18px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.home__process {
+  background: var(--color-bg-alt);
+}
+
+.home__footer-legal {
+  padding: var(--spacing-6) 0;
+  background: var(--color-primary-dark);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.home__footer-legal-text {
+  margin: 0 0 var(--spacing-2);
+}
+
+.home__footer-legal-email {
+  margin: 0;
+}
+
+.home__footer-legal-email a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.home__footer-legal-email a:hover {
+  text-decoration: underline;
 }

@@ -1,0 +1,27 @@
+.expertise-page__sectors {
+  background: var(--color-surface);
+}
+
+.expertise-page__expertise {
+  background: var(--color-bg-alt);
+}
+
+.expertise-page__disclaimer {
+  background: var(--color-surface);
+}
+
+.expertise-page__disclaimer-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: var(--spacing-6) var(--spacing-5);
+  background: var(--color-bg-alt);
+  border-left: 3px solid var(--color-primary-light);
+  border-radius: var(--radius-md);
+}
+
+.expertise-page__disclaimer-text {
+  margin: var(--spacing-3) 0 0;
+  color: var(--color-text-light);
+  font-size: 0.95rem;
+  line-height: var(--line-height-relaxed);
+}

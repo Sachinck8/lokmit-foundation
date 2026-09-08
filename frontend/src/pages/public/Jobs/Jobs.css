@@ -1,0 +1,22 @@
+.jobs-page__portal-title {
+  margin: 0 0 var(--spacing-3);
+  font-size: clamp(1.3rem, 2.4vw, 1.6rem);
+}
+
+.jobs-page__portal-desc {
+  color: var(--color-text-light);
+  max-width: 600px;
+  margin: 0 0 var(--spacing-5);
+  line-height: var(--line-height-relaxed);
+}
+
+.jobs-page__candidate,
+.jobs-page__employer {
+  padding: var(--spacing-8) 0;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.jobs-page__employer {
+  border-top: none;
+}

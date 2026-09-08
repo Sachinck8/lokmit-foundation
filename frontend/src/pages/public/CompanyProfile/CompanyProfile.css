@@ -1,0 +1,55 @@
+.company-profile__quick-facts {
+  background: var(--color-bg-alt);
+}
+
+.company-profile__overview {
+  background: var(--color-surface);
+}
+
+.company-profile__overview-inner {
+  max-width: 840px;
+  margin: 0 auto;
+}
+
+.company-profile__overview-title {
+  margin: var(--spacing-6) 0 var(--spacing-4);
+  font-size: clamp(1.5rem, 2.8vw, 1.9rem);
+  color: var(--color-text);
+}
+
+.company-profile__overview-text {
+  font-size: clamp(1rem, 1.5vw, 1.1rem);
+  color: var(--color-text);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-5);
+}
+
+.company-profile__tagline {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-dark);
+  font-size: clamp(1rem, 1.5vw, 1.1rem);
+}
+
+.company-profile__objectives {
+  background: var(--color-bg-alt);
+}
+
+.company-profile__cta-title {
+  color: var(--color-surface);
+  text-align: center;
+}
+
+.company-profile__cta-subtitle {
+  color: rgba(255, 255, 255, 0.88);
+  text-align: center;
+  max-width: 560px;
+  margin: 0 auto var(--spacing-7);
+  line-height: var(--line-height-relaxed);
+}
+
+.company-profile__cta-actions {
+  display: flex;
+  gap: var(--spacing-4);
+  justify-content: center;
+  flex-wrap: wrap;
+}

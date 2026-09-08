@@ -1,0 +1,24 @@
+.legal-information__details {
+  background: var(--color-bg-alt);
+}
+
+.legal-information__note {
+  background: var(--color-surface);
+}
+
+.legal-information__note-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.legal-information__note-text {
+  margin: var(--spacing-5) 0 var(--spacing-6);
+  color: var(--color-text-light);
+  line-height: var(--line-height-relaxed);
+}
+
+.legal-information__links {
+  display: flex;
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+}

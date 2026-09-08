@@ -1,0 +1,7 @@
+.legal-page {
+  min-height: 100%;
+}
+
+.legal-page + .legal-page {
+  margin-top: 0;
+}

@@ -1,0 +1,11 @@
+.legal-marker {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--color-text-light);
+  line-height: var(--line-height-relaxed);
+}
+
+.legal-marker--compact {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.8);
+}

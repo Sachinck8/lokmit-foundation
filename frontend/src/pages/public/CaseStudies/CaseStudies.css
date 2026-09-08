@@ -1,0 +1,112 @@
+.case-studies-page__structure {
+  padding: var(--spacing-8) 0;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.case-studies-page__structure-title {
+  margin: 0 0 var(--spacing-3);
+  font-size: clamp(1.4rem, 2.6vw, 1.75rem);
+  text-align: center;
+}
+
+.case-studies-page__structure-intro {
+  color: var(--color-text-light);
+  max-width: 600px;
+  margin: 0 auto var(--spacing-6);
+  text-align: center;
+  line-height: var(--line-height-relaxed);
+}
+
+.case-studies-page__structure-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-width: 720px;
+  margin: 0 auto;
+  display: grid;
+  gap: var(--spacing-3);
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 640px) {
+  .case-studies-page__structure-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.case-studies-page__structure-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-3);
+  font-size: 0.96rem;
+  color: var(--color-text-light);
+}
+
+.case-studies-page__structure-number {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  font-size: 0.95rem;
+  min-width: 28px;
+}
+
+.case-studies-page__structure-field {
+  line-height: var(--line-height-relaxed);
+}
+
+.case-studies-page__template {
+  padding: var(--spacing-8) 0;
+  background: var(--color-bg-alt);
+}
+
+.case-studies-page__template-title {
+  margin: 0 0 var(--spacing-5);
+  font-size: clamp(1.4rem, 2.6vw, 1.75rem);
+  text-align: center;
+}
+
+.case-studies-page__template-list {
+  margin: 0;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.case-studies-page__template-item {
+  display: flex;
+  padding: var(--spacing-4) var(--spacing-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.case-studies-page__template-item:last-child {
+  border-bottom: none;
+}
+
+@media (min-width: 560px) {
+  .case-studies-page__template-item {
+    flex-direction: row;
+    gap: var(--spacing-6);
+  }
+}
+
+.case-studies-page__template-label {
+  flex: 0 0 140px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-dark);
+  font-size: 0.95rem;
+  padding-top: 4px;
+}
+
+.case-studies-page__template-value {
+  flex: 1;
+  color: var(--color-text-light);
+  font-size: 0.95rem;
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+  padding-top: 4px;
+}
+
+.case-studies-page__template-value em {
+  font-style: italic;
+  color: var(--color-muted);
+}

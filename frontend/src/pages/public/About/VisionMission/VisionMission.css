@@ -1,0 +1,50 @@
+.vision-mission-page__vision {
+  padding: var(--spacing-8) 0;
+  background: var(--color-bg-alt);
+  border-top: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.vision-mission-page__label {
+  margin: 0 0 var(--spacing-4);
+  font-size: clamp(1.3rem, 2.4vw, 1.6rem);
+  color: var(--color-primary-dark);
+}
+
+.vision-mission-page__text {
+  color: var(--color-text);
+  font-size: clamp(1rem, 1.5vw, 1.1rem);
+  line-height: var(--line-height-relaxed);
+  max-width: 780px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.vision-mission-page__mission {
+  padding: var(--spacing-8) 0;
+  background: var(--color-surface);
+}
+
+.vision-mission-page__intro {
+  margin: 0 0 var(--spacing-5);
+  color: var(--color-text-light);
+  font-size: 1rem;
+}
+
+.vision-mission-page__items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.vision-mission-page__item {
+  padding: var(--spacing-3) 0;
+  border-bottom: 1px solid var(--color-border-light);
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: var(--line-height-relaxed);
+}
+
+.vision-mission-page__item:last-child {
+  border-bottom: none;
+}

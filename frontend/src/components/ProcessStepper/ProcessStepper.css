@@ -1,0 +1,96 @@
+.process-stepper {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-8);
+}
+
+.process-stepper--accent {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-surface);
+}
+
+.process-stepper__title {
+  margin: 0 0 var(--spacing-2);
+  text-align: center;
+  color: var(--color-text);
+}
+
+.process-stepper--accent .process-stepper__title {
+  color: var(--color-surface);
+}
+
+.process-stepper__tagline {
+  margin: 0 auto var(--spacing-7);
+  text-align: center;
+  max-width: 580px;
+  color: var(--color-text-light);
+  font-size: clamp(0.98rem, 1.2vw, 1.05rem);
+  line-height: var(--line-height-relaxed);
+}
+
+.process-stepper--accent .process-stepper__tagline {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.process-stepper__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--spacing-3);
+  counter-reset: stepper;
+}
+
+@media (min-width: 640px) {
+  .process-stepper__list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 860px) {
+  .process-stepper__list {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.process-stepper__item {
+  position: relative;
+  padding: var(--spacing-4) var(--spacing-4) var(--spacing-4) var(--spacing-6);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-alt);
+  border-left: 3px solid var(--color-primary-light);
+}
+
+.process-stepper--accent .process-stepper__item {
+  background: rgba(255, 255, 255, 0.08);
+  border-left-color: var(--color-accent);
+}
+
+.process-stepper__index {
+  display: none;
+}
+
+.process-stepper__label {
+  display: block;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-dark);
+  font-size: clamp(1rem, 1.3vw, 1.1rem);
+  margin-bottom: var(--spacing-1);
+}
+
+.process-stepper--accent .process-stepper__label {
+  color: var(--color-surface);
+}
+
+.process-stepper__description {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-text-light);
+  line-height: var(--line-height-relaxed);
+}
+
+.process-stepper--accent .process-stepper__description {
+  color: rgba(255, 255, 255, 0.82);
+}
