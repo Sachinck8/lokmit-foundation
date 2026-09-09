@@ -13,10 +13,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>Web-layer test that uses @AutoConfigureMockMvc(addFilters = false) to
  * bypass the Spring Security filter chain.  The controller under test depends
- * only on AuthService and SecurityUtils, both of which are @MockBean'd.</p>
+ * only on AuthService and SecurityUtils, both of which are @MockitoBean'd.</p>
  */
 @WebMvcTest(controllers = AuthController.class)
 @Import(JwtConfig.class)
@@ -44,20 +44,20 @@ class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private AuthService authService;
 
-    @MockBean
+    @MockitoBean
     private SecurityUtils securityUtils;
 
     // JwtAuthenticationFilter extends OncePerRequestFilter (a Filter), which
     // @WebMvcTest picks up automatically. It needs JwtTokenProvider and
     // CustomUserDetailsService, neither of which are @Service beans that
     // @WebMvcTest would scan. Provide mocks to satisfy its constructor.
-    @MockBean
+    @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
 
-    @MockBean
+    @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
 
     @Test

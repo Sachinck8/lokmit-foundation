@@ -4,13 +4,15 @@ import com.lokmit.foundation.common.constants.ApiPaths;
 import com.lokmit.foundation.contact.dto.ContactMessageResponse;
 import com.lokmit.foundation.contact.dto.CreateContactMessageRequest;
 import com.lokmit.foundation.contact.service.ContactMessageService;
+import com.lokmit.foundation.security.service.CustomUserDetailsService;
+import com.lokmit.foundation.security.service.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.bean.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -30,8 +32,18 @@ class ContactMessageControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private ContactMessageService contactMessageService;
+
+    // JwtAuthenticationFilter extends OncePerRequestFilter (a Filter), which
+    // @WebMvcTest picks up automatically. It needs JwtTokenProvider and
+    // CustomUserDetailsService, neither of which are @Service beans that
+    // @WebMvcTest would scan. Provide mocks to satisfy its constructor.
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
 
     private CreateContactMessageRequest validRequest() {
         CreateContactMessageRequest request = new CreateContactMessageRequest();
