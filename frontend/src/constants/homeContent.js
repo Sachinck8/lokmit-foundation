@@ -15,6 +15,12 @@ export const homeContent = {
       lines: ['We Guide.', 'We Train.', 'We Mentor.', 'You Execute.'],
       visualLabel: 'Our Commitment',
     },
+    steps: [
+      { label: 'We Guide.', description: 'Understand your requirements and objectives.' },
+      { label: 'We Train.', description: 'Build the capability and structure to deliver.' },
+      { label: 'We Mentor.', description: 'Provide ongoing technical mentorship.' },
+      { label: 'You Execute.', description: 'Execute with confidence and compliance.' },
+    ],
     description:
       'We combine technical guidance, structured training, and continuous mentoring so your organization can execute with confidence and compliance.',
     cta: { label: 'Understand How We Work', to: '/about' },

@@ -1,3 +1,5 @@
+import './EmptyState.css'
+
 export default function EmptyState({ title, text, actionLabel, onAction, secondaryLabel, onSecondary }) {
   return (
     <div className="empty-state">

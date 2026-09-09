@@ -4,6 +4,17 @@
   gap: var(--section-spacing);
 }
 
+.home__hero-secondary {
+  color: var(--color-surface);
+  border-color: rgba(255, 255, 255, 0.85);
+}
+
+.home__hero-secondary:hover:not(:disabled) {
+  background-color: var(--color-surface);
+  color: var(--color-primary-dark);
+  border-color: var(--color-surface);
+}
+
 .home__working-model-note {
   text-align: center;
   color: rgba(255, 255, 255, 0.82);

@@ -1,3 +1,5 @@
+import './TeamCard.css'
+
 export default function TeamCard({ name, role, bio, initials }) {
   const computedInitials = initials ?? name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
 

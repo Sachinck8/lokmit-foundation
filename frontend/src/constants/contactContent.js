@@ -24,12 +24,6 @@ export const contactContent = {
     { value: 'general', label: 'General Enquiry' },
   ],
   form: {
-    headings: {
-      success: 'Thank you for your enquiry',
-      error: 'Something went wrong',
-      sending: 'Sending...',
-      placeholder: 'Your enquiry will be reviewed and responded to.',
-    },
     fields: {
       name: { label: 'Full Name', placeholder: 'Your full name', required: true },
       email: { label: 'Email Address', placeholder: 'your.email@example.com', required: true },

@@ -1,3 +1,5 @@
+import './BulletList.css'
+
 export default function BulletList({ items, title, description }) {
   return (
     <div className="bullet-list">

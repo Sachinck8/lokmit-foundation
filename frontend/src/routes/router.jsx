@@ -28,14 +28,11 @@ import EmployerLogin from '../pages/public/EmployerLogin/EmployerLogin.jsx'
 import CandidateLogin from '../pages/public/CandidateLogin/CandidateLogin.jsx'
 import AdminPanel from '../pages/public/AdminPanel/AdminPanel.jsx'
 import NotFound from '../pages/public/NotFound/NotFound.jsx'
-
-const aboutRoutes = [
-  { path: 'vision-mission', element: require('../pages/public/About/VisionMission/VisionMission.jsx').default },
-  { path: 'objectives', element: require('../pages/public/About/Objectives/Objectives.jsx').default },
-  { path: 'values', element: require('../pages/public/About/Values/Values.jsx').default },
-  { path: 'directors-message', element: require('../pages/public/About/DirectorsMessage/DirectorsMessage.jsx').default },
-  { path: 'team', element: require('../pages/public/About/Team/Team.jsx').default },
-]
+import VisionMission from '../pages/public/About/VisionMission/VisionMission.jsx'
+import Objectives from '../pages/public/About/Objectives/Objectives.jsx'
+import Values from '../pages/public/About/Values/Values.jsx'
+import DirectorsMessage from '../pages/public/About/DirectorsMessage/DirectorsMessage.jsx'
+import Team from '../pages/public/About/Team/Team.jsx'
 
 const router = createBrowserRouter([
   {
@@ -43,7 +40,12 @@ const router = createBrowserRouter([
     element: <PublicLayout />,
     children: [
       { index: true, element: <Home /> },
-      { path: '/about', element: <About />, children: aboutRoutes },
+      { path: '/about', element: <About /> },
+      { path: '/about/vision-mission', element: <VisionMission /> },
+      { path: '/about/objectives', element: <Objectives /> },
+      { path: '/about/values', element: <Values /> },
+      { path: '/about/directors-message', element: <DirectorsMessage /> },
+      { path: '/about/team', element: <Team /> },
       { path: '/company-profile', element: <CompanyProfile /> },
       { path: '/legal-information', element: <LegalInformation /> },
       { path: '/services', element: <Services /> },
@@ -61,7 +63,7 @@ const router = createBrowserRouter([
       { path: '/contact', element: <Contact /> },
       { path: '/faq', element: <FAQ /> },
       { path: '/privacy-policy', element: <PrivacyPolicy /> },
-      { path: '/terms-conditions', element: <TermsConditions /> },
+      { path: '/terms-and-conditions', element: <TermsConditions /> },
       { path: '/refund-policy', element: <RefundPolicy /> },
       { path: '/disclaimer', element: <Disclaimer /> },
       { path: '/cookie-policy', element: <CookiePolicy /> },

@@ -96,8 +96,14 @@
 }
 
 .navbar__link--active {
-  color: var(--color-primary);
-  background-color: var(--color-primary);
+  color: var(--color-primary-dark);
+  background-color: rgba(20, 83, 45, 0.1);
+  font-weight: var(--font-weight-semibold);
+}
+
+.navbar__link--active:hover {
+  color: var(--color-primary-dark);
+  background-color: rgba(20, 83, 45, 0.16);
 }
 
 .navbar__actions {
@@ -296,8 +302,9 @@
 }
 
 .navbar__mobile-link--active {
-  color: var(--color-primary);
-  background-color: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  background-color: rgba(20, 83, 45, 0.1);
+  font-weight: var(--font-weight-semibold);
 }
 
 .navbar__mobile-divider {

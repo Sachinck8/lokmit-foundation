@@ -1,3 +1,5 @@
+import './ProcessStepper.css'
+
 export default function ProcessStepper({ steps, tagline, title, accent = false }) {
   return (
     <div className={`process-stepper${accent ? ' process-stepper--accent' : ''}`}>

@@ -187,7 +187,7 @@
 .contact-page__textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(20, 83, 45, 0.15);
+  box-shadow: 0 0 0 3px rgba(20, 107, 51, 0.14);
 }
 
 .contact-page__input--invalid,
@@ -238,41 +238,23 @@
 }
 
 .contact-page__success {
-  text-align: center;
-  padding: var(--spacing-8) var(--spacing-6);
-  background: var(--color-bg-alt);
-  border: 1px solid var(--color-border-light);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-6);
+  background: rgba(20, 107, 51, 0.06);
+  border: 1px solid rgba(20, 107, 51, 0.25);
+  border-left: 4px solid var(--color-primary);
   border-radius: var(--radius-lg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-4);
-}
-
-.contact-page__success-icon {
-  width: 56px;
-  height: 56px;
-  color: var(--color-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-surface);
-  border-radius: var(--radius-full);
-}
-
-.contact-page__success-icon svg {
-  width: 28px;
-  height: 28px;
 }
 
 .contact-page__success-title {
-  margin: 0;
-  font-size: 1.2rem;
-  color: var(--color-text);
+  margin: 0 0 var(--spacing-2);
+  font-size: 1.05rem;
+  color: var(--color-primary-dark);
 }
 
 .contact-page__success-text {
-  margin: 0 0 var(--spacing-5);
+  margin: 0;
   color: var(--color-text-light);
-  max-width: 320px;
+  font-size: 0.95rem;
+  line-height: var(--line-height-relaxed);
 }

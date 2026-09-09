@@ -1,3 +1,5 @@
+import { company } from './siteIdentity.js'
+
 export const legalContent = {
   privacyPolicy: {
     title: 'Privacy Policy',
@@ -27,7 +29,7 @@ export const legalContent = {
       },
       {
         heading: 'Contact Us',
-        body: `If you have questions about this Privacy Policy, please contact us at ${process.env.REACT_APP_OFFICIAL_EMAIL || 'lokmitfoundation@gmail.com'}.`,
+        body: `If you have questions about this Privacy Policy, please contact us at ${company.officialEmail}.`,
       },
     ],
   },

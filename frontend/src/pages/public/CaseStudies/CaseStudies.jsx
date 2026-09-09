@@ -1,12 +1,12 @@
 import EmptyState from '../../../components/EmptyState/EmptyState.jsx'
 import PageHero from '../../../components/PageHero/PageHero.jsx'
 import Container from '../../../components/Container/Container.jsx'
-import Button from '../../../components/Button/Button.jsx'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { caseStudiesContent } from '../../../constants/caseStudiesContent.js'
 import '../LegalPage/LegalPage.css'
 
 export default function CaseStudies() {
+  const navigate = useNavigate()
   return (
     <div className="case-studies-page">
       <PageHero
@@ -20,7 +20,7 @@ export default function CaseStudies() {
           title={caseStudiesContent.empty.title}
           text={caseStudiesContent.empty.text}
           secondaryLabel="Contact Us"
-          onSecondary={() => {}}
+          onSecondary={() => navigate('/contact')}
         />
 
         <section className="case-studies-page__structure">

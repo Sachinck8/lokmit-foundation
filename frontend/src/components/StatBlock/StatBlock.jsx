@@ -1,3 +1,5 @@
+import './StatBlock.css'
+
 export default function StatBlock({ items, title, subtitle, compact = false }) {
   return (
     <div className={`stat-block${compact ? ' stat-block--compact' : ''}`}>

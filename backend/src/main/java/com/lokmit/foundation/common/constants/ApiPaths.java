@@ -18,6 +18,9 @@ public final class ApiPaths {
     public static final String AUTH_LOGOUT = AUTH + "/logout";
     public static final String AUTH_ME = AUTH + "/me";
 
+    /** Public contact enquiries (submission only; management is authenticated). */
+    public static final String CONTACT_MESSAGES = API_V1 + "/contact-messages";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

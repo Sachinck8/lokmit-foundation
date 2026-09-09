@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import PageHero from '../../../components/PageHero/PageHero.jsx'
 import Container from '../../../components/Container/Container.jsx'
-import Button from '../../../components/Button/Button.jsx'
 import Icon from '../../../components/Icon/Icon.jsx'
 import { contactContent } from '../../../constants/contactContent.js'
 import { company } from '../../../constants/siteIdentity.js'
+import { submitEnquiry as submitEnquiryToApi } from '../../../services/contactService.js'
 import './Contact.css'
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const REQUIRED_FIELDS = ['name', 'email', 'category', 'subject', 'message']
 
 export default function Contact() {
   const hero = contactContent.hero
@@ -22,43 +25,70 @@ export default function Contact() {
     subject: '',
     message: '',
   })
-  const [submitted, setSubmitted] = useState(false)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const [touched, setTouched] = useState({})
 
-  const isFieldInvalid = (name, value) => {
-    if (!form.fields[name]?.required) return false
-    if (!touched[name]) return false
-    return !value || value.trim() === ''
+  const getFieldError = (name, value) => {
+    if (!form.fields[name]?.required) return null
+    if (!value || value.trim() === '') {
+      if (name === 'email') return 'A valid email is required.'
+      if (name === 'category') return 'Please select a category.'
+      return 'This field is required.'
+    }
+    if (name === 'email' && !EMAIL_PATTERN.test(value.trim())) {
+      return 'Please enter a valid email address.'
+    }
+    return null
   }
+
+  const isFieldInvalid = (name, value) => Boolean(touched[name] && getFieldError(name, value))
 
   const updateField = (name, value) => {
     setFormState(prev => ({ ...prev, [name]: value }))
     setTouched(prev => ({ ...prev, [name]: true }))
-    setError(false)
   }
 
-  const handleSubmit = (event) => {
+  const submitEnquiry = (event) => {
     event.preventDefault()
-    const required = ['name', 'email', 'category', 'subject', 'message']
-    const invalid = required.filter(field => !formState[field]?.trim())
-    if (invalid.length) {
-      setTouched(Object.fromEntries(invalid.map(f => [f, true])))
-      setError(true)
+    if (submitting) {
+      // A submission is already in progress — ignore duplicate submits.
       return
     }
-    setSubmitting(true)
-    setError(false)
-    setTimeout(() => {
-      setSubmitting(false)
-      setSubmitted(true)
-    }, 600)
-  }
+    setTouched(prev => ({
+      ...prev,
+      ...Object.fromEntries(REQUIRED_FIELDS.map(field => [field, true])),
+    }))
 
-  const isFormValid = () => {
-    const required = ['name', 'email', 'category', 'subject', 'message']
-    return required.every(field => formState[field]?.trim())
+    const invalid = REQUIRED_FIELDS.filter(field => getFieldError(field, formState[field]))
+    if (invalid.length) {
+      setError('Please complete the highlighted fields before sending your enquiry.')
+      return
+    }
+
+    setError('')
+    setSubmitting(true)
+
+    submitEnquiryToApi({
+      name: formState.name.trim(),
+      email: formState.email.trim(),
+      phone: formState.phone.trim() || undefined,
+      category: formState.category,
+      subject: formState.subject.trim(),
+      message: formState.message.trim(),
+    })
+      .then(() => {
+        setSubmitted(true)
+        setFormState({ name: '', email: '', phone: '', category: '', subject: '', message: '' })
+        setTouched({})
+      })
+      .catch(() => {
+        setError('We could not send your enquiry right now. Please try again, or email us directly.')
+      })
+      .finally(() => {
+        setSubmitting(false)
+      })
   }
 
   return (
@@ -87,28 +117,6 @@ export default function Contact() {
               <p className="contact-page__note">{note}</p>
             )}
 
-            <div className="contact-page__categories">
-              <h2 className="contact-page__categories-title">Enquiry Categories</h2>
-              <ul className="contact-page__categories-list">
-                {enquiryCategories.map(cat => (
-                  <li key={cat.value} className="contact-page__category">
-                    <select
-                      value={formState.category}
-                      onChange={(e) => updateField('category', e.target.value)}
-                      className={`contact-page__category-select${isFieldInvalid('category', formState.category) ? ' contact-page__category-select--invalid' : ''}`}
-                      aria-label={cat.label}
-                      disabled={submitted}
-                    >
-                      <option value="" disabled>{cat.label}</option>
-                      {enquiryCategories.map(c => (
-                        <option key={c.value} value={c.value}>{c.label}</option>
-                      ))}
-                    </select>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
             <div className="contact-page__quick-links">
               <a href={`mailto:${info.email}`} className="contact-page__quick-link">
                 <Icon name="mail" />
@@ -123,19 +131,15 @@ export default function Contact() {
 
           <div className="contact-page__form" id="form">
             <h2 className="contact-page__form-title">Send an Enquiry</h2>
-            {submitted ? (
-              <div className="contact-page__success">
-                <div className="contact-page__success-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </div>
-                <h3 className="contact-page__success-title">{form.headings.success}</h3>
-                <p className="contact-page__success-text">{form.headings.placeholder}</p>
-                <Button variant="primary" size="medium" onClick={() => setSubmitted(false)}>Send Another Enquiry</Button>
+            {submitted && (
+              <div className="contact-page__success" role="status">
+                <h3 className="contact-page__success-title">Thank you — your enquiry has been received.</h3>
+                <p className="contact-page__success-text">
+                  Our team will review your message and respond to you at the email address you provided.
+                </p>
               </div>
-            ) : (
-              <form className="contact-page__form-inner" onSubmit={handleSubmit} noValidate>
+            )}
+            <form className="contact-page__form-inner" onSubmit={submitEnquiry} noValidate>
                 <div className="contact-page__field">
                   <label className="contact-page__label" htmlFor="contact-name">
                     {form.fields.name.label}
@@ -152,10 +156,9 @@ export default function Contact() {
                     aria-invalid={isFieldInvalid('name', formState.name)}
                     aria-describedby={isFieldInvalid('name', formState.name) ? 'contact-name-error' : undefined}
                     required={form.fields.name.required}
-                    disabled={submitting}
                   />
                   {isFieldInvalid('name', formState.name) && (
-                    <p id="contact-name-error" className="contact-page__field-error">This field is required.</p>
+                    <p id="contact-name-error" className="contact-page__field-error">{getFieldError('name', formState.name)}</p>
                   )}
                 </div>
 
@@ -175,10 +178,9 @@ export default function Contact() {
                     aria-invalid={isFieldInvalid('email', formState.email)}
                     aria-describedby={isFieldInvalid('email', formState.email) ? 'contact-email-error' : undefined}
                     required={form.fields.email.required}
-                    disabled={submitting}
                   />
                   {isFieldInvalid('email', formState.email) && (
-                    <p id="contact-email-error" className="contact-page__field-error">A valid email is required.</p>
+                    <p id="contact-email-error" className="contact-page__field-error">{getFieldError('email', formState.email)}</p>
                   )}
                 </div>
 
@@ -195,7 +197,6 @@ export default function Contact() {
                     onChange={(e) => updateField('phone', e.target.value)}
                     placeholder={form.fields.phone.placeholder}
                     className="contact-page__input"
-                    disabled={submitting}
                   />
                 </div>
 
@@ -213,7 +214,6 @@ export default function Contact() {
                     aria-invalid={isFieldInvalid('category', formState.category)}
                     aria-describedby={isFieldInvalid('category', formState.category) ? 'contact-category-error' : undefined}
                     required={form.fields.category.required}
-                    disabled={submitting}
                   >
                     <option value="" disabled>{form.fields.category.placeholder}</option>
                     {enquiryCategories.map(c => (
@@ -221,7 +221,7 @@ export default function Contact() {
                     ))}
                   </select>
                   {isFieldInvalid('category', formState.category) && (
-                    <p id="contact-category-error" className="contact-page__field-error">Please select a category.</p>
+                    <p id="contact-category-error" className="contact-page__field-error">{getFieldError('category', formState.category)}</p>
                   )}
                 </div>
 
@@ -241,10 +241,9 @@ export default function Contact() {
                     aria-invalid={isFieldInvalid('subject', formState.subject)}
                     aria-describedby={isFieldInvalid('subject', formState.subject) ? 'contact-subject-error' : undefined}
                     required={form.fields.subject.required}
-                    disabled={submitting}
                   />
                   {isFieldInvalid('subject', formState.subject) && (
-                    <p id="contact-subject-error" className="contact-page__field-error">This field is required.</p>
+                    <p id="contact-subject-error" className="contact-page__field-error">{getFieldError('subject', formState.subject)}</p>
                   )}
                 </div>
 
@@ -264,28 +263,22 @@ export default function Contact() {
                     aria-invalid={isFieldInvalid('message', formState.message)}
                     aria-describedby={isFieldInvalid('message', formState.message) ? 'contact-message-error' : undefined}
                     required={form.fields.message.required}
-                    disabled={submitting}
                   />
                   {isFieldInvalid('message', formState.message) && (
-                    <p id="contact-message-error" className="contact-page__field-error">This field is required.</p>
+                    <p id="contact-message-error" className="contact-page__field-error">{getFieldError('message', formState.message)}</p>
                   )}
                 </div>
 
-                {error && !isFieldInvalid('name', formState.name) && (
-                  <p className="contact-page__form-error">Something went wrong. Please try again.</p>
+                {error && (
+                  <p className="contact-page__form-error" role="alert">{error}</p>
                 )}
 
-                <button
-                  type="submit"
-                  className="contact-page__submit"
-                  disabled={submitting || !isFormValid()}
-                >
-                  {submitting ? form.headings.sending : form.submit}
+                <button type="submit" className="contact-page__submit" disabled={submitting}>
+                  {submitting ? 'Sending…' : form.submit}
                 </button>
 
                 <p className="contact-page__privacy-note">{form.privacyNote}</p>
-              </form>
-            )}
+            </form>
           </div>
         </div>
       </Container>

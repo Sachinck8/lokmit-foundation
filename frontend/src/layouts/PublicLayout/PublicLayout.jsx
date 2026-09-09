@@ -1,3 +1,4 @@
+import { Outlet } from 'react-router-dom'
 import Navbar from '../../components/Navbar/Navbar.jsx'
 import Footer from '../../components/Footer/Footer.jsx'
 import './PublicLayout.css'
@@ -6,8 +7,10 @@ export default function PublicLayout() {
   return (
     <div className="public-layout">
       <Navbar />
-      <main className="public-layout__main">
-        <div className="public-layout__content" />
+      <main className="public-layout__main" id="main-content">
+        <div className="public-layout__content">
+          <Outlet />
+        </div>
       </main>
       <Footer />
     </div>

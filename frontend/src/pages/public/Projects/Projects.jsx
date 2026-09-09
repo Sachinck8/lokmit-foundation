@@ -1,12 +1,12 @@
 import EmptyState from '../../../components/EmptyState/EmptyState.jsx'
 import PageHero from '../../../components/PageHero/PageHero.jsx'
 import Container from '../../../components/Container/Container.jsx'
-import Button from '../../../components/Button/Button.jsx'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { projectsContent } from '../../../constants/projectsContent.js'
 import './Projects.css'
 
 export default function Projects() {
+  const navigate = useNavigate()
   return (
     <div className="projects-page">
       <PageHero
@@ -19,7 +19,7 @@ export default function Projects() {
           title={projectsContent.empty.title}
           text={projectsContent.empty.text}
           secondaryLabel="Contact Us"
-          onSecondary={() => {}}
+          onSecondary={() => navigate('/contact')}
         />
         <p className="projects-page__note">{projectsContent.note}</p>
       </Container>

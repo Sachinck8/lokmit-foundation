@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import './Accordion.css'
 
 export default function Accordion({ items, title, alwaysOpenFirst = false }) {
   const [openIndex, setOpenIndex] = useState(alwaysOpenFirst ? 0 : null)

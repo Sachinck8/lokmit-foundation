@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import Button from '../Button/Button.jsx'
+import './CtaSection.css'
 
 export default function CtaSection({ background, title, subtitle, primaryCta, secondaryCta, align = 'center' }) {
   return (
@@ -8,9 +9,9 @@ export default function CtaSection({ background, title, subtitle, primaryCta, se
       style={background ? { background } : undefined}
     >
       <div className="cta-section__content" style={{ textAlign: align }}>
-        <h2 className="cta-section__title">{title}</h2>
+        <h2 className="cta-section__title" style={background ? undefined : { color: 'var(--color-text)' }}>{title}</h2>
         {subtitle && (
-          <p className="cta-section__subtitle">{subtitle}</p>
+          <p className="cta-section__subtitle" style={background ? undefined : { color: 'var(--color-text-light)' }}>{subtitle}</p>
         )}
         <div className="cta-section__actions" style={{ justifyContent: align === 'center' ? 'center' : 'flex-start' }}>
           {primaryCta && (

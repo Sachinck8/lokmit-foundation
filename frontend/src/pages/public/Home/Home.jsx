@@ -35,6 +35,16 @@ export default function Home() {
         subtitle={hero.subtitle}
         badge={hero.badge}
         background={hero.background}
+        actions={
+          <>
+            <Link to={hero.primaryCta.to}>
+              <Button variant="primary" size="large">{hero.primaryCta.label}</Button>
+            </Link>
+            <Link to={hero.secondaryCta.to}>
+              <Button variant="outline" size="large" className="home__hero-secondary">{hero.secondaryCta.label}</Button>
+            </Link>
+          </>
+        }
       />
 
       <section className="section home__working-model section--alt">
@@ -42,12 +52,7 @@ export default function Home() {
           <ProcessStepper
             title={workingModel.title}
             tagline={workingModel.subtitle}
-            steps={[
-              { label: workingModel.tagline.lines[0], description: 'Understand your requirements and objectives.' },
-              { label: workingModel.tagline.lines[1], description: 'Build the capability and structure to deliver.' },
-              { label: workingModel.tagline.lines[2], description: 'Provide ongoing technical mentorship.' },
-              { label: workingModel.tagline.lines[3], description: 'Execute with confidence and compliance.' },
-            ]}
+            steps={workingModel.steps}
             accent
           />
           <p className="home__working-model-note">{workingModel.description}</p>
