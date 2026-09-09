@@ -24,12 +24,6 @@ export const contactContent = {
     { value: 'general', label: 'General Enquiry' },
   ],
   form: {
-    offlineNotice: {
-      title: 'Online enquiry submission is not connected yet',
-      text:
-        'This form is not linked to our systems at the moment, so nothing has been sent. Please email us directly and we will respond to your enquiry.',
-      ctaLabel: 'Email Us Instead',
-    },
     fields: {
       name: { label: 'Full Name', placeholder: 'Your full name', required: true },
       email: { label: 'Email Address', placeholder: 'your.email@example.com', required: true },

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import PageHero from '../../../components/PageHero/PageHero.jsx'
 import Container from '../../../components/Container/Container.jsx'
-import Button from '../../../components/Button/Button.jsx'
 import Icon from '../../../components/Icon/Icon.jsx'
 import { contactContent } from '../../../constants/contactContent.js'
 import { company } from '../../../constants/siteIdentity.js'
+import { submitEnquiry as submitEnquiryToApi } from '../../../services/contactService.js'
 import './Contact.css'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -26,7 +26,8 @@ export default function Contact() {
     message: '',
   })
   const [error, setError] = useState('')
-  const [showOfflineNotice, setShowOfflineNotice] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const [touched, setTouched] = useState({})
 
   const getFieldError = (name, value) => {
@@ -51,6 +52,10 @@ export default function Contact() {
 
   const submitEnquiry = (event) => {
     event.preventDefault()
+    if (submitting) {
+      // A submission is already in progress — ignore duplicate submits.
+      return
+    }
     setTouched(prev => ({
       ...prev,
       ...Object.fromEntries(REQUIRED_FIELDS.map(field => [field, true])),
@@ -58,14 +63,32 @@ export default function Contact() {
 
     const invalid = REQUIRED_FIELDS.filter(field => getFieldError(field, formState[field]))
     if (invalid.length) {
-      setShowOfflineNotice(false)
       setError('Please complete the highlighted fields before sending your enquiry.')
       return
     }
 
     setError('')
-    // There is no enquiry backend connected yet. Do not pretend an enquiry was sent.
-    setShowOfflineNotice(true)
+    setSubmitting(true)
+
+    submitEnquiryToApi({
+      name: formState.name.trim(),
+      email: formState.email.trim(),
+      phone: formState.phone.trim() || undefined,
+      category: formState.category,
+      subject: formState.subject.trim(),
+      message: formState.message.trim(),
+    })
+      .then(() => {
+        setSubmitted(true)
+        setFormState({ name: '', email: '', phone: '', category: '', subject: '', message: '' })
+        setTouched({})
+      })
+      .catch(() => {
+        setError('We could not send your enquiry right now. Please try again, or email us directly.')
+      })
+      .finally(() => {
+        setSubmitting(false)
+      })
   }
 
   return (
@@ -108,13 +131,12 @@ export default function Contact() {
 
           <div className="contact-page__form" id="form">
             <h2 className="contact-page__form-title">Send an Enquiry</h2>
-            {showOfflineNotice && (
-              <div className="contact-page__offline" role="status">
-                <h3 className="contact-page__offline-title">{form.offlineNotice.title}</h3>
-                <p className="contact-page__offline-text">{form.offlineNotice.text}</p>
-                <Button variant="primary" size="medium" href={`mailto:${info.email}`}>
-                  {form.offlineNotice.ctaLabel}
-                </Button>
+            {submitted && (
+              <div className="contact-page__success" role="status">
+                <h3 className="contact-page__success-title">Thank you — your enquiry has been received.</h3>
+                <p className="contact-page__success-text">
+                  Our team will review your message and respond to you at the email address you provided.
+                </p>
               </div>
             )}
             <form className="contact-page__form-inner" onSubmit={submitEnquiry} noValidate>
@@ -251,8 +273,8 @@ export default function Contact() {
                   <p className="contact-page__form-error" role="alert">{error}</p>
                 )}
 
-                <button type="submit" className="contact-page__submit">
-                  {form.submit}
+                <button type="submit" className="contact-page__submit" disabled={submitting}>
+                  {submitting ? 'Sending…' : form.submit}
                 </button>
 
                 <p className="contact-page__privacy-note">{form.privacyNote}</p>

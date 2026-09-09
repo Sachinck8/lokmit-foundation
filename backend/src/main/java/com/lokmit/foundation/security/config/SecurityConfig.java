@@ -36,6 +36,7 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
             ApiPaths.HEALTH,
+            ApiPaths.CONTACT_MESSAGES,
             ApiPaths.API_V1 + "/auth/login",
             ApiPaths.API_V1 + "/auth/refresh",
             "/api/v1/api-docs",
