@@ -103,17 +103,21 @@ class JwtTokenProviderTest {
     }
 
     @Test
-    void token_shouldExpireCorrectly() throws InterruptedException {
-        JwtConfig shortLivedConfig = new JwtConfig();
-        shortLivedConfig.setSecret(TEST_SECRET);
-        shortLivedConfig.setAccessTokenExpiration(100); // 100ms
-        shortLivedConfig.setRefreshTokenExpiration(100);
-        JwtTokenProvider shortLivedProvider = new JwtTokenProvider(shortLivedConfig);
+    void token_shouldExpireCorrectly() {
+        // Deterministic expiry check: a NEGATIVE expiration produces a token
+        // whose exp claim is already in the past at the moment it is issued,
+        // so no wall-clock sleep is needed (sleep-based expiry tests are
+        // timing-flaky on loaded machines).
+        JwtConfig expiredConfig = new JwtConfig();
+        expiredConfig.setSecret(TEST_SECRET);
+        expiredConfig.setAccessTokenExpiration(-5000);
+        expiredConfig.setRefreshTokenExpiration(-5000);
+        JwtTokenProvider expiredProvider = new JwtTokenProvider(expiredConfig);
 
-        String token = shortLivedProvider.generateAccessToken(1L, "test@example.com", List.of("ROLE_ADMIN"));
-        assertThat(shortLivedProvider.validateToken(token)).isTrue();
+        String token = expiredProvider.generateAccessToken(1L, "test@example.com", List.of("ROLE_ADMIN"));
 
-        Thread.sleep(200); // Wait for token to expire
-        assertThat(shortLivedProvider.validateToken(token)).isFalse();
+        assertThat(expiredProvider.validateToken(token))
+                .as("A token whose expiration is already in the past must be rejected")
+                .isFalse();
     }
 }

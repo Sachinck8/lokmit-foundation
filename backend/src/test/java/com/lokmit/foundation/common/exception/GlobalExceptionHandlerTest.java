@@ -1,9 +1,13 @@
 package com.lokmit.foundation.common.exception;
 
 import com.lokmit.foundation.common.api.ErrorCodes;
+import com.lokmit.foundation.security.service.CustomUserDetailsService;
+import com.lokmit.foundation.security.service.JwtTokenProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -18,10 +22,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * exceptions to the standard error envelope with stable status codes.
  */
 @WebMvcTest(controllers = TestController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class GlobalExceptionHandlerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    // JwtAuthenticationFilter extends OncePerRequestFilter (a Filter), which
+    // @WebMvcTest picks up automatically. It needs JwtTokenProvider and
+    // CustomUserDetailsService, neither of which are @Service beans that
+    // @WebMvcTest would scan. Provide mocks to satisfy its constructor.
+    @MockBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockBean
+    private CustomUserDetailsService customUserDetailsService;
 
     @Test
     void notFoundException_shouldReturn404Envelope() throws Exception {

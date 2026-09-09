@@ -14,7 +14,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -23,8 +22,12 @@ import java.io.IOException;
 /**
  * Filter that validates JWT tokens from the Authorization header and sets up Spring Security context.
  * Expects the header format: "Bearer <token>"
+ *
+ * <p>Deliberately NOT annotated with {@code @Component}: it is registered as a
+ * {@code @Bean} in {@code SecurityConfig} so that web-layer test slices
+ * ({@code @WebMvcTest}) do not instantiate it and its service-layer
+ * dependencies (JwtTokenProvider, CustomUserDetailsService).</p>
  */
-@Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
