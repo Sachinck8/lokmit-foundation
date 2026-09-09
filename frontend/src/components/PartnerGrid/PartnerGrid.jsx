@@ -1,3 +1,5 @@
+import './PartnerGrid.css'
+
 export default function PartnerGrid({ count = 6, label = 'Partner' }) {
   return (
     <div className="partner-grid">

@@ -92,7 +92,7 @@ export const site = {
     ],
     legal: [
       { to: '/privacy-policy', label: 'Privacy Policy' },
-      { to: '/terms-conditions', label: 'Terms & Conditions' },
+      { to: '/terms-and-conditions', label: 'Terms & Conditions' },
       { to: '/refund-policy', label: 'Refund / Cancellation Policy' },
       { to: '/disclaimer', label: 'Disclaimer' },
       { to: '/cookie-policy', label: 'Cookie Policy' },

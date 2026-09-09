@@ -57,6 +57,7 @@
   --spacing-4: 1rem;
   --spacing-5: 1.25rem;
   --spacing-6: 1.5rem;
+  --spacing-7: 1.75rem;
   --spacing-8: 2rem;
   --spacing-10: 2.5rem;
   --spacing-12: 3rem;
@@ -86,6 +87,8 @@
 
   /* Layout */
   --container-max: 1240px;
+  --section-spacing: 72px;
+  --section-spacing-mobile: 44px;
   --section-padding: 72px;
   --section-padding-mobile: 44px;
 }
@@ -340,6 +343,17 @@ ol {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @media (max-width: 480px) {

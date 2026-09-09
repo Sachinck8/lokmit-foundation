@@ -24,11 +24,11 @@ export const contactContent = {
     { value: 'general', label: 'General Enquiry' },
   ],
   form: {
-    headings: {
-      success: 'Thank you for your enquiry',
-      error: 'Something went wrong',
-      sending: 'Sending...',
-      placeholder: 'Your enquiry will be reviewed and responded to.',
+    offlineNotice: {
+      title: 'Online enquiry submission is not connected yet',
+      text:
+        'This form is not linked to our systems at the moment, so nothing has been sent. Please email us directly and we will respond to your enquiry.',
+      ctaLabel: 'Email Us Instead',
     },
     fields: {
       name: { label: 'Full Name', placeholder: 'Your full name', required: true },
