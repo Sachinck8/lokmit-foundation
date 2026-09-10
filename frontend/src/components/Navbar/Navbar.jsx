@@ -21,7 +21,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsSticky(window.scrollY > 40)
+      setIsSticky(window.scrollY > 24)
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
@@ -70,6 +70,12 @@ export default function Navbar() {
     }
   }, [isOpen])
 
+  // Close menus whenever the route changes
+  useEffect(() => {
+    setIsOpen(false)
+    setShowLoginMenu(false)
+  }, [location.pathname])
+
   const handleNavClick = (to) => {
     navigate(to)
     setIsOpen(false)
@@ -79,15 +85,18 @@ export default function Navbar() {
   return (
     <header ref={headerRef} className={`navbar${isSticky ? ' navbar--sticky' : ''}`}>
       <div className="navbar__container">
-        <Link to="/" className="navbar__brand" onClick={() => setIsOpen(false)}>
-          <span className="navbar__brand-icon" aria-hidden="true">
-            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M20 4L36 12V28L20 36L4 28V12L20 4Z" fill="currentColor" opacity="0.2" />
-              <path d="M20 12L28 16V24L20 28L12 24V16L20 12Z" fill="currentColor" />
-              <circle cx="20" cy="20" r="3" fill="currentColor" opacity="0.6" />
-            </svg>
+        <Link to="/" className="navbar__brand" aria-label="LOKMIT FOUNDATION — Home">
+          <img
+            src="/assets/lokmit-logo.png"
+            alt="LOKMIT FOUNDATION logo"
+            className="navbar__brand-logo"
+            width="46"
+            height="46"
+          />
+          <span className="navbar__brand-text">
+            <span className="navbar__brand-name">LOKMIT</span>
+            <span className="navbar__brand-sub">FOUNDATION</span>
           </span>
-          <span className="navbar__brand-text">LOKMIT FOUNDATION</span>
         </Link>
 
         <nav className="navbar__nav" aria-label="Primary navigation">
@@ -117,7 +126,7 @@ export default function Navbar() {
               aria-haspopup="true"
               aria-label="Log in menu"
             >
-              <span className="navbar__login-label">Log In</span>
+              <span className="navbar__login-label">Login</span>
               <svg className="navbar__login-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <polyline points="6 9 12 15 18 9" />
               </svg>
@@ -140,9 +149,9 @@ export default function Navbar() {
             )}
           </div>
 
-          <a href={`mailto:${company.officialEmail}`} className="navbar__contact-btn">
+          <Link to="/contact" className="navbar__contact-btn">
             Contact
-          </a>
+          </Link>
 
           <button
             className={`navbar__menu-btn${isOpen ? ' navbar__menu-btn--open' : ''}`}
@@ -181,7 +190,6 @@ export default function Navbar() {
                     className={`navbar__mobile-link${activeLink === link.to ? ' navbar__mobile-link--active' : ''}`}
                     onClick={() => handleNavClick(link.to)}
                     aria-current={activeLink === link.to ? 'page' : undefined}
-                    autoFocus
                   >
                     {link.label}
                   </Link>
@@ -189,6 +197,7 @@ export default function Navbar() {
               ))}
             </ul>
             <div className="navbar__mobile-divider" aria-hidden="true" />
+            <p className="navbar__mobile-group-label">Portals</p>
             <ul className="navbar__mobile-list">
               {loginLinks.map(link => (
                 <li key={link.to}>

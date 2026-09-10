@@ -16,7 +16,6 @@ export default function RefundPolicy() {
       <PageHero
         title={legalContent.refundPolicy.title}
         subtitle={legalContent.refundPolicy.intro}
-        background="linear-gradient(135deg, #0d3d21 0%, #14532d 100%)"
       />
       <Container>
         <Accordion items={refundItems} />

@@ -10,7 +10,6 @@
   flex-direction: column;
 }
 
-.public-layout__content {
+.public-layout__main > * {
   flex: 1;
-  scroll-margin-top: 72px;
 }

@@ -10,7 +10,6 @@ export default function FAQ() {
       <PageHero
         title={faqContent.hero.title}
         subtitle={faqContent.hero.subtitle}
-        background="linear-gradient(135deg, #0d3d21 0%, #14532d 100%)"
       />
       <Container>
         <div className="faq-page__categories">

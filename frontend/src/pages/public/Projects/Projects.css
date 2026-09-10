@@ -1,7 +1,12 @@
-.projects-page__note {
-  color: var(--color-text-light);
-  max-width: 620px;
+.projects__section {
+  padding-top: var(--spacing-10);
+}
+
+.projects__note {
   margin: var(--spacing-6) auto 0;
+  max-width: 640px;
   text-align: center;
+  color: var(--color-muted);
+  font-size: 0.85rem;
   line-height: var(--line-height-relaxed);
 }

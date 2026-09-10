@@ -1,24 +1,142 @@
-.legal-information__details {
-  background: var(--color-bg-alt);
+.li__details {
+  padding-top: var(--spacing-12);
 }
 
-.legal-information__note {
-  background: var(--color-surface);
-}
-
-.legal-information__note-inner {
-  max-width: 720px;
+.li__layout {
+  display: grid;
+  gap: var(--spacing-6);
+  max-width: 1020px;
   margin: 0 auto;
 }
 
-.legal-information__note-text {
-  margin: var(--spacing-5) 0 var(--spacing-6);
+@media (min-width: 920px) {
+  .li__layout {
+    grid-template-columns: 1.5fr 1fr;
+    align-items: start;
+  }
+}
+
+.li__panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-top: 3px solid var(--color-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-7);
+  box-shadow: var(--shadow-sm);
+}
+
+.li__panel-title {
+  margin: 0 0 var(--spacing-5);
+  font-size: 1.2rem;
+  color: var(--blue-800);
+}
+
+.li__list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.li__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-6);
+  padding: var(--spacing-4) 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.li__row:last-child {
+  border-bottom: none;
+}
+
+.li__label {
+  font-size: 0.8rem;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.li__value {
+  margin: 0;
+  text-align: right;
+  font-size: 0.95rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--blue-800);
+  word-break: break-word;
+}
+
+/* --- Side cards --- */
+.li__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.li__office {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-5) var(--spacing-6);
+  box-shadow: var(--shadow-xs);
+}
+
+.li__office-title {
+  margin: 0 0 var(--spacing-3);
+  font-size: 1rem;
+  color: var(--blue-800);
+}
+
+.li__office-address {
+  font-style: normal;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.li__office-line {
   color: var(--color-text-light);
+  font-size: 0.92rem;
+  line-height: var(--line-height-snug);
+}
+
+.li__director {
+  margin-top: var(--spacing-3);
+}
+
+.li__email {
+  display: inline-block;
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  font-size: 0.95rem;
+  word-break: break-all;
+  margin-bottom: var(--spacing-2);
+}
+
+.li__links {
+  display: flex;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.li__note {
+  margin: var(--spacing-8) auto 0;
+  max-width: 720px;
+  text-align: center;
+  color: var(--color-muted);
+  font-size: 0.85rem;
   line-height: var(--line-height-relaxed);
 }
 
-.legal-information__links {
-  display: flex;
-  gap: var(--spacing-4);
-  flex-wrap: wrap;
+@media (max-width: 560px) {
+  .li__row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .li__value {
+    text-align: left;
+  }
 }

@@ -19,5 +19,5 @@
   margin: 0 0 var(--spacing-5);
   font-size: clamp(1.3rem, 2.4vw, 1.6rem);
   text-align: center;
-  color: var(--color-primary-dark);
+  color: var(--blue-800);
 }

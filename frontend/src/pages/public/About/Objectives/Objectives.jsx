@@ -1,6 +1,5 @@
 import PageHero from '../../../../components/PageHero/PageHero.jsx'
 import Container from '../../../../components/Container/Container.jsx'
-import BulletList from '../../../../components/BulletList/BulletList.jsx'
 import { objectivesContent } from '../../../../constants/aboutContent.js'
 import './Objectives.css'
 
@@ -10,17 +9,21 @@ export default function Objectives() {
       <PageHero
         title={objectivesContent.hero.title}
         subtitle={objectivesContent.hero.subtitle}
-        background="linear-gradient(135deg, #0d3d21 0%, #14532d 100%)"
       />
-      <Container>
-        <section className="objectives-page__list">
-          <BulletList
-            title={objectivesContent.hero.title}
-            items={objectivesContent.items.map(item => item.title)}
-          />
-        </section>
-        <p className="objectives-page__note">{objectivesContent.note}</p>
-      </Container>
+
+      <section className="section obj__list">
+        <Container>
+          <ul className="obj__grid">
+            {objectivesContent.items.map((item, index) => (
+              <li key={item.title} className="obj__item">
+                <span className="obj__num" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                <span className="obj__title">{item.title}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="obj__note">{objectivesContent.note}</p>
+        </Container>
+      </section>
     </div>
   )
 }

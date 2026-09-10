@@ -1,11 +1,16 @@
-.events-page__note {
-  padding: var(--spacing-8) 0;
+.events__section {
+  padding-top: var(--spacing-10);
+}
+
+.events__note {
+  max-width: 620px;
+  margin: var(--spacing-6) auto 0;
   text-align: center;
 }
 
-.events-page__note-text {
-  max-width: 520px;
-  margin: 0 auto;
-  color: var(--color-text-light);
+.events__note-text {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.88rem;
   line-height: var(--line-height-relaxed);
 }
