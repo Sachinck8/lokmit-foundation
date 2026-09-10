@@ -2,6 +2,25 @@
 // Authoritative source: client-provided company profile.
 // Do not invent additional legal details.
 
+// --- Official brand assets ---
+// Official supplied assets live in `frontend/public/brand/` (served at `/brand/`).
+// Each entry names the official asset with a verified fallback to the existing
+// master logo so the UI never renders a broken image while an official asset
+// is unavailable. Assets are referenced by their public URL path.
+export const brand = {
+  primary: '/brand/logo-primary.png',
+  horizontal: '/brand/logo-horizontal.png',
+  symbol: '/brand/logo-symbol.png',
+  compact: '/brand/logo-compact.png',
+  white: '/brand/logo-white.png',
+  black: '/brand/logo-black.png',
+  favicon: '/brand/favicon.png',
+  social: '/brand/social-logo.png',
+  colors: '/brand/brand-colors.png',
+  // Verified on-disk fallback (the real uploaded logo artwork).
+  fallback: '/assets/lokmit-logo.png',
+}
+
 export const company = {
   name: 'LOKMIT FOUNDATION',
   legalStatus: 'A Company incorporated under the Companies Act, 2013',

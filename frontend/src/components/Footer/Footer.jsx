@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
-import { site, company } from '../../constants/siteIdentity.js'
+import { site, company, brand } from '../../constants/siteIdentity.js'
+import BrandImage from '../BrandImage/BrandImage.jsx'
 import './Footer.css'
 
 export default function Footer() {
@@ -9,8 +10,8 @@ export default function Footer() {
         <div className="footer__grid">
           <div className="footer__brand">
             <Link to="/" className="footer__logo" aria-label="LOKMIT FOUNDATION home">
-              <img
-                src="/assets/lokmit-logo.png"
+              <BrandImage
+                src={brand.white}
                 alt="LOKMIT FOUNDATION logo"
                 className="footer__logo-img"
                 width="52"

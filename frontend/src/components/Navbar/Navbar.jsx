@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { primaryPageLinks, loginLinks } from './PageLinks.jsx'
-import { company } from '../../constants/siteIdentity.js'
+import { company, brand } from '../../constants/siteIdentity.js'
+import BrandImage from '../BrandImage/BrandImage.jsx'
 import './Navbar.css'
 
 export default function Navbar() {
@@ -86,8 +87,8 @@ export default function Navbar() {
     <header ref={headerRef} className={`navbar${isSticky ? ' navbar--sticky' : ''}`}>
       <div className="navbar__container">
         <Link to="/" className="navbar__brand" aria-label="LOKMIT FOUNDATION — Home">
-          <img
-            src="/assets/lokmit-logo.png"
+          <BrandImage
+            src={brand.primary}
             alt="LOKMIT FOUNDATION logo"
             className="navbar__brand-logo"
             width="46"
