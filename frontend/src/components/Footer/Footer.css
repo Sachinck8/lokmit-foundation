@@ -49,19 +49,6 @@
   object-fit: contain;
 }
 
-.footer__brand-symbol {
-  display: inline-flex;
-  align-items: center;
-  margin: 0 0 var(--spacing-4);
-  opacity: 0.85;
-}
-
-.footer__symbol-img {
-  height: 34px;
-  width: auto;
-  object-fit: contain;
-}
-
 .footer__descriptor {
   color: rgba(255, 255, 255, 0.85);
   font-size: 0.95rem;

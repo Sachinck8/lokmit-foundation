@@ -11,15 +11,10 @@ export default function Footer() {
           <div className="footer__brand">
             {/* Primary footer brand: official reverse logo (dark background),
                 rendered prominently — it contains the full wordmark, so no
-                duplicate text block is rendered. The small symbol below is a
-                subtle supporting mark, never a replacement for the main logo
-                and never oversized. */}
+                duplicate text block is rendered. */}
             <Link to="/" className="footer__logo" aria-label="LOKMIT FOUNDATION home">
               <BrandLogo variant="footer" to={null} className="footer__logo-img" loading="lazy" />
             </Link>
-            <span className="footer__brand-symbol" aria-hidden="true">
-              <BrandLogo variant="symbol" to={null} className="footer__symbol-img" loading="lazy" />
-            </span>
             <p className="footer__descriptor">
               Professional Technical Consultancy &amp; Skill Development
             </p>
