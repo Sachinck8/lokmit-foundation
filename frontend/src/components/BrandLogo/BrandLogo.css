@@ -16,9 +16,9 @@
 
 /* Desktop navbar: horizontal lockup on the light navbar bar.
    Transparent asset — shown as supplied, no background added.
-   40px within the 72px header keeps comfortable vertical breathing room. */
+   43px within the 72px header keeps comfortable vertical breathing room. */
 .brand-logo--desktop-navbar {
-  height: 40px;
+  height: 43px;
   width: auto;
 }
 
