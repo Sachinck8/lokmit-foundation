@@ -13,6 +13,7 @@ export const brand = {
   symbol: '/brand/logo-symbol.png',
   compact: '/brand/logo-compact.png',
   white: '/brand/logo-white.png',
+  reverse: '/brand/REVERSE LOGO.png',
   black: '/brand/logo-black.png',
   favicon: '/brand/favicon.png',
   social: '/brand/social-logo.png',

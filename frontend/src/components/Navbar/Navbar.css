@@ -60,12 +60,6 @@
   }
 }
 
-.navbar__brand-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.05;
-}
-
 .navbar__brand-name {
   font-weight: var(--font-weight-extrabold);
   font-size: 1.12rem;

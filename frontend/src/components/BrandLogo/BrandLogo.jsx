@@ -9,7 +9,7 @@ import './BrandLogo.css'
  * Variants (context → official asset):
  *  - "desktop-navbar" → logo-horizontal.png (transparent lockup, light bar)
  *  - "mobile-navbar"  → logo-compact.png (opaque compact square logo)
- *  - "footer"         → logo-white.png (reverse logo for the dark footer)
+ *  - "footer"         → REVERSE LOGO.png (official reverse logo, dark footer)
  *  - "symbol"         → logo-symbol.png (small supporting mark; never huge)
  *  - "primary"        → logo-primary.png (general light-background usage)
  *
@@ -19,7 +19,7 @@ import './BrandLogo.css'
 const VARIANTS = {
   'desktop-navbar': { src: brand.horizontal, className: 'brand-logo--desktop-navbar' },
   'mobile-navbar': { src: brand.compact, className: 'brand-logo--mobile-navbar' },
-  footer: { src: brand.white, className: 'brand-logo--footer' },
+  footer: { src: brand.reverse, className: 'brand-logo--footer' },
   symbol: { src: brand.symbol, className: 'brand-logo--symbol' },
   primary: { src: brand.primary, className: 'brand-logo--primary' },
 }
