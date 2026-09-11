@@ -93,6 +93,8 @@ export default function Navbar() {
           {/* to={null}: the surrounding <Link> is the single clickable element */}
           <BrandLogo variant="desktop-navbar" to={null} className="navbar__brand-logo--desktop" loading="eager" />
           <BrandLogo variant="mobile-navbar" to={null} className="navbar__brand-logo--mobile" loading="eager" />
+          {/* Text fallback for mobile, where the compact logo is a mark only.
+              Hidden ≥768px so the horizontal logo is the sole brand element. */}
           <span className="navbar__brand-text">
             <span className="navbar__brand-name">LOKMIT</span>
             <span className="navbar__brand-sub">FOUNDATION</span>

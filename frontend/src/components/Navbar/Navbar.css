@@ -33,7 +33,13 @@
 }
 
 /* Brand lockup: horizontal logo on desktop, compact square on mobile.
-   Sizes and spacing live in BrandLogo.css; only visibility is switched here. */
+   Sizes and spacing live in BrandLogo.css; only visibility is switched here.
+   The horizontal desktop asset already contains the full wordmark, so the
+   text block is hidden ≥768px — the horizontal logo is the brand element. */
+.navbar__brand-text {
+  display: none;
+}
+
 .navbar__brand-logo--mobile {
   display: none;
 }
@@ -45,6 +51,12 @@
 
   .navbar__brand-logo--mobile {
     display: block;
+  }
+
+  .navbar__brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
   }
 }
 

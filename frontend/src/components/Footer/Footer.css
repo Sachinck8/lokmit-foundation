@@ -34,17 +34,19 @@
 }
 
 /* --- Brand column --- */
+/* Primary footer brand: the official reverse logo contains the full
+   wordmark, so it is rendered prominently with no duplicate text block. */
 .footer__logo {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
   text-decoration: none;
   margin-bottom: var(--spacing-4);
 }
 
 .footer__logo-img {
-  /* Sized by BrandLogo.css (footer variant). Transparent reverse logo —
-     rendered directly on the dark background, no backing plate. */
+  height: 64px;
+  width: auto;
+  object-fit: contain;
 }
 
 .footer__brand-symbol {
@@ -55,28 +57,9 @@
 }
 
 .footer__symbol-img {
-  /* Sized by BrandLogo.css (symbol variant, 34px). */
-}
-
-.footer__logo-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.05;
-}
-
-.footer__logo-name {
-  font-weight: var(--font-weight-extrabold);
-  font-size: 1.25rem;
-  letter-spacing: 0.06em;
-  color: #ffffff;
-}
-
-.footer__logo-sub {
-  font-weight: var(--font-weight-semibold);
-  font-size: 0.66rem;
-  letter-spacing: 0.34em;
-  color: var(--gold-500);
-  text-transform: uppercase;
+  height: 34px;
+  width: auto;
+  object-fit: contain;
 }
 
 .footer__descriptor {

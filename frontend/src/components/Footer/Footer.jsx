@@ -9,15 +9,13 @@ export default function Footer() {
       <div className="footer__wrapper">
         <div className="footer__grid">
           <div className="footer__brand">
-            {/* Primary footer brand: official reverse logo (dark background).
-                The small symbol below is a subtle supporting mark, never a
-                replacement for the main logo and never oversized. */}
+            {/* Primary footer brand: official reverse logo (dark background),
+                rendered prominently — it contains the full wordmark, so no
+                duplicate text block is rendered. The small symbol below is a
+                subtle supporting mark, never a replacement for the main logo
+                and never oversized. */}
             <Link to="/" className="footer__logo" aria-label="LOKMIT FOUNDATION home">
               <BrandLogo variant="footer" to={null} className="footer__logo-img" loading="lazy" />
-              <span className="footer__logo-text">
-                <span className="footer__logo-name">LOKMIT</span>
-                <span className="footer__logo-sub">FOUNDATION</span>
-              </span>
             </Link>
             <span className="footer__brand-symbol" aria-hidden="true">
               <BrandLogo variant="symbol" to={null} className="footer__symbol-img" loading="lazy" />
