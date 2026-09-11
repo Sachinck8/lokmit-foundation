@@ -17,8 +17,6 @@ export const brand = {
   favicon: '/brand/favicon.png',
   social: '/brand/social-logo.png',
   colors: '/brand/brand-colors.png',
-  // Verified on-disk fallback (the real uploaded logo artwork).
-  fallback: '/assets/lokmit-logo.png',
 }
 
 export const company = {

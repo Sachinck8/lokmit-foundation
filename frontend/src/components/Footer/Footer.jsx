@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import { site, company, brand } from '../../constants/siteIdentity.js'
-import BrandImage from '../BrandImage/BrandImage.jsx'
+import { site, company } from '../../constants/siteIdentity.js'
+import BrandLogo from '../BrandLogo/BrandLogo.jsx'
 import './Footer.css'
 
 export default function Footer() {
@@ -9,20 +9,19 @@ export default function Footer() {
       <div className="footer__wrapper">
         <div className="footer__grid">
           <div className="footer__brand">
+            {/* Primary footer brand: official reverse logo (dark background).
+                The small symbol below is a subtle supporting mark, never a
+                replacement for the main logo and never oversized. */}
             <Link to="/" className="footer__logo" aria-label="LOKMIT FOUNDATION home">
-              <BrandImage
-                src={brand.white}
-                alt="LOKMIT FOUNDATION logo"
-                className="footer__logo-img"
-                width="52"
-                height="52"
-                loading="lazy"
-              />
+              <BrandLogo variant="footer" to={null} className="footer__logo-img" loading="lazy" />
               <span className="footer__logo-text">
                 <span className="footer__logo-name">LOKMIT</span>
                 <span className="footer__logo-sub">FOUNDATION</span>
               </span>
             </Link>
+            <span className="footer__brand-symbol" aria-hidden="true">
+              <BrandLogo variant="symbol" to={null} className="footer__symbol-img" loading="lazy" />
+            </span>
             <p className="footer__descriptor">
               Professional Technical Consultancy &amp; Skill Development
             </p>

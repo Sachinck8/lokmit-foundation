@@ -32,11 +32,20 @@
   flex-shrink: 0;
 }
 
-.navbar__brand-logo {
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
-  flex-shrink: 0;
+/* Brand lockup: horizontal logo on desktop, compact square on mobile.
+   Sizes and spacing live in BrandLogo.css; only visibility is switched here. */
+.navbar__brand-logo--mobile {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .navbar__brand-logo--desktop {
+    display: none;
+  }
+
+  .navbar__brand-logo--mobile {
+    display: block;
+  }
 }
 
 .navbar__brand-text {

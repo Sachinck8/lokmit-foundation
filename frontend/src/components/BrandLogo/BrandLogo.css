@@ -1,0 +1,47 @@
+/* Official LOKMIT FOUNDATION brand logo display rules.
+   Assets are shown exactly as supplied: original colors, no filters,
+   no crops, aspect ratio always preserved (height-driven sizing). */
+
+.brand-logo-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.brand-logo {
+  display: block;
+  object-fit: contain;
+}
+
+/* Desktop navbar: horizontal lockup on the light navbar bar.
+   Transparent asset — shown as supplied, no background added. */
+.brand-logo--desktop-navbar {
+  height: 46px;
+  width: auto;
+}
+
+/* Mobile navbar: compact square logo for tight spaces. */
+.brand-logo--mobile-navbar {
+  height: 44px;
+  width: 44px;
+}
+
+/* Footer: official reverse logo on the dark footer background.
+   Transparent asset — rendered directly, no chip or backing plate. */
+.brand-logo--footer {
+  height: 48px;
+  width: auto;
+}
+
+/* Supporting brand symbol: small, subtle, never a decorative circle. */
+.brand-logo--symbol {
+  height: 34px;
+  width: auto;
+}
+
+/* General primary logo for light backgrounds. */
+.brand-logo--primary {
+  height: 48px;
+  width: auto;
+}

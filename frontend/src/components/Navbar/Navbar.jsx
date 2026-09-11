@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { primaryPageLinks, loginLinks } from './PageLinks.jsx'
-import { company, brand } from '../../constants/siteIdentity.js'
-import BrandImage from '../BrandImage/BrandImage.jsx'
+import { company } from '../../constants/siteIdentity.js'
+import BrandLogo from '../BrandLogo/BrandLogo.jsx'
 import './Navbar.css'
 
 export default function Navbar() {
@@ -86,14 +86,13 @@ export default function Navbar() {
   return (
     <header ref={headerRef} className={`navbar${isSticky ? ' navbar--sticky' : ''}`}>
       <div className="navbar__container">
+        {/* Official brand lockup: horizontal on desktop, compact on mobile.
+            Clickable, links to "/". Layout adjusts around the logo — the
+            logo asset itself is never modified. */}
         <Link to="/" className="navbar__brand" aria-label="LOKMIT FOUNDATION — Home">
-          <BrandImage
-            src={brand.primary}
-            alt="LOKMIT FOUNDATION logo"
-            className="navbar__brand-logo"
-            width="46"
-            height="46"
-          />
+          {/* to={null}: the surrounding <Link> is the single clickable element */}
+          <BrandLogo variant="desktop-navbar" to={null} className="navbar__brand-logo--desktop" loading="eager" />
+          <BrandLogo variant="mobile-navbar" to={null} className="navbar__brand-logo--mobile" loading="eager" />
           <span className="navbar__brand-text">
             <span className="navbar__brand-name">LOKMIT</span>
             <span className="navbar__brand-sub">FOUNDATION</span>
