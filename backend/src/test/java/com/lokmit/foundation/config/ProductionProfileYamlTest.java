@@ -197,4 +197,22 @@ class ProductionProfileYamlTest {
     void baseKeepsSafeDefaults() {
         assertEquals("${JWT_SECRET:}", baseProps.get("app.security.jwt.secret"));
     }
+
+    // ------------------------------------------------------------------
+    // Security headers (I-5): HSTS contract
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("production enables HSTS and remains environment-overridable")
+    void prodEnablesHsts() {
+        assertEquals("${APP_HSTS_ENABLED:true}", prodProps.get("app.security.headers.hsts-enabled"));
+        assertEquals("${APP_HSTS_MAX_AGE_SECONDS:31536000}", prodProps.get("app.security.headers.hsts-max-age-seconds"));
+        assertEquals("${APP_HSTS_INCLUDE_SUBDOMAINS:true}", prodProps.get("app.security.headers.hsts-include-subdomains"));
+    }
+
+    @Test
+    @DisplayName("development keeps HSTS disabled by default")
+    void devKeepsHstsDisabled() {
+        assertEquals("${APP_HSTS_ENABLED:false}", baseProps.get("app.security.headers.hsts-enabled"));
+    }
 }

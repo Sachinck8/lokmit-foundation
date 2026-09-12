@@ -36,10 +36,17 @@ spring:
 
 # CORS: production origins MUST be configured explicitly via the environment.
 # No dev fallback here — a missing variable fails startup with a clear message.
+# Security headers: HSTS enabled for HTTPS deployments (browsers ignore the
+# header over plain HTTP, so enabling it is safe even behind a TLS-terminating
+# proxy); max-age/includeSubDomains remain overridable without a code change.
 app:
   security:
     cors:
       allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}
+    headers:
+      hsts-enabled: ${APP_HSTS_ENABLED:true}
+      hsts-max-age-seconds: ${APP_HSTS_MAX_AGE_SECONDS:31536000}
+      hsts-include-subdomains: ${APP_HSTS_INCLUDE_SUBDOMAINS:true}
 
 # Logging: production keeps noise low; no secrets are logged by the app.
 logging:

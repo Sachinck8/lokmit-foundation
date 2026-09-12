@@ -95,6 +95,9 @@ Secrets and environment-specific values are never hard-coded.
 | `JWT_REFRESH_TOKEN_EXPIRATION` | backend | Refresh token expiration in ms (default `604800000` = 7 days) |
 | `BOOTSTRAP_ADMIN_PASSWORD` | backend | Initial admin password (only used if password_hash is NULL) |
 | `APP_CORS_ALLOWED_ORIGINS` | backend | Comma-separated exact frontend origins for CORS (dev default: `http://localhost:5173,http://localhost:4173`; **required in production**) |
+| `APP_HSTS_ENABLED` | backend | Emit `Strict-Transport-Security` (default `false`; `true` in production) |
+| `APP_HSTS_MAX_AGE_SECONDS` | backend | HSTS max-age in seconds (default `31536000`) |
+| `APP_HSTS_INCLUDE_SUBDOMAINS` | backend | HSTS `includeSubDomains` (default `true`) |
 | `LOGIN_MAX_FAILED_ATTEMPTS` | backend | Failed logins before temporary lockout (default `5`) |
 | `LOGIN_LOCKOUT_DURATION_MINUTES` | backend | Temporary lockout duration in minutes (default `15`) |
 | `REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES` | backend | Refresh-token cleanup interval (default `60`, `0` disables) |
@@ -172,6 +175,12 @@ YAML, or documentation. Placeholders live in `backend/.env.example`.
   `allowCredentials(false)` (Bearer-token API, no cookies), methods limited
   to `GET/POST/PATCH/OPTIONS`, headers limited to `Authorization` and
   `Content-Type`. A wildcard origin is rejected at startup.
+- **Security headers:** every response carries `X-Content-Type-Options:
+  nosniff`, `X-Frame-Options: DENY`, a strict CSP (`default-src 'none';
+  frame-ancestors 'none'`, Swagger-UI compatible), `Referrer-Policy:
+  no-referrer`, and a restrictive `Permissions-Policy`; HSTS is enabled in
+  production (`APP_HSTS_ENABLED`, default `true` there) and off in
+  development.
 - **Actuator:** exposure stays `health,info`; health details hidden
   (`show-details: never`).
 

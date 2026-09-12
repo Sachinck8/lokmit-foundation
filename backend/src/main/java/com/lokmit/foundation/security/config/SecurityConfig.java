@@ -22,6 +22,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -34,11 +35,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableConfigurationProperties(JwtConfig.class)
+@EnableConfigurationProperties({JwtConfig.class, SecurityHeadersProperties.class})
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final ObjectMapper objectMapper;
+    private final SecurityHeadersProperties securityHeadersProperties;
 
     // NOTE: /api/v1/contact-messages is deliberately NOT listed here as a
     // blanket public path — only its POST method is public (see the method-
@@ -56,9 +58,12 @@ public class SecurityConfig {
             "/v3/api-docs/**"
     };
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, ObjectMapper objectMapper) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          ObjectMapper objectMapper,
+                          SecurityHeadersProperties securityHeadersProperties) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.objectMapper = objectMapper;
+        this.securityHeadersProperties = securityHeadersProperties;
     }
 
     /**
@@ -88,6 +93,33 @@ public class SecurityConfig {
                 // handled by the CorsFilter before authorization; actual requests
                 // keep their normal authentication/authorization treatment.
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                // Security response headers (I-5). Spring Security's defaults are
+                // kept for X-Content-Type-Options: nosniff, the cache-control set,
+                // and X-Frame-Options: DENY (equivalent to frame-ancestors 'none';
+                // modern browsers prefer the CSP directive). The explicitly added
+                // writers below cover the policy headers the defaults do not set.
+                .headers(headers -> headers
+                        // The API serves only JSON + springdoc HTML. The CSP keeps
+                        // Swagger UI working (its inline scripts and data: images)
+                        // while locking down every other document response.
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; "
+                                        + "form-action 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
+                                        + "script-src 'self' 'unsafe-inline'"))
+                        .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                        // Minimal, API-appropriate feature/permission policy.
+                        .permissionsPolicyHeader(permissions -> permissions.policy(
+                                "camera=(), microphone=(), geolocation=(), payment=()"))
+                        // HSTS is environment-dependent: off in development, on in
+                        // production (APP_HSTS_ENABLED=true via application-prod.yml).
+                        .httpStrictTransportSecurity(hsts -> {
+                            if (securityHeadersProperties.isHstsEnabled()) {
+                                hsts.includeSubDomains(securityHeadersProperties.isHstsIncludeSubdomains())
+                                        .maxAgeInSeconds(securityHeadersProperties.getHstsMaxAgeSeconds());
+                            } else {
+                                hsts.disable();
+                            }
+                        }))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()

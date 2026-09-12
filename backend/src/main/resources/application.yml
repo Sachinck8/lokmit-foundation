@@ -62,6 +62,13 @@ app:
     # production sets APP_CORS_ALLOWED_ORIGINS in application-prod.yml.
     cors:
       allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:4173}
+    # Security headers (I-5). Static policy headers are configured in
+    # SecurityConfig. HSTS is deliberately off in development (plain HTTP)
+    # and enabled by the prod profile via APP_HSTS_ENABLED.
+    headers:
+      hsts-enabled: ${APP_HSTS_ENABLED:false}
+      hsts-max-age-seconds: ${APP_HSTS_MAX_AGE_SECONDS:31536000}
+      hsts-include-subdomains: ${APP_HSTS_INCLUDE_SUBDOMAINS:true}
     # Refresh-token housekeeping. Set cleanup-interval-minutes to 0 to disable.
     refresh-token:
       cleanup-interval-minutes: ${REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES:60}
