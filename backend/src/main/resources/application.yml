@@ -53,6 +53,39 @@ app:
     # Only used when admin password_hash is NULL
     bootstrap:
       admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+    # Login brute-force protection (persistent, account-level lockout)
+    login-protection:
+      max-failed-attempts: ${LOGIN_MAX_FAILED_ATTEMPTS:5}
+      lockout-duration-minutes: ${LOGIN_LOCKOUT_DURATION_MINUTES:15}
+    # CORS: explicit allow-list. Never "*" with credentials. The default here
+    # covers local development (Vite dev server on 5173 / preview on 4173);
+    # production sets APP_CORS_ALLOWED_ORIGINS in application-prod.yml.
+    cors:
+      allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:4173}
+    # Security headers (I-5). Static policy headers are configured in
+    # SecurityConfig. HSTS is deliberately off in development (plain HTTP)
+    # and enabled by the prod profile via APP_HSTS_ENABLED.
+    headers:
+      hsts-enabled: ${APP_HSTS_ENABLED:false}
+      hsts-max-age-seconds: ${APP_HSTS_MAX_AGE_SECONDS:31536000}
+      hsts-include-subdomains: ${APP_HSTS_INCLUDE_SUBDOMAINS:true}
+    # Refresh-token housekeeping. Set cleanup-interval-minutes to 0 to disable.
+    refresh-token:
+      cleanup-interval-minutes: ${REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES:60}
+    # I-6 request rate limiting for the two public, high-risk endpoints.
+    # Per client IP, instance-local in-memory fixed windows. POST-only, so
+    # preflights, health, Swagger, and authenticated admin APIs are untouched.
+    rate-limit:
+      login:
+        enabled: ${RATE_LIMIT_LOGIN_ENABLED:true}
+        capacity: ${RATE_LIMIT_LOGIN_CAPACITY:10}
+        window-seconds: ${RATE_LIMIT_LOGIN_WINDOW_SECONDS:60}
+        max-tracked-keys: ${RATE_LIMIT_MAX_TRACKED_KEYS:10000}
+      contact:
+        enabled: ${RATE_LIMIT_CONTACT_ENABLED:true}
+        capacity: ${RATE_LIMIT_CONTACT_CAPACITY:5}
+        window-seconds: ${RATE_LIMIT_CONTACT_WINDOW_SECONDS:60}
+        max-tracked-keys: ${RATE_LIMIT_MAX_TRACKED_KEYS:10000}
 
 logging:
   level:

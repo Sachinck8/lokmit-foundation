@@ -1,0 +1,82 @@
+# =====================================================================
+# PRODUCTION profile — explicit, environment-driven configuration.
+#
+# Activate with:  --spring.profiles.active=prod   (or SPRING_PROFILES_ACTIVE=prod)
+#
+# Rules enforced by this file:
+#   * No secrets in source control — every sensitive value comes from an
+#     environment variable with NO default, so startup fails with a clear
+#     "property is missing" message rather than silently using one.
+#   * The schema belongs to Flyway; Hibernate only validates.
+#   * CORS origins must be configured explicitly (APP_CORS_ALLOWED_ORIGINS).
+#
+# Required environment variables (see README "Production Configuration"):
+#   DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET, APP_CORS_ALLOWED_ORIGINS
+# =====================================================================
+
+spring:
+  # Database: strictly environment-driven, no defaults.
+  # A missing variable fails startup with a clear unresolved-placeholder error.
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    # The password is never echoed in logs or error messages by the application.
+    password: ${DB_PASSWORD}
+
+  jpa:
+    open-in-view: false
+    # Flyway owns the schema; Hibernate may only verify entity mappings.
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+# CORS: production origins MUST be configured explicitly via the environment.
+# No dev fallback here — a missing variable fails startup with a clear message.
+# Security headers: HSTS enabled for HTTPS deployments (browsers ignore the
+# header over plain HTTP, so enabling it is safe even behind a TLS-terminating
+# proxy); max-age/includeSubDomains remain overridable without a code change.
+app:
+  security:
+    cors:
+      allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}
+    headers:
+      hsts-enabled: ${APP_HSTS_ENABLED:true}
+      hsts-max-age-seconds: ${APP_HSTS_MAX_AGE_SECONDS:31536000}
+      hsts-include-subdomains: ${APP_HSTS_INCLUDE_SUBDOMAINS:true}
+    # I-6 rate limiting is enabled by default in every environment; the
+    # capacity/window values below stay overridable for production tuning.
+    # Limiter state is instance-local (in-memory); with N instances the
+    # effective per-client limit is N × capacity. A distributed store can
+    # replace FixedWindowRateLimiter without changing callers.
+    rate-limit:
+      login:
+        enabled: ${RATE_LIMIT_LOGIN_ENABLED:true}
+        capacity: ${RATE_LIMIT_LOGIN_CAPACITY:10}
+        window-seconds: ${RATE_LIMIT_LOGIN_WINDOW_SECONDS:60}
+      contact:
+        enabled: ${RATE_LIMIT_CONTACT_ENABLED:true}
+        capacity: ${RATE_LIMIT_CONTACT_CAPACITY:5}
+        window-seconds: ${RATE_LIMIT_CONTACT_WINDOW_SECONDS:60}
+
+# Logging: production keeps noise low; no secrets are logged by the app.
+logging:
+  level:
+    root: info
+    org.flywaydb: info
+    org.hibernate.SQL: warn
+    com.lokmit.foundation.security: info
+
+# Actuator: keep the existing minimal exposure (health, info) and hide
+# health details from unauthenticated callers. No new endpoints are opened.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never

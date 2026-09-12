@@ -10,7 +10,8 @@
 
 .not-found__code {
   font-size: 6rem;
-  color: var(--color-primary-light);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--blue-100);
   line-height: 1;
   margin-bottom: var(--spacing-2);
 }
@@ -22,12 +23,17 @@
 
 .not-found__text {
   color: var(--color-text-light);
-  max-width: 360px;
+  max-width: 420px;
   margin-bottom: var(--spacing-7);
+  line-height: var(--line-height-relaxed);
 }
 
 .not-found__contact-link {
   margin-top: var(--spacing-4);
   color: var(--color-primary);
   font-weight: var(--font-weight-medium);
+}
+
+.not-found__contact-link:hover {
+  text-decoration: underline;
 }

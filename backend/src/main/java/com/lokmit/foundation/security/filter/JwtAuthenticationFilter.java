@@ -27,6 +27,15 @@ import java.io.IOException;
  * {@code @Bean} in {@code SecurityConfig} so that web-layer test slices
  * ({@code @WebMvcTest}) do not instantiate it and its service-layer
  * dependencies (JwtTokenProvider, CustomUserDetailsService).</p>
+ *
+ * <p><strong>Database-backed status enforcement (A1):</strong> on every
+ * request the user is reloaded from the database via
+ * {@link CustomUserDetailsService}. A principal whose account is no longer
+ * {@code ACTIVE} (locked, suspended, or deleted) is treated as disabled and
+ * is <em>not</em> authenticated — a still-unexpired access JWT therefore
+ * cannot keep a deactivated account working. Roles and permissions are also
+ * rebuilt from the database here, so JWT {@code roles} claims are never the
+ * source of authorization decisions.</p>
  */
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -47,7 +56,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
+        try {
+            authenticateRequest(request);
+            filterChain.doFilter(request, response);
+        } finally {
+            // Stateless API: never leak authentication state between requests
+            // running on reused container threads.
+            SecurityContextHolder.clearContext();
+        }
+    }
 
+    /**
+     * Validates the bearer token and populates the security context when the
+     * token is valid AND the database-backed account is enabled. Any failure
+     * leaves the context empty so downstream rules treat the request as
+     * anonymous (401 for protected endpoints via the authentication entry
+     * point).
+     */
+    private void authenticateRequest(HttpServletRequest request) {
         String token = extractToken(request);
 
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
@@ -57,6 +83,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (StringUtils.hasText(email)) {
                     try {
                         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                        // Fail closed on disabled accounts (A1): a user whose
+                        // status is no longer ACTIVE (locked, suspended, or
+                        // deleted by an administrator) must not keep a working
+                        // session just because their access JWT is still
+                        // unexpired.
+                        if (!userDetails.isEnabled()) {
+                            LOG.debug("Rejecting authentication for non-ACTIVE account");
+                            return;
+                        }
                         UsernamePasswordAuthenticationToken authentication =
                                 new UsernamePasswordAuthenticationToken(
                                         userDetails, token, userDetails.getAuthorities());
@@ -68,8 +103,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         }
-
-        filterChain.doFilter(request, response);
     }
 
     /**

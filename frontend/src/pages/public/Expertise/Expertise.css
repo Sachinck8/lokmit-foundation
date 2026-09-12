@@ -1,27 +1,101 @@
-.expertise-page__sectors {
+.ex__sectors {
+  padding-top: var(--spacing-12);
+}
+
+.ex__grid {
+  display: grid;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-8);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .ex__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1000px) {
+  .ex__grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.ex__card {
   background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-5);
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--transition-slow), box-shadow var(--transition-slow);
 }
 
-.expertise-page__expertise {
-  background: var(--color-bg-alt);
+.ex__card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
-.expertise-page__disclaimer {
+.ex__card-title {
+  margin: 0 0 8px;
+  font-size: 1.02rem;
+  color: var(--blue-800);
+}
+
+.ex__card-desc {
+  margin: 0;
+  font-size: 0.89rem;
+  color: var(--color-text-light);
+  line-height: var(--line-height-relaxed);
+}
+
+/* --- Programs --- */
+.ex__program-tags {
+  list-style: none;
+  margin: var(--spacing-8) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  justify-content: center;
+}
+
+.ex__program-tag {
   background: var(--color-surface);
+  border: 1px solid var(--green-100);
+  color: var(--green-800);
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  font-size: 0.92rem;
+  font-weight: var(--font-weight-semibold);
 }
 
-.expertise-page__disclaimer-inner {
+.ex__disclaimer {
+  margin: var(--spacing-6) auto 0;
+  max-width: 720px;
+  text-align: center;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  line-height: var(--line-height-relaxed);
+}
+
+.ex__disclaimer strong {
+  color: var(--color-text-light);
+}
+
+/* --- CTA --- */
+.ex__cta-inner {
+  text-align: center;
   max-width: 680px;
   margin: 0 auto;
-  padding: var(--spacing-6) var(--spacing-5);
-  background: var(--color-bg-alt);
-  border-left: 3px solid var(--color-primary-light);
-  border-radius: var(--radius-md);
 }
 
-.expertise-page__disclaimer-text {
-  margin: var(--spacing-3) 0 0;
-  color: var(--color-text-light);
-  font-size: 0.95rem;
-  line-height: var(--line-height-relaxed);
+.ex__cta-title {
+  margin-bottom: var(--spacing-6);
+}
+
+.ex__cta-actions {
+  display: flex;
+  gap: var(--spacing-4);
+  justify-content: center;
+  flex-wrap: wrap;
 }

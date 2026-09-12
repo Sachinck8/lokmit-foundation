@@ -4,55 +4,68 @@
   justify-content: center;
   gap: 8px;
   font-family: inherit;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.01em;
   text-decoration: none;
-  border: 2px solid transparent;
+  border: 1.5px solid transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background-color var(--transition-base),
+    color var(--transition-base),
+    border-color var(--transition-base),
+    box-shadow var(--transition-base),
+    transform var(--transition-base);
   white-space: nowrap;
   user-select: none;
+  line-height: 1;
 }
 
 .btn:focus-visible {
-  outline: 3px solid var(--color-primary-light);
+  outline: 3px solid var(--color-secondary-light);
   outline-offset: 2px;
 }
 
 .btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
+/* --- Primary: deep blue --- */
 .btn--primary {
   background-color: var(--color-primary);
-  color: var(--color-surface);
+  color: #ffffff;
   border-color: var(--color-primary);
 }
 
 .btn--primary:hover:not(:disabled) {
-  background-color: #0d3d21;
-  border-color: #0d3d21;
+  background-color: var(--blue-800);
+  border-color: var(--blue-800);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(20, 83, 45, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .btn--primary:active:not(:disabled) {
   transform: translateY(0);
+  box-shadow: none;
 }
 
+/* --- Secondary: professional green --- */
 .btn--secondary {
-  background-color: var(--color-primary-light);
-  color: var(--color-surface);
-  border-color: var(--color-primary-light);
+  background-color: var(--color-secondary);
+  color: #ffffff;
+  border-color: var(--color-secondary);
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background-color: #129943;
-  border-color: #129943;
+  background-color: var(--green-800);
+  border-color: var(--green-800);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
+/* --- Outline: works on light backgrounds --- */
 .btn--outline {
   background-color: transparent;
   color: var(--color-primary);
@@ -61,10 +74,25 @@
 
 .btn--outline:hover:not(:disabled) {
   background-color: var(--color-primary);
-  color: var(--color-surface);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* --- Outline tuned for dark backgrounds --- */
+.btn--dark-outline {
+  background-color: transparent;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+.btn--dark-outline:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: #ffffff;
   transform: translateY(-1px);
 }
 
+/* --- Ghost: quiet action --- */
 .btn--ghost {
   background-color: transparent;
   color: var(--color-primary);
@@ -72,46 +100,30 @@
 }
 
 .btn--ghost:hover:not(:disabled) {
-  background-color: rgba(20, 83, 45, 0.08);
+  background-color: var(--blue-50);
+  color: var(--blue-800);
 }
 
-.btn--size-small {
-  padding: 8px 16px;
-  font-size: 0.85rem;
-  border-radius: 6px;
+/* --- Sizes: consistent rhythm --- */
+.btn--small {
+  padding: 9px 16px;
+  font-size: 0.875rem;
+  border-radius: var(--radius-md);
+  height: 38px;
 }
 
-.btn--size-medium {
-  padding: 12px 24px;
+.btn--medium {
+  padding: 0 24px;
   font-size: 0.95rem;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
+  height: 46px;
 }
 
-.btn--size-large {
-  padding: 16px 32px;
+.btn--large {
+  padding: 0 30px;
   font-size: 1rem;
-  border-radius: 10px;
-}
-
-.btn--icon-only {
-  padding: 0;
-  min-width: 40px;
-  min-height: 40px;
-}
-
-.btn--icon-only.btn--size-small {
-  min-width: 32px;
-  min-height: 32px;
-}
-
-.btn--icon-only.btn--size-medium {
-  min-width: 40px;
-  min-height: 40px;
-}
-
-.btn--icon-only.btn--size-large {
-  min-width: 48px;
-  min-height: 48px;
+  border-radius: var(--radius-lg);
+  height: 52px;
 }
 
 .btn svg {
@@ -120,19 +132,24 @@
   flex-shrink: 0;
 }
 
-.btn--size-small svg {
-  width: 16px;
-  height: 16px;
+.btn--small svg {
+  width: 15px;
+  height: 15px;
 }
 
-.btn--size-large svg {
+.btn--large svg {
   width: 20px;
   height: 20px;
 }
 
 @media (max-width: 480px) {
-  .btn--size-large {
-    padding: 14px 28px;
+  .btn--large {
+    height: 50px;
+    padding: 0 24px;
     font-size: 0.95rem;
+  }
+
+  .btn--medium {
+    height: 44px;
   }
 }

@@ -26,6 +26,9 @@ public final class ErrorCodes {
     public static final String UNAUTHORIZED = "UNAUTHORIZED";
     public static final String FORBIDDEN = "FORBIDDEN";
 
+    // I-6: public endpoint request rate limiting
+    public static final String RATE_LIMITED = "RATE_LIMITED";
+
     private ErrorCodes() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

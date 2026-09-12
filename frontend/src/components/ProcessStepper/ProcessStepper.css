@@ -1,14 +1,5 @@
 .process-stepper {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  padding: var(--spacing-8);
-}
-
-.process-stepper--accent {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-surface);
+  padding: var(--spacing-6) 0;
 }
 
 .process-stepper__title {
@@ -17,21 +8,13 @@
   color: var(--color-text);
 }
 
-.process-stepper--accent .process-stepper__title {
-  color: var(--color-surface);
-}
-
 .process-stepper__tagline {
-  margin: 0 auto var(--spacing-7);
+  margin: 0 auto var(--spacing-8);
   text-align: center;
-  max-width: 580px;
+  max-width: 620px;
   color: var(--color-text-light);
-  font-size: clamp(0.98rem, 1.2vw, 1.05rem);
+  font-size: var(--font-size-md);
   line-height: var(--line-height-relaxed);
-}
-
-.process-stepper--accent .process-stepper__tagline {
-  color: rgba(255, 255, 255, 0.85);
 }
 
 .process-stepper__list {
@@ -39,17 +22,18 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--spacing-3);
+  gap: var(--spacing-6);
   counter-reset: stepper;
 }
 
 @media (min-width: 640px) {
   .process-stepper__list {
     grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-8) var(--spacing-6);
   }
 }
 
-@media (min-width: 860px) {
+@media (min-width: 900px) {
   .process-stepper__list {
     grid-template-columns: repeat(4, 1fr);
   }
@@ -57,40 +41,94 @@
 
 .process-stepper__item {
   position: relative;
-  padding: var(--spacing-4) var(--spacing-4) var(--spacing-4) var(--spacing-6);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-alt);
-  border-left: 3px solid var(--color-primary-light);
+  padding: var(--spacing-5) var(--spacing-5) var(--spacing-5) var(--spacing-6);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-xs);
 }
 
-.process-stepper--accent .process-stepper__item {
-  background: rgba(255, 255, 255, 0.08);
-  border-left-color: var(--color-accent);
+/* connecting accent line on the index */
+.process-stepper__item::before {
+  content: '';
+  position: absolute;
+  top: 26px;
+  bottom: -26px;
+  left: 27px;
+  width: 2px;
+  background: linear-gradient(180deg, var(--green-100), transparent);
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .process-stepper__item:last-child::before {
+    display: none;
+  }
 }
 
 .process-stepper__index {
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--green-50);
+  border: 1px solid var(--green-100);
+  color: var(--green-800);
+  font-size: 0.82rem;
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-4);
 }
 
 .process-stepper__label {
   display: block;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-primary-dark);
-  font-size: clamp(1rem, 1.3vw, 1.1rem);
-  margin-bottom: var(--spacing-1);
-}
-
-.process-stepper--accent .process-stepper__label {
-  color: var(--color-surface);
+  font-weight: var(--font-weight-bold);
+  color: var(--blue-800);
+  font-size: 1.05rem;
+  margin-bottom: var(--spacing-2);
 }
 
 .process-stepper__description {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: var(--color-text-light);
   line-height: var(--line-height-relaxed);
 }
 
+.process-stepper__footnote {
+  margin: var(--spacing-8) auto 0;
+  text-align: center;
+  font-size: 0.85rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: var(--font-weight-bold);
+  color: var(--gold-600);
+}
+
+/* --- Accent variant: dark panel --- */
+.process-stepper--accent .process-stepper__item {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+.process-stepper--accent .process-stepper__title,
+.process-stepper--accent .process-stepper__label {
+  color: #ffffff;
+}
+
+.process-stepper--accent .process-stepper__tagline,
 .process-stepper--accent .process-stepper__description {
   color: rgba(255, 255, 255, 0.82);
+}
+
+.process-stepper--accent .process-stepper__index {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+}
+
+.process-stepper--accent .process-stepper__footnote {
+  color: var(--gold-500);
 }

@@ -16,7 +16,6 @@ export default function CookiePolicy() {
       <PageHero
         title={legalContent.cookiePolicy.title}
         subtitle={legalContent.cookiePolicy.intro}
-        background="linear-gradient(135deg, #0d3d21 0%, #14532d 100%)"
       />
       <Container>
         <Accordion items={cookieItems} />

@@ -16,7 +16,6 @@ export default function PrivacyPolicy() {
       <PageHero
         title={legalContent.privacyPolicy.title}
         subtitle={legalContent.privacyPolicy.intro}
-        background="linear-gradient(135deg, #0d3d21 0%, #14532d 100%)"
       />
       <Container>
         <Accordion items={privacyItems} />

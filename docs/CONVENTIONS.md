@@ -104,6 +104,14 @@ and take effect from Phase 1 onward.
 - Express config via variables: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`,
   `SERVER_PORT`, `JWT_SECRET`, `JWT_ACCESS_TOKEN_EXPIRATION`,
   `JWT_REFRESH_TOKEN_EXPIRATION`, `BOOTSTRAP_ADMIN_PASSWORD`,
+  `APP_CORS_ALLOWED_ORIGINS`, `APP_HSTS_ENABLED`,
+  `APP_HSTS_MAX_AGE_SECONDS`, `APP_HSTS_INCLUDE_SUBDOMAINS`,
+  `LOGIN_MAX_FAILED_ATTEMPTS`,
+  `LOGIN_LOCKOUT_DURATION_MINUTES`, `REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES`,
+  `RATE_LIMIT_LOGIN_ENABLED`, `RATE_LIMIT_LOGIN_CAPACITY`,
+  `RATE_LIMIT_LOGIN_WINDOW_SECONDS`, `RATE_LIMIT_CONTACT_ENABLED`,
+  `RATE_LIMIT_CONTACT_CAPACITY`, `RATE_LIMIT_CONTACT_WINDOW_SECONDS`,
+  `RATE_LIMIT_MAX_TRACKED_KEYS`,
   later `MAIL_*`, `STORAGE_*`.
 - `application.yml` reads them with safe, non-secret defaults:
   `${DB_USERNAME:lokmit_app}`, `${DB_PASSWORD:}` etc.
@@ -125,6 +133,30 @@ and take effect from Phase 1 onward.
 - Logs must not contain passwords, tokens, or personal data.
 - File uploads are validated for type, size, and allowed extensions before
   storage.
+
+### 10.1 RBAC enforcement (Admin APIs)
+
+- The authorization model is `User → roles → permissions`; permissions are
+  seeded in `V2__identity_schema.sql` and mirrored as Java constants in
+  `security/Permissions.java` (single source of truth for endpoint checks).
+- Authority materialization happens server-side on every request:
+  `CustomUserDetailsService` loads the user from the database and exposes
+  `ROLE_<code>` plus each granted permission code as Spring Security
+  authorities. JWT `roles` claims are informational only — never trusted for
+  authorization decisions.
+- Management/admin endpoints declare
+  `@PreAuthorize("hasAuthority('" + Permissions.X + "')")` (method security),
+  e.g. `messages:manage`, `users:manage`. Prefer permission checks over
+  `hasRole(...)` so role re-grants never require code changes.
+- Authorization failures return 403 `FORBIDDEN`; missing/invalid credentials
+  return 401 `UNAUTHORIZED` — both in the standard error envelope.
+- Account status is enforced fail-closed on every request: only `ACTIVE`
+  accounts are authenticated; `LOCKED`/`SUSPENDED`/`DELETED` (or unknown)
+  statuses disable the principal, so deactivation takes effect immediately
+  without waiting for token expiry.
+- Never accept user/role/permission identity from client input (body, query,
+  path, or token claims) as authorization input; the principal always comes
+  from the validated security context.
 
 ## 11. Git Commit Conventions
 

@@ -17,6 +17,8 @@ authentication phase onward) must match it.
 | `V6__content_schema.sql` | News/blog, events, gallery | `news_categories`, `blog_posts`, `blog_post_categories`, `events`, `event_images`, `galleries`, `gallery_categories`, `gallery_items`, `testimonials` |
 | `V7__communication_schema.sql` | Communication | `contact_messages` |
 | `V8__employment_schema.sql` | Employment / job portal | `employers`, `candidates`, `resumes`, `skills`, `candidate_skills`, `candidate_educations`, `candidate_experiences`, `job_categories`, `jobs`, `job_skills`, `job_applications` |
+| `V9__login_protection.sql` | Login brute-force protection | adds `failed_login_attempts`, `failed_login_window_started_at`, `locked_until` to `users` |
+| `V10__refresh_token_hardening.sql` | Refresh-token hardening | adds `family_id`, `consumed_at` to `refresh_tokens` (rotation reuse detection + atomic consumption) |
 
 41 domain tables + `flyway_schema_history` (managed by Flyway itself).
 
@@ -72,7 +74,7 @@ of this schema.
 `FlywayMigrationIntegrationTest` (test profile, skipped automatically when
 PostgreSQL is unreachable) applies the full migration chain to a throwaway
 schema `lokmit_it`, asserts all 41 tables exist, asserts history rows
-`V1..V8` succeeded, and verifies a second migrate run is a no-op.
+`V1..V10` succeeded, and verifies a second migrate run is a no-op.
 
 ## Authentication Schema (Phase 4)
 
