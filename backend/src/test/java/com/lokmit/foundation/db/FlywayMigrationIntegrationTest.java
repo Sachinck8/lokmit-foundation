@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Integration test for the full Flyway migration chain (V1–V8).
+ * Integration test for the full Flyway migration chain (V1–V9).
  *
  * <p>Runs the migrations against a throwaway schema {@code lokmit_it} in the
  * configured development database, asserts that every expected table exists,
@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class FlywayMigrationIntegrationTest {
 
     private static final String IT_SCHEMA = "lokmit_it";
-    private static final int EXPECTED_MIGRATIONS = 8;
+    private static final int EXPECTED_MIGRATIONS = 9;
     private static final int EXPECTED_TABLES = 42; // 41 domain tables + flyway_schema_history
 
     private static final String URL = resolve("DB_URL",

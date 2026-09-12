@@ -53,6 +53,10 @@ app:
     # Only used when admin password_hash is NULL
     bootstrap:
       admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+    # Login brute-force protection (persistent, account-level lockout)
+    login-protection:
+      max-failed-attempts: ${LOGIN_MAX_FAILED_ATTEMPTS:5}
+      lockout-duration-minutes: ${LOGIN_LOCKOUT_DURATION_MINUTES:15}
 
 logging:
   level:

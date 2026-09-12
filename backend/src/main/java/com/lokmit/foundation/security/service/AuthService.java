@@ -32,15 +32,18 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final LoginLockoutService loginLockoutService;
 
     public AuthService(UserRepository userRepository,
                        RefreshTokenRepository refreshTokenRepository,
                        PasswordEncoder passwordEncoder,
-                       JwtTokenProvider jwtTokenProvider) {
+                       JwtTokenProvider jwtTokenProvider,
+                       LoginLockoutService loginLockoutService) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.loginLockoutService = loginLockoutService;
     }
 
     /**
@@ -51,15 +54,26 @@ public class AuthService {
      */
     @Transactional
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail().toLowerCase().trim())
+        String email = request.getEmail().toLowerCase().trim();
+
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AuthenticationFailedException("Invalid email or password"));
+
+        // Temporary brute-force lockout: rejected before any account-specific
+        // processing. Same generic failure as wrong credentials — no enumeration,
+        // no remaining lockout time revealed.
+        if (loginLockoutService.isLocked(user)) {
+            throw new AuthenticationFailedException("Invalid email or password");
+        }
 
         validateUserStatus(user);
 
         if (user.getPasswordHash() == null || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            loginLockoutService.recordFailedAttempt(email);
             throw new AuthenticationFailedException("Invalid email or password");
         }
 
+        loginLockoutService.resetOnSuccess(user);
         user.setLastLoginAt(OffsetDateTime.now());
         userRepository.save(user);
 
