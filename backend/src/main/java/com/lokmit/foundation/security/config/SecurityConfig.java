@@ -9,6 +9,7 @@ import com.lokmit.foundation.security.service.CustomUserDetailsService;
 import com.lokmit.foundation.security.service.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -38,9 +39,12 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final ObjectMapper objectMapper;
 
+    // NOTE: /api/v1/contact-messages is deliberately NOT listed here as a
+    // blanket public path — only its POST method is public (see the method-
+    // specific matchers below) so the management endpoints cannot be reached
+    // anonymously. First matching rule wins in the authorize chain.
     private static final String[] PUBLIC_ENDPOINTS = {
             ApiPaths.HEALTH,
-            ApiPaths.CONTACT_MESSAGES,
             ApiPaths.API_V1 + "/auth/login",
             ApiPaths.API_V1 + "/auth/refresh",
             "/api/v1/api-docs",
@@ -81,6 +85,11 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        // POST /contact-messages stays public for the website form;
+                        // GET/PATCH require an authenticated principal so anonymous
+                        // callers get 401 (not 403) on the management endpoints. The
+                        // messages:manage permission is then enforced by @PreAuthorize.
+                        .requestMatchers(HttpMethod.POST, ApiPaths.CONTACT_MESSAGES).permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions
