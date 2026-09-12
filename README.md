@@ -94,6 +94,10 @@ Secrets and environment-specific values are never hard-coded.
 | `JWT_ACCESS_TOKEN_EXPIRATION` | backend | Access token expiration in ms (default `900000` = 15 min) |
 | `JWT_REFRESH_TOKEN_EXPIRATION` | backend | Refresh token expiration in ms (default `604800000` = 7 days) |
 | `BOOTSTRAP_ADMIN_PASSWORD` | backend | Initial admin password (only used if password_hash is NULL) |
+| `APP_CORS_ALLOWED_ORIGINS` | backend | Comma-separated exact frontend origins for CORS (dev default: `http://localhost:5173,http://localhost:4173`; **required in production**) |
+| `LOGIN_MAX_FAILED_ATTEMPTS` | backend | Failed logins before temporary lockout (default `5`) |
+| `LOGIN_LOCKOUT_DURATION_MINUTES` | backend | Temporary lockout duration in minutes (default `15`) |
+| `REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES` | backend | Refresh-token cleanup interval (default `60`, `0` disables) |
 | `VITE_API_BASE_URL` | frontend | Backend API base path (default `/api/v1`) |
 
 - **`.env.example` files** (root, `backend/`, `frontend/`) document the variables
@@ -125,6 +129,58 @@ Health check (no authentication):
 ```text
 GET http://localhost:8080/api/v1/health
 ```
+
+## Production Configuration
+
+The backend ships a dedicated **`prod`** Spring profile
+(`backend/src/main/resources/application-prod.yml`). It is strict by design:
+sensitive values have **no defaults**, so startup fails with a clear message
+instead of running with insecure fallbacks.
+
+### Activating the production profile
+
+```bash
+# Either via flag:
+java -jar target/lokmit-foundation-backend-0.1.0-SNAPSHOT.jar --spring.profiles.active=prod
+
+# Or via environment:
+SPRING_PROFILES_ACTIVE=prod java -jar target/lokmit-foundation-backend-0.1.0-SNAPSHOT.jar
+```
+
+### Required environment variables (production)
+
+| Variable | Purpose | Behavior when missing |
+|----------|---------|----------------------|
+| `DB_URL` | Production JDBC URL | Startup fails (`DB_URL` unresolved) |
+| `DB_USERNAME` | Production database role | Startup fails |
+| `DB_PASSWORD` | Production database password | Startup fails |
+| `JWT_SECRET` | JWT signing key (min 32 bytes) | Startup fails fast (I-1) |
+| `APP_CORS_ALLOWED_ORIGINS` | Exact frontend origins, comma-separated | Startup fails |
+
+Set these only in the deployment secret store — never in source control,
+YAML, or documentation. Placeholders live in `backend/.env.example`.
+
+### Production guarantees
+
+- **Database:** Flyway owns the schema; Hibernate runs with
+  `ddl-auto: validate` only (`create`/`update`/`create-drop` never appear in
+  production). Missing database variables abort startup; values are never
+  logged.
+- **JWT:** the I-1 fail-fast applies unchanged — missing/blank/short
+  `JWT_SECRET` aborts boot, no fallback secret exists in production.
+- **CORS:** explicit allow-list only (`APP_CORS_ALLOWED_ORIGINS`),
+  `allowCredentials(false)` (Bearer-token API, no cookies), methods limited
+  to `GET/POST/PATCH/OPTIONS`, headers limited to `Authorization` and
+  `Content-Type`. A wildcard origin is rejected at startup.
+- **Actuator:** exposure stays `health,info`; health details hidden
+  (`show-details: never`).
+
+### CORS in development
+
+The default profile pre-allows the Vite dev server origins
+(`http://localhost:5173`, `http://localhost:4173`) and remains overridable via
+`APP_CORS_ALLOWED_ORIGINS`; the frontend also uses the Vite proxy for same-origin
+calls, so local development needs no extra setup.
 
 Expected response:
 

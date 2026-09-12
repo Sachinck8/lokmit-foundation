@@ -5,6 +5,7 @@ import com.lokmit.foundation.contact.dto.ContactMessageAdminResponse;
 import com.lokmit.foundation.contact.dto.ContactMessageResponse;
 import com.lokmit.foundation.contact.dto.CreateContactMessageRequest;
 import com.lokmit.foundation.contact.service.ContactMessageService;
+import com.lokmit.foundation.security.config.CorsConfig;
 import com.lokmit.foundation.security.config.SecurityConfig;
 import com.lokmit.foundation.security.service.CustomUserDetailsService;
 import com.lokmit.foundation.security.service.JwtTokenProvider;
@@ -45,7 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * </ul>
  */
 @WebMvcTest(controllers = ContactMessageController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, CorsConfig.class})
 @AutoConfigureMockMvc
 class ContactMessageAdminSecurityTest {
 

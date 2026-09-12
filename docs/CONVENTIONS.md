@@ -104,6 +104,8 @@ and take effect from Phase 1 onward.
 - Express config via variables: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`,
   `SERVER_PORT`, `JWT_SECRET`, `JWT_ACCESS_TOKEN_EXPIRATION`,
   `JWT_REFRESH_TOKEN_EXPIRATION`, `BOOTSTRAP_ADMIN_PASSWORD`,
+  `APP_CORS_ALLOWED_ORIGINS`, `LOGIN_MAX_FAILED_ATTEMPTS`,
+  `LOGIN_LOCKOUT_DURATION_MINUTES`, `REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES`,
   later `MAIL_*`, `STORAGE_*`.
 - `application.yml` reads them with safe, non-secret defaults:
   `${DB_USERNAME:lokmit_app}`, `${DB_PASSWORD:}` etc.
