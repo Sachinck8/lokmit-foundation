@@ -57,6 +57,9 @@ app:
     login-protection:
       max-failed-attempts: ${LOGIN_MAX_FAILED_ATTEMPTS:5}
       lockout-duration-minutes: ${LOGIN_LOCKOUT_DURATION_MINUTES:15}
+    # Refresh-token housekeeping. Set cleanup-interval-minutes to 0 to disable.
+    refresh-token:
+      cleanup-interval-minutes: ${REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES:60}
 
 logging:
   level:
