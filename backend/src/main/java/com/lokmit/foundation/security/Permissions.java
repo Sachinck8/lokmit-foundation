@@ -5,9 +5,10 @@ package com.lokmit.foundation.security;
  * authorization ({@code @PreAuthorize}).
  *
  * <p>These codes match the permissions seeded in
- * {@code V2__identity_schema.sql} (table {@code permissions}) one-to-one.
- * They are the single source of truth for endpoint authorization: the
- * database grants them to roles via {@code role_permissions}, and
+ * {@code V2__identity_schema.sql} and {@code V11__dashboard_permission.sql}
+ * (table {@code permissions}) one-to-one. They are the single source of truth
+ * for endpoint authorization: the database grants them to roles via
+ * {@code role_permissions}, and
  * {@link com.lokmit.foundation.security.service.CustomUserDetailsService}
  * materializes each user's granted permission codes as Spring Security
  * authorities on every request from the database.</p>
@@ -15,7 +16,7 @@ package com.lokmit.foundation.security;
  * <p><strong>Usage for all future Admin APIs:</strong></p>
  * <pre>{@code
  * @GetMapping("/api/v1/admin/...")
- * @PreAuthorize("hasAuthority('" + Permissions.USERS_MANAGE + "')")
+ * @PreAuthorize("hasAuthority('" + Permissions.DASHBOARD_VIEW + "')")
  * public ResponseEntity<ApiResponse<...>> endpoint() { ... }
  * }</pre>
  *
@@ -32,11 +33,11 @@ package com.lokmit.foundation.security;
  *       speculative codes here.</li>
  * </ul>
  *
- * <p><strong>Role → permission summary (V2 seed data):</strong></p>
+ * <p><strong>Role → permission summary (V2 + V11 seed data):</strong></p>
  * <ul>
  *   <li>SUPER_ADMIN — all permissions below</li>
- *   <li>ADMIN — content:manage, content:publish, downloads:manage,
- *       messages:manage, jobs:manage, settings:manage</li>
+ *   <li>ADMIN — dashboard:view, content:manage, content:publish,
+ *       downloads:manage, messages:manage, jobs:manage, settings:manage</li>
  *   <li>EDITOR — content:manage, downloads:manage</li>
  *   <li>MODERATOR — jobs:moderate, messages:manage</li>
  *   <li>CANDIDATE, EMPLOYER, CLIENT — none (normal platform users; never
@@ -70,6 +71,11 @@ public final class Permissions {
 
     /** Manage site settings and configuration. */
     public static final String SETTINGS_MANAGE = "settings:manage";
+
+    // Seeded in V11__dashboard_permission.sql (A2).
+
+    /** View the administrative dashboard summary and recent activity. */
+    public static final String DASHBOARD_VIEW = "dashboard:view";
 
     private Permissions() {
         throw new AssertionError("Utility class must not be instantiated.");

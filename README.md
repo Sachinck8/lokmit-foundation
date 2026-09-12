@@ -209,7 +209,9 @@ instance-local, in-memory fixed windows:
   authorization — the database is authoritative.
 - **Declarative checks:** management endpoints use
   `@PreAuthorize("hasAuthority('" + Permissions.X + "')")` — e.g. the contact
-  enquiry management API requires `messages:manage`.
+  enquiry management API requires `messages:manage` and the Admin Dashboard
+  read APIs require `dashboard:view` (seeded by V11 to SUPER_ADMIN and
+  ADMIN).
 - **Access levels:** SUPER_ADMIN holds every permission; ADMIN covers
   day-to-day management (`content:*`, `downloads:manage`, `messages:manage`,
   `jobs:manage`, `settings:manage`) but **not** `users:manage`; MODERATOR is
@@ -283,6 +285,23 @@ The backend generates OpenAPI 3 documentation automatically:
 - Errors are mapped centrally by `GlobalExceptionHandler` to stable status
   codes and machine-readable error codes (see `docs/CONVENTIONS.md`).
 - `GET /api/v1/health` intentionally keeps its simple operational payload.
+
+### Admin Dashboard API (A2)
+
+Read-only endpoints under `/api/v1/admin/dashboard`, all guarded by the
+`dashboard:view` permission (anonymous → 401, unauthorized → 403):
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/v1/admin/dashboard/summary` | Platform counts: users (total/active/inactive), candidate & employer profiles, jobs by lifecycle status (DRAFT/PUBLISHED/CLOSED/ARCHIVED), applications, enquiries by status (NEW/READ/REPLIED/ARCHIVED) |
+| `GET /api/v1/admin/dashboard/recent-enquiries?limit=5` | Newest contact enquiries (id, name, email, subject, status, createdAt) |
+| `GET /api/v1/admin/dashboard/recent-users?limit=5` | Newest accounts (no password/token/role material) |
+| `GET /api/v1/admin/dashboard/recent-applications?limit=5` | Newest applications with candidate name and job title (single join, no N+1) |
+
+- `limit` defaults to 5 and is clamped to a maximum of 10 server-side, so a
+  large value can never widen the query.
+- All counts aggregate in PostgreSQL (COUNT queries); no entity rows are
+  loaded into memory and no dashboard tables were added.
 
 ## Frontend Setup & Run
 

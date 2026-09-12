@@ -21,6 +21,9 @@ public final class ApiPaths {
     /** Public contact enquiries (submission only; management is authenticated). */
     public static final String CONTACT_MESSAGES = API_V1 + "/contact-messages";
 
+    /** Admin dashboard read APIs (A2) — guarded by the dashboard:view permission. */
+    public static final String ADMIN_DASHBOARD = API_V1 + "/admin/dashboard";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }
