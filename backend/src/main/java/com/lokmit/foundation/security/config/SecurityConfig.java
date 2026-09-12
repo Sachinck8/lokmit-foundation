@@ -5,6 +5,7 @@ import com.lokmit.foundation.common.api.ErrorCodes;
 import com.lokmit.foundation.common.api.ApiResponse;
 import com.lokmit.foundation.common.api.ApiError;
 import com.lokmit.foundation.security.filter.JwtAuthenticationFilter;
+import com.lokmit.foundation.security.ratelimit.RateLimitFilter;
 import com.lokmit.foundation.security.service.CustomUserDetailsService;
 import com.lokmit.foundation.security.service.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -35,7 +37,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableConfigurationProperties({JwtConfig.class, SecurityHeadersProperties.class})
+@EnableConfigurationProperties({JwtConfig.class, SecurityHeadersProperties.class, RateLimitProperties.class})
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -84,9 +86,34 @@ public class SecurityConfig {
         return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService);
     }
 
+    /**
+     * I-6 request rate limiting for the public login and contact endpoints.
+     * Declared {@code static} for the same bean-cycle reason as
+     * {@link #jwtAuthenticationFilter} above.
+     */
+    @Bean
+    public static RateLimitFilter rateLimitFilter(RateLimitProperties rateLimitProperties,
+                                                  ObjectMapper objectMapper) {
+        return new RateLimitFilter(rateLimitProperties, objectMapper);
+    }
+
+    /**
+     * Prevents Spring Boot from ALSO auto-registering the rate-limit filter as
+     * a top-level servlet filter. It must run only inside the security filter
+     * chain (after authentication) so that 429 responses pass through the
+     * security headers writer and CORS handling stays authoritative.
+     */
+    @Bean
+    public static FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(RateLimitFilter rateLimitFilter) {
+        FilterRegistrationBean<RateLimitFilter> registration = new FilterRegistrationBean<>(rateLimitFilter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   CorsConfigurationSource corsConfigurationSource) throws Exception {
+                                                   CorsConfigurationSource corsConfigurationSource,
+                                                   RateLimitFilter rateLimitFilter) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 // Standard Spring Security CORS integration: preflights are
@@ -148,7 +175,10 @@ public class SecurityConfig {
                             response.getWriter().write(objectMapper.writeValueAsString(error));
                         })
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // I-6: runs after authentication so rate limiting never alters
+                // authentication/authorization outcomes; it only counts requests.
+                .addFilterAfter(rateLimitFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

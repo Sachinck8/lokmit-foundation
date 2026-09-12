@@ -72,6 +72,20 @@ app:
     # Refresh-token housekeeping. Set cleanup-interval-minutes to 0 to disable.
     refresh-token:
       cleanup-interval-minutes: ${REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES:60}
+    # I-6 request rate limiting for the two public, high-risk endpoints.
+    # Per client IP, instance-local in-memory fixed windows. POST-only, so
+    # preflights, health, Swagger, and authenticated admin APIs are untouched.
+    rate-limit:
+      login:
+        enabled: ${RATE_LIMIT_LOGIN_ENABLED:true}
+        capacity: ${RATE_LIMIT_LOGIN_CAPACITY:10}
+        window-seconds: ${RATE_LIMIT_LOGIN_WINDOW_SECONDS:60}
+        max-tracked-keys: ${RATE_LIMIT_MAX_TRACKED_KEYS:10000}
+      contact:
+        enabled: ${RATE_LIMIT_CONTACT_ENABLED:true}
+        capacity: ${RATE_LIMIT_CONTACT_CAPACITY:5}
+        window-seconds: ${RATE_LIMIT_CONTACT_WINDOW_SECONDS:60}
+        max-tracked-keys: ${RATE_LIMIT_MAX_TRACKED_KEYS:10000}
 
 logging:
   level:

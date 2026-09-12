@@ -215,4 +215,27 @@ class ProductionProfileYamlTest {
     void devKeepsHstsDisabled() {
         assertEquals("${APP_HSTS_ENABLED:false}", baseProps.get("app.security.headers.hsts-enabled"));
     }
+
+    // ------------------------------------------------------------------
+    // Rate limiting (I-6): configuration contract
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("production rate limiting is enabled with overridable capacities")
+    void prodRateLimitContract() {
+        assertEquals("${RATE_LIMIT_LOGIN_ENABLED:true}", prodProps.get("app.security.rate-limit.login.enabled"));
+        assertEquals("${RATE_LIMIT_LOGIN_CAPACITY:10}", prodProps.get("app.security.rate-limit.login.capacity"));
+        assertEquals("${RATE_LIMIT_LOGIN_WINDOW_SECONDS:60}", prodProps.get("app.security.rate-limit.login.window-seconds"));
+        assertEquals("${RATE_LIMIT_CONTACT_ENABLED:true}", prodProps.get("app.security.rate-limit.contact.enabled"));
+        assertEquals("${RATE_LIMIT_CONTACT_CAPACITY:5}", prodProps.get("app.security.rate-limit.contact.capacity"));
+        assertEquals("${RATE_LIMIT_CONTACT_WINDOW_SECONDS:60}", prodProps.get("app.security.rate-limit.contact.window-seconds"));
+    }
+
+    @Test
+    @DisplayName("development rate limiting mirrors the production defaults")
+    void devRateLimitDefaultsPresent() {
+        assertEquals("${RATE_LIMIT_LOGIN_ENABLED:true}", baseProps.get("app.security.rate-limit.login.enabled"));
+        assertEquals("${RATE_LIMIT_LOGIN_CAPACITY:10}", baseProps.get("app.security.rate-limit.login.capacity"));
+        assertEquals("${RATE_LIMIT_CONTACT_CAPACITY:5}", baseProps.get("app.security.rate-limit.contact.capacity"));
+    }
 }

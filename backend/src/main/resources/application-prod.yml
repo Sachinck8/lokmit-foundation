@@ -47,6 +47,20 @@ app:
       hsts-enabled: ${APP_HSTS_ENABLED:true}
       hsts-max-age-seconds: ${APP_HSTS_MAX_AGE_SECONDS:31536000}
       hsts-include-subdomains: ${APP_HSTS_INCLUDE_SUBDOMAINS:true}
+    # I-6 rate limiting is enabled by default in every environment; the
+    # capacity/window values below stay overridable for production tuning.
+    # Limiter state is instance-local (in-memory); with N instances the
+    # effective per-client limit is N × capacity. A distributed store can
+    # replace FixedWindowRateLimiter without changing callers.
+    rate-limit:
+      login:
+        enabled: ${RATE_LIMIT_LOGIN_ENABLED:true}
+        capacity: ${RATE_LIMIT_LOGIN_CAPACITY:10}
+        window-seconds: ${RATE_LIMIT_LOGIN_WINDOW_SECONDS:60}
+      contact:
+        enabled: ${RATE_LIMIT_CONTACT_ENABLED:true}
+        capacity: ${RATE_LIMIT_CONTACT_CAPACITY:5}
+        window-seconds: ${RATE_LIMIT_CONTACT_WINDOW_SECONDS:60}
 
 # Logging: production keeps noise low; no secrets are logged by the app.
 logging:

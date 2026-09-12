@@ -98,6 +98,13 @@ Secrets and environment-specific values are never hard-coded.
 | `APP_HSTS_ENABLED` | backend | Emit `Strict-Transport-Security` (default `false`; `true` in production) |
 | `APP_HSTS_MAX_AGE_SECONDS` | backend | HSTS max-age in seconds (default `31536000`) |
 | `APP_HSTS_INCLUDE_SUBDOMAINS` | backend | HSTS `includeSubDomains` (default `true`) |
+| `RATE_LIMIT_LOGIN_ENABLED` | backend | Enable login rate limiting (default `true`) |
+| `RATE_LIMIT_LOGIN_CAPACITY` | backend | Login requests per window per client IP (default `10`) |
+| `RATE_LIMIT_LOGIN_WINDOW_SECONDS` | backend | Login rate-limit window in seconds (default `60`) |
+| `RATE_LIMIT_CONTACT_ENABLED` | backend | Enable contact-form rate limiting (default `true`) |
+| `RATE_LIMIT_CONTACT_CAPACITY` | backend | Contact submissions per window per client IP (default `5`) |
+| `RATE_LIMIT_CONTACT_WINDOW_SECONDS` | backend | Contact rate-limit window in seconds (default `60`) |
+| `RATE_LIMIT_MAX_TRACKED_KEYS` | backend | Memory bound: max client IPs tracked per limiter (default `10000`) |
 | `LOGIN_MAX_FAILED_ATTEMPTS` | backend | Failed logins before temporary lockout (default `5`) |
 | `LOGIN_LOCKOUT_DURATION_MINUTES` | backend | Temporary lockout duration in minutes (default `15`) |
 | `REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES` | backend | Refresh-token cleanup interval (default `60`, `0` disables) |
@@ -163,6 +170,34 @@ SPRING_PROFILES_ACTIVE=prod java -jar target/lokmit-foundation-backend-0.1.0-SNA
 Set these only in the deployment secret store — never in source control,
 YAML, or documentation. Placeholders live in `backend/.env.example`.
 
+### Rate limiting (I-6)
+
+The two public, high-risk endpoints are rate-limited **per client IP** with
+instance-local, in-memory fixed windows:
+
+| Endpoint | Default limit |
+|----------|---------------|
+| `POST /api/v1/auth/login` | 10 requests / 60 s / IP |
+| `POST /api/v1/contact-messages` | 5 requests / 60 s / IP |
+
+- Exceeding the limit returns **429 Too Many Requests** in the standard API
+  error envelope (`RATE_LIMITED`) with a `Retry-After` header (seconds until
+  the client's window resets). No bucket state is exposed.
+- Only these two method+path pairs are limited — preflights (OPTIONS), the
+  health check, Swagger/OpenAPI, refresh/logout, and all authenticated admin
+  endpoints are untouched.
+- `X-Forwarded-For` is **never** trusted (no trusted-proxy configuration
+  exists); the limiter keys on the servlet remote address. Behind a reverse
+  proxy, the proxy should be the only thing that can reach the backend so the
+  socket address is meaningful, or set `server.forward-headers-strategy` with
+  an explicit trust model.
+- This complements (does not replace) the I-2 per-account login lockout:
+  the limiter protects the endpoint from flooding with rotating identities;
+  I-2 protects individual accounts from password guessing.
+- **Instance-local limitation:** state lives in each JVM. With N instances
+  the effective per-client limit is N × capacity. A distributed store can
+  replace `FixedWindowRateLimiter` later without changing callers.
+
 ### Production guarantees
 
 - **Database:** Flyway owns the schema; Hibernate runs with
@@ -183,6 +218,8 @@ YAML, or documentation. Placeholders live in `backend/.env.example`.
   development.
 - **Actuator:** exposure stays `health,info`; health details hidden
   (`show-details: never`).
+- **Rate limiting:** enabled in every environment with the defaults above;
+  capacities/windows overridable via the `RATE_LIMIT_*` variables.
 
 ### CORS in development
 
