@@ -134,6 +134,30 @@ and take effect from Phase 1 onward.
 - File uploads are validated for type, size, and allowed extensions before
   storage.
 
+### 10.1 RBAC enforcement (Admin APIs)
+
+- The authorization model is `User → roles → permissions`; permissions are
+  seeded in `V2__identity_schema.sql` and mirrored as Java constants in
+  `security/Permissions.java` (single source of truth for endpoint checks).
+- Authority materialization happens server-side on every request:
+  `CustomUserDetailsService` loads the user from the database and exposes
+  `ROLE_<code>` plus each granted permission code as Spring Security
+  authorities. JWT `roles` claims are informational only — never trusted for
+  authorization decisions.
+- Management/admin endpoints declare
+  `@PreAuthorize("hasAuthority('" + Permissions.X + "')")` (method security),
+  e.g. `messages:manage`, `users:manage`. Prefer permission checks over
+  `hasRole(...)` so role re-grants never require code changes.
+- Authorization failures return 403 `FORBIDDEN`; missing/invalid credentials
+  return 401 `UNAUTHORIZED` — both in the standard error envelope.
+- Account status is enforced fail-closed on every request: only `ACTIVE`
+  accounts are authenticated; `LOCKED`/`SUSPENDED`/`DELETED` (or unknown)
+  statuses disable the principal, so deactivation takes effect immediately
+  without waiting for token expiry.
+- Never accept user/role/permission identity from client input (body, query,
+  path, or token claims) as authorization input; the principal always comes
+  from the validated security context.
+
 ## 11. Git Commit Conventions
 
 - Commits are **atomic**: one logical change per commit.

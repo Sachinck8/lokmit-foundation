@@ -198,6 +198,32 @@ instance-local, in-memory fixed windows:
   the effective per-client limit is N × capacity. A distributed store can
   replace `FixedWindowRateLimiter` later without changing callers.
 
+### Authentication & RBAC model (A1)
+
+- **Model:** `User → roles → permissions`. Roles and permission grants live
+  in the database (seeded in `V2__identity_schema.sql`); permission codes are
+  mirrored as Java constants in `security/Permissions.java`.
+- **Enforcement:** on every request `CustomUserDetailsService` reloads the
+  user from the database and exposes `ROLE_<code>` + each granted permission
+  as Spring Security authorities. JWT `roles` claims are never trusted for
+  authorization — the database is authoritative.
+- **Declarative checks:** management endpoints use
+  `@PreAuthorize("hasAuthority('" + Permissions.X + "')")` — e.g. the contact
+  enquiry management API requires `messages:manage`.
+- **Access levels:** SUPER_ADMIN holds every permission; ADMIN covers
+  day-to-day management (`content:*`, `downloads:manage`, `messages:manage`,
+  `jobs:manage`, `settings:manage`) but **not** `users:manage`; MODERATOR is
+  limited to `jobs:moderate` + `messages:manage`; CANDIDATE/EMPLOYER/CLIENT
+  have no administrative permissions. Anonymous callers reach only the
+  explicit public endpoints.
+- **Account status is enforced per request:** only `ACTIVE` accounts are
+  authenticated. `LOCKED`/`SUSPENDED`/`DELETED` accounts are rejected even
+  with a still-valid access token (fail-closed), so deactivation is
+  immediate.
+- **Errors:** 401 `UNAUTHORIZED` for missing/invalid credentials, 403
+  `FORBIDDEN` for insufficient permissions — both in the standard error
+  envelope; responses never echo tokens or account internals.
+
 ### Production guarantees
 
 - **Database:** Flyway owns the schema; Hibernate runs with
