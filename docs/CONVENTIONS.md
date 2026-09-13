@@ -158,6 +158,27 @@ and take effect from Phase 1 onward.
   path, or token claims) as authorization input; the principal always comes
   from the validated security context.
 
+### 10.2 User-management safety rules (A3)
+
+- The whole `/api/v1/admin/users` surface is guarded by `users:manage`
+  (V2 seed: SUPER_ADMIN only). Additional in-service rules protect against
+  self-inflicted lockout and privilege destruction — they must stay in the
+  backend, never the frontend:
+  - an administrator cannot move their own account to a non-ACTIVE status or
+    change their own roles (400);
+  - the last active SUPER_ADMIN cannot be disabled or stripped of the
+    SUPER_ADMIN role (400) — the system always retains one active
+    SUPER_ADMIN;
+  - granting the SUPER_ADMIN role requires the caller to hold
+    `ROLE_SUPER_ADMIN` (403), established from database-backed authorities.
+- Moving an account out of ACTIVE revokes all its refresh tokens so sessions
+  end immediately; the fail-closed JWT filter (10.1) already refuses
+  non-ACTIVE accounts on the next request.
+- Status/role filter values validate against the seeded domains; unknown
+  values return 400 rather than silently matching nothing.
+- Admin user responses are DTOs; password hashes, brute-force bookkeeping
+  (I-2) and refresh-token material (I-8) never appear in any payload.
+
 ## 11. Git Commit Conventions
 
 - Commits are **atomic**: one logical change per commit.

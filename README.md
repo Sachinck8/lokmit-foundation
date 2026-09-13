@@ -303,6 +303,33 @@ Read-only endpoints under `/api/v1/admin/dashboard`, all guarded by the
 - All counts aggregate in PostgreSQL (COUNT queries); no entity rows are
   loaded into memory and no dashboard tables were added.
 
+### Admin User Management (A3)
+
+Endpoints under `/api/v1/admin/users`, all guarded by the `users:manage`
+permission (V2 seed: SUPER_ADMIN only; ADMIN/MODERATOR get 403 by design):
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/v1/admin/users?page=0&size=20&search=&status=&role=` | Paginated list, newest first. Search matches email/full name; `status` and `role` validate against the seeded domains (unknown values → 400) |
+| `GET /api/v1/admin/users/{id}` | Safe detail view |
+| `PATCH /api/v1/admin/users/{id}/status` | Status-only change (ACTIVE/LOCKED/SUSPENDED/DELETED) |
+| `PUT /api/v1/admin/users/{id}/roles` | Full role replacement |
+
+Server-enforced protections (never left to the frontend):
+
+- **Self-protection** — an administrator cannot move their own account to a
+  non-ACTIVE status or change their own roles (400).
+- **Last-SUPER_ADMIN protection** — disabling the final active SUPER_ADMIN,
+  or removing the SUPER_ADMIN role from it, is rejected (400); the system
+  always keeps at least one active SUPER_ADMIN.
+- **No privilege escalation** — granting SUPER_ADMIN requires the caller to
+  hold `ROLE_SUPER_ADMIN` (403 otherwise), from the database-backed
+  authorities, never a JWT claim.
+- Moving an account out of ACTIVE revokes all its refresh tokens (I-8
+  support), so sessions end immediately alongside the A1 fail-closed filter.
+- Responses are DTOs; password hashes, I-2 brute-force bookkeeping and
+  refresh-token material are structurally absent from every payload.
+
 ## Frontend Setup & Run
 
 ```powershell

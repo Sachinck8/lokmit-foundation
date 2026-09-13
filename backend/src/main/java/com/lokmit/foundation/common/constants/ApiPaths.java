@@ -24,6 +24,9 @@ public final class ApiPaths {
     /** Admin dashboard read APIs (A2) — guarded by the dashboard:view permission. */
     public static final String ADMIN_DASHBOARD = API_V1 + "/admin/dashboard";
 
+    /** Admin user management APIs (A3) — guarded by the users:manage permission. */
+    public static final String ADMIN_USERS = API_V1 + "/admin/users";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }
