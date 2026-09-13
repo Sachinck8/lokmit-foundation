@@ -330,6 +330,35 @@ Server-enforced protections (never left to the frontend):
 - Responses are DTOs; password hashes, I-2 brute-force bookkeeping and
   refresh-token material are structurally absent from every payload.
 
+### Admin CMS Management (A4)
+
+Endpoints under `/api/v1/admin/cms`, mapped to the existing V3 CMS tables —
+no new tables, no schema changes, no new permissions (existing V2 grants
+cover the tiers):
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/cms/site-settings` | `settings:manage` (SUPER_ADMIN, ADMIN) | list (key search + pagination), get by id / unique key, PATCH value/description (key immutable) |
+| `/admin/cms/website-content` | `content:manage` (SUPER_ADMIN, ADMIN, EDITOR) | list (pageKey/sectionKey/status filters), get by id / page+section key, create (always DRAFT), PATCH title/body |
+| `/admin/cms/website-content/{id}/publish`, `/archive`, DELETE | `content:publish` (SUPER_ADMIN, ADMIN) | lifecycle transitions and deletion |
+| `/admin/cms/seo-metadata` | `content:manage` | list (entityType/entityId/search filters), get by id / entity pair, create, PATCH |
+
+Server-enforced rules:
+
+- Content lifecycle mirrors the V3 check constraint: DRAFT → PUBLISHED →
+  ARCHIVED (terminal). New sections always start as DRAFT; archived sections
+  cannot be re-published (409). No invented publishing workflow.
+- Duplicate keys are rejected with 409: unique setting_key,
+  unique (page_key, section_key), unique (entity_type, entity_id) — each
+  pre-checked in the service and backstopped by the database constraints
+  against concurrent creation races.
+- `contentJson` is validated for JSON well-formedness before it reaches the
+  JSONB column (400 on malformed input).
+- Identity keys never move through the API: setting keys and the SEO
+  (entityType, entityId) pair are immutable.
+- DTOs only; timestamps are OffsetDateTime, matching the timestamptz
+  columns.
+
 ## Frontend Setup & Run
 
 ```powershell

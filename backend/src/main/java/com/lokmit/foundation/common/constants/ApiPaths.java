@@ -27,6 +27,12 @@ public final class ApiPaths {
     /** Admin user management APIs (A3) — guarded by the users:manage permission. */
     public static final String ADMIN_USERS = API_V1 + "/admin/users";
 
+    /** Admin CMS management namespace (A4) — guarded by CMS permissions. */
+    public static final String ADMIN_CMS = API_V1 + "/admin/cms";
+    public static final String ADMIN_CMS_SITE_SETTINGS = ADMIN_CMS + "/site-settings";
+    public static final String ADMIN_CMS_WEBSITE_CONTENT = ADMIN_CMS + "/website-content";
+    public static final String ADMIN_CMS_SEO_METADATA = ADMIN_CMS + "/seo-metadata";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }
