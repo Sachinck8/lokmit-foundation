@@ -20,6 +20,7 @@ authentication phase onward) must match it.
 | `V9__login_protection.sql` | Login brute-force protection | adds `failed_login_attempts`, `failed_login_window_started_at`, `locked_until` to `users` |
 | `V10__refresh_token_hardening.sql` | Refresh-token hardening | adds `family_id`, `consumed_at` to `refresh_tokens` (rotation reuse detection + atomic consumption) |
 | `V11__dashboard_permission.sql` | Admin dashboard access | adds `dashboard:view` permission granted to SUPER_ADMIN and ADMIN (A2) |
+| `V12__services_permission.sql` | Admin services & expertise management | adds `services:manage` permission granted to SUPER_ADMIN and ADMIN (A5) |
 | — | Admin user management | no new migration: the existing `users:manage` permission (V2, SUPER_ADMIN) guards `/api/v1/admin/users`; role/status data comes from the existing identity tables (A3) |
 | — | Admin CMS management | no new migration: existing V2 permissions guard `/api/v1/admin/cms` (`settings:manage` → site settings; `content:manage` → website content/SEO reads & edits; `content:publish` → content lifecycle & deletion); data comes from the V3 `site_settings`, `website_content`, `seo_metadata` tables (A4) |
 
@@ -77,7 +78,7 @@ of this schema.
 `FlywayMigrationIntegrationTest` (test profile, skipped automatically when
 PostgreSQL is unreachable) applies the full migration chain to a throwaway
 schema `lokmit_it`, asserts all 41 tables exist, asserts history rows
-`V1..V11` succeeded, and verifies a second migrate run is a no-op.
+`V1..V12` succeeded, and verifies a second migrate run is a no-op.
 
 ## Authentication Schema (Phase 4)
 

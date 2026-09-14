@@ -5,8 +5,9 @@ package com.lokmit.foundation.security;
  * authorization ({@code @PreAuthorize}).
  *
  * <p>These codes match the permissions seeded in
- * {@code V2__identity_schema.sql} and {@code V11__dashboard_permission.sql}
- * (table {@code permissions}) one-to-one. They are the single source of truth
+ * {@code V2__identity_schema.sql}, {@code V11__dashboard_permission.sql} and
+ * {@code V12__services_permission.sql} (table {@code permissions})
+ * one-to-one. They are the single source of truth
  * for endpoint authorization: the database grants them to roles via
  * {@code role_permissions}, and
  * {@link com.lokmit.foundation.security.service.CustomUserDetailsService}
@@ -76,6 +77,11 @@ public final class Permissions {
 
     /** View the administrative dashboard summary and recent activity. */
     public static final String DASHBOARD_VIEW = "dashboard:view";
+
+    // Seeded in V12__services_permission.sql (A5).
+
+    /** Manage service categories, services and expertise areas. */
+    public static final String SERVICES_MANAGE = "services:manage";
 
     private Permissions() {
         throw new AssertionError("Utility class must not be instantiated.");

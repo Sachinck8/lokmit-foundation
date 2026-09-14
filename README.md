@@ -359,6 +359,34 @@ Server-enforced rules:
 - DTOs only; timestamps are OffsetDateTime, matching the timestamptz
   columns.
 
+### Admin Services & Expertise Management (A5)
+
+Endpoints under `/api/v1/admin`, mapped to the existing V4 services-catalog
+tables — no new tables, one new permission:
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/service-categories` | `services:manage` (SUPER_ADMIN, ADMIN) | list (status filter + pagination, display-order sort), get by id, create (always ACTIVE), PATCH name/description/displayOrder/status (slug immutable), DELETE (referencing services are detached, never cascade-deleted — existing FK ON DELETE SET NULL) |
+| `/admin/services` | `services:manage` | list (categoryId/status filters + title/summary search + pagination), get by id, create (always DRAFT; unknown categoryId → 404), PATCH (categoryId null detaches; status changes via dedicated endpoints), `/publish`, `/archive`, DELETE |
+| `/admin/expertise-areas` | `services:manage` | list (status filter + name search + pagination), get by id, create (always DRAFT), PATCH name/description/displayOrder (slug immutable), `/publish`, `/archive`, DELETE |
+
+Server-enforced rules:
+
+- `services:manage` was added in V12 because no V2 permission covers the
+  services catalog; reusing `content:manage` would have granted EDITOR write
+  access to the commercial services catalog, which the seed never intended.
+- Service/expertise lifecycle mirrors the V4 check constraint: DRAFT →
+  PUBLISHED → ARCHIVED (terminal). Archived records cannot change status
+  (409). Category status is the simple ACTIVE/INACTIVE domain.
+- Unique business keys are pre-checked for a clean 409 (category name and
+  slug, service slug, expertise slug) and backstopped by the database
+  constraints against concurrent races.
+- Category references are validated before any write: an unknown categoryId
+  returns 404 — orphaning inserts are impossible.
+- Slugs are immutable through the API (URL identity); partial updates leave
+  omitted fields unchanged, with explicit-null clearing where the column is
+  nullable.
+
 ## Frontend Setup & Run
 
 ```powershell

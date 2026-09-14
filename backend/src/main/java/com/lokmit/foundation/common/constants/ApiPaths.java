@@ -33,6 +33,11 @@ public final class ApiPaths {
     public static final String ADMIN_CMS_WEBSITE_CONTENT = ADMIN_CMS + "/website-content";
     public static final String ADMIN_CMS_SEO_METADATA = ADMIN_CMS + "/seo-metadata";
 
+    /** Admin services & expertise management APIs (A5) — guarded by services:manage. */
+    public static final String ADMIN_SERVICE_CATEGORIES = API_V1 + "/admin/service-categories";
+    public static final String ADMIN_SERVICES = API_V1 + "/admin/services";
+    public static final String ADMIN_EXPERTISE_AREAS = API_V1 + "/admin/expertise-areas";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }
