@@ -38,6 +38,10 @@ public final class ApiPaths {
     public static final String ADMIN_SERVICES = API_V1 + "/admin/services";
     public static final String ADMIN_EXPERTISE_AREAS = API_V1 + "/admin/expertise-areas";
 
+    /** Admin projects management APIs (A6) — guarded by projects:manage. */
+    public static final String ADMIN_PROJECT_CATEGORIES = API_V1 + "/admin/project-categories";
+    public static final String ADMIN_PROJECTS = API_V1 + "/admin/projects";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

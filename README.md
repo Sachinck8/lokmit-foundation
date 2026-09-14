@@ -387,6 +387,39 @@ Server-enforced rules:
   omitted fields unchanged, with explicit-null clearing where the column is
   nullable.
 
+### Admin Projects Management (A6)
+
+Endpoints under `/api/v1/admin`, mapped to the existing V5 projects tables —
+no new tables, one new permission:
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/project-categories` | `projects:manage` (SUPER_ADMIN, ADMIN) | list (status filter + pagination, display-order sort), get by id, create (always ACTIVE), PATCH name/description/displayOrder/status (slug immutable), DELETE (referencing projects are detached, never cascade-deleted — existing FK ON DELETE SET NULL) |
+| `/admin/projects` | `projects:manage` | list (categoryId/status/projectStatus filters + title/summary search + pagination, newest first), get by id, create (always DRAFT; unknown categoryId → 404; end-before-start → 400), PATCH (categoryId null detaches; resulting date pair validated; status changes via dedicated endpoints), `/publish` (stamps published_at), `/archive`, DELETE (owned image metadata removed by the existing FK cascade) |
+| `/admin/projects/{id}/images` | `projects:manage` | list (paginated gallery), POST image metadata (URL reference only — no file upload in A6; unknown project → 404; duplicate URL within the gallery → 409) |
+| `/admin/projects/{projectId}/images/{imageId}` | `projects:manage` | get/PATCH/DELETE image metadata (mismatched project/image pair → 404; owning project immutable) |
+
+Server-enforced rules:
+
+- `projects:manage` was added in V13 because no V2 permission covers the
+  projects domain; reusing `content:manage` would have granted EDITOR write
+  access to the project portfolio, which the seed never intended.
+- Projects carry two independent status dimensions, exactly per the V5
+  constraints: the editorial lifecycle `status` (DRAFT → PUBLISHED →
+  ARCHIVED, terminal; publish stamps `published_at`) and the nullable
+  delivery state `projectStatus` (PLANNING/ONGOING/COMPLETED).
+- `chk_projects_dates` is enforced in the service for every create and
+  partial update, including patches that touch only one side of the pair —
+  the API answers 400 before the database constraint would reject the row.
+- `objectives` is a JSONB column; caller-supplied JSON is validated for
+  well-formedness before any write (400 on malformed input).
+- Unique business keys are pre-checked for a clean 409 (category name and
+  slug, project slug) and backstopped by the database constraints.
+- Image endpoints are METADATA only: `imageUrl` is a caller-supplied URL
+  reference; binary upload, storage and processing are a separate future
+  phase. A project/image mismatch is a 404 — an image is always managed
+  through its owning project.
+
 ## Frontend Setup & Run
 
 ```powershell

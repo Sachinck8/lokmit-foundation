@@ -83,6 +83,11 @@ public final class Permissions {
     /** Manage service categories, services and expertise areas. */
     public static final String SERVICES_MANAGE = "services:manage";
 
+    // Seeded in V13__projects_permission.sql (A6).
+
+    /** Manage project categories, projects and project image metadata. */
+    public static final String PROJECTS_MANAGE = "projects:manage";
+
     private Permissions() {
         throw new AssertionError("Utility class must not be instantiated.");
     }
