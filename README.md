@@ -461,6 +461,48 @@ Server-enforced rules:
   domains. Granted only to SUPER_ADMIN and ADMIN; MODERATOR, EDITOR,
   CANDIDATE, EMPLOYER and CLIENT deliberately receive neither.
 
+### Admin Job Management (A7.2)
+
+Endpoints under `/api/v1/admin/jobs`, mapped to the existing V8 `jobs` and
+`job_skills` tables — no new tables, no new migration, no new permission
+(reuses `employment:manage`, SUPER_ADMIN + ADMIN):
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/jobs` | `employment:manage` | list (employerId/categoryId/status/employmentType/workMode filters + title/slug/location search + pagination, newest first), get by id, create (always DRAFT — status/publishedAt are not writable at creation; duplicate slug → 409; unknown employer/category → 404; salaryMin > salaryMax → 400), PATCH (partial; slug and owning employer immutable; categoryId null detaches; status NOT patchable; resulting salary pair validated), DELETE (job_skills cascade away per V8; the database refuses deletion while job_applications reference the job) |
+| `/admin/jobs/{id}/publish` | `employment:manage` | DRAFT → PUBLISHED, stamps `published_at`; already-published → 409; any other non-draft state → 400 |
+| `/admin/jobs/{id}/close` | `employment:manage` | PUBLISHED → CLOSED; job data fully preserved; other states → 400 |
+| `/admin/jobs/{id}/archive` | `employment:manage` | DRAFT/PUBLISHED/CLOSED → ARCHIVED; terminal (repeat → 409); data preserved |
+| `/admin/jobs/{jobId}/skills` | `employment:manage` | list a job's skill requirements, POST `{"skillId":N}` add (unknown job/skill → 404; duplicate → 409) |
+| `/admin/jobs/{jobId}/skills/{skillId}` | `employment:manage` | DELETE requirement (unknown pair → 404) |
+
+Server-enforced rules:
+
+- The V8 lifecycle model is used exactly: `DRAFT` → `PUBLISHED` → `CLOSED`
+  → `ARCHIVED` (chk_jobs_status). Publish stamps `published_at`. Status is
+  controllable ONLY through the transition endpoints — PATCH cannot change
+  it, so the lifecycle cannot be bypassed. Archive is terminal.
+- The owning employer is immutable and must exist (404 otherwise); no
+  employer or user is ever created implicitly. `fk_jobs_employer` has no
+  ON DELETE action, so the database itself prevents deleting a referenced
+  employer.
+- Slug is the immutable URL identity (project convention); unique slug is
+  pre-checked (409) and backstopped by `uq_jobs_slug` for concurrent races.
+- Category is optional: `fk_jobs_category` is `ON DELETE SET NULL`, so
+  deleting a category (A7.1) detaches jobs, never deletes them; responses
+  safely render a null category.
+- DELETE removes the job row only. Its `job_skills` rows cascade away per
+  V8. `fk_job_applications_job` has NO ON DELETE action — the database
+  refuses to delete a job that already has applications, so deletion is
+  effectively blocked once applications exist (A7.3 will manage them).
+- Employer/category data in job responses is embedded as safe summaries
+  (company name / verification state, category name / slug) — no linked-user
+  identity or security material is ever serialized.
+- **A7.3 application management is NOT implemented yet** — job_applications
+  has no API in this phase.
+
+## Frontend Setup & Run
+
 ## Frontend Setup & Run
 
 ```powershell

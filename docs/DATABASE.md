@@ -26,6 +26,7 @@ authentication phase onward) must match it.
 | — | Admin user management | no new migration: the existing `users:manage` permission (V2, SUPER_ADMIN) guards `/api/v1/admin/users`; role/status data comes from the existing identity tables (A3) |
 | — | Admin CMS management | no new migration: existing V2 permissions guard `/api/v1/admin/cms` (`settings:manage` → site settings; `content:manage` → website content/SEO reads & edits; `content:publish` → content lifecycle & deletion); data comes from the V3 `site_settings`, `website_content`, `seo_metadata` tables (A4) |
 | — | Admin employment foundation | V14 adds `employment:manage` and `candidates:manage` (both granted to SUPER_ADMIN and ADMIN) guarding `/api/v1/admin/employers|candidates|skills|job-categories` and the nested candidate-skill assignments; no new tables — data comes from the V8 employment tables (A7.1) |
+| — | Admin job management | no new migration: the existing `employment:manage` permission (V14, SUPER_ADMIN and ADMIN) guards `/api/v1/admin/jobs` CRUD + publish/close/archive lifecycle and the nested job-skill requirements; no new tables — data comes from the V8 `jobs` and `job_skills` tables (A7.2) |
 
 41 domain tables + `flyway_schema_history` (managed by Flyway itself).
 
@@ -164,4 +165,13 @@ Join tables (`user_roles`, `role_permissions`, `blog_post_categories`,
   and job requirements (intentional, documented cleanup).
 - `fk_jobs_category` is `ON DELETE SET NULL` — deleting a job category
   detaches jobs, never deletes them.
+- `fk_jobs_employer` has NO ON DELETE action — the database refuses to
+  delete an employer while jobs reference it.
+- `fk_job_skills_job` is `ON DELETE CASCADE` — deleting a job removes its
+  skill requirements (A7.2 job DELETE relies on this).
+- `fk_job_applications_job` has NO ON DELETE action — the database refuses
+  to delete a job that already has applications. Job deletion is therefore
+  effectively blocked once applications exist; the archive lifecycle is the
+  supported retirement path. Application management itself is A7.3 (not
+  implemented yet).
 
