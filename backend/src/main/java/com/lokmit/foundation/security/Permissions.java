@@ -96,6 +96,11 @@ public final class Permissions {
     /** Manage candidate profiles and candidate↔skill assignments (admin-side). */
     public static final String CANDIDATES_MANAGE = "candidates:manage";
 
+    // Seeded in V16__notifications_audit_outbox.sql (A7.5).
+
+    /** View and manage in-app notifications (recipient-scoped). */
+    public static final String NOTIFICATIONS_MANAGE = "notifications:manage";
+
     private Permissions() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

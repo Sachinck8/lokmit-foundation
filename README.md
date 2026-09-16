@@ -108,6 +108,11 @@ Secrets and environment-specific values are never hard-coded.
 | `LOGIN_MAX_FAILED_ATTEMPTS` | backend | Failed logins before temporary lockout (default `5`) |
 | `LOGIN_LOCKOUT_DURATION_MINUTES` | backend | Temporary lockout duration in minutes (default `15`) |
 | `REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES` | backend | Refresh-token cleanup interval (default `60`, `0` disables) |
+| `OUTBOX_RELAY_ENABLED` | backend | Enable the outbox relay that materializes in-app notifications (default `true`) |
+| `OUTBOX_RELAY_POLLING_INTERVAL_SECONDS` | backend | Seconds between relay passes (default `30`, `0` disables) |
+| `OUTBOX_RELAY_BATCH_SIZE` | backend | Max outbox events claimed per relay pass (default `50`) |
+| `OUTBOX_RELAY_RETRY_BACKOFF_SECONDS` | backend | Base backoff after a failed processing attempt (default `60`, scaled by attempt count) |
+| `OUTBOX_RELAY_MAX_ATTEMPTS` | backend | Attempts before an outbox event is marked FAILED and never retried (default `5`) |
 | `VITE_API_BASE_URL` | frontend | Backend API base path (default `/api/v1`) |
 
 - **`.env.example` files** (root, `backend/`, `frontend/`) document the variables
@@ -582,7 +587,65 @@ Server-enforced rules:
   `10:30+05:45` → `04:45Z`).
 - History/interview responses expose only schema-backed scheduling/audit
   data — never User entities, passwords, tokens or lockout fields.
-- **A7.5 — Notifications + Audit/Outbox — is NOT implemented.**
+- **A7.6 — Resume/File Storage — is NOT implemented.**
+
+### Admin Notifications + Audit Logs + Outbox (A7.5)
+
+V16 adds three tables (`notifications`, `audit_logs`, `outbox_events`) and
+the `notifications:manage` permission (SUPER_ADMIN + ADMIN). MVP delivery is
+**IN-APP ONLY** — no email/SMS/WhatsApp integration and no external
+messaging infrastructure:
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/notifications` | `notifications:manage` | list own notifications (type/unreadOnly filters + pagination, newest first), unread count, get by id, PATCH mark read / mark unread |
+| `/admin/audit-logs` | `users:manage` (SUPER_ADMIN only) | list audit records (actorUserId/entityType/entityId/action/from-to filters + pagination, newest first), get by id |
+| — | — | the outbox has **no public API**: it is written transactionally by business services and drained by the relay |
+
+Server-enforced rules:
+
+- **Recipient isolation is absolute:** every notification operation is
+  scoped to the authenticated user's database id resolved server-side via
+  `SecurityUtils`; a foreign (id, recipient) pair is a plain 404 with no
+  existence leak. `notifications:manage` authorizes the endpoints but never
+  broadens scoping — no API accepts a client-supplied recipient id.
+- **Audit logs are append-only and immutable:** there is deliberately no
+  create/update/delete endpoint (writes 405). Rows are written by backend
+  services only, in the SAME transaction as the audited action (REQUIRED
+  propagation). Reads are restricted to the SUPER_ADMIN-only `users:manage`
+  authority — `notifications:manage` deliberately does NOT grant audit
+  access.
+- **Actor integrity:** audit `actor_user_id` is always resolved server-side
+  from the authenticated principal (NULL for system actions); it is never
+  accepted from client input and carries no ON DELETE cascade, so audit
+  survival is never coupled to user retention.
+- **No secrets in audit payloads:** `details` is serialized to JSON TEXT
+  with security-sensitive keys redacted (password, token, JWT, secret,
+  credential, authorization — case- and separator-insensitive);
+  unserializable payloads fail the transaction rather than persisting a
+  corrupt record.
+- **Transactional outbox:** every application status transition (A7.3) and
+  interview create/update/cancel/delete (A7.4) additionally writes one
+  `audit_logs` row and one `outbox_events` row inside the SAME transaction —
+  a failed side effect rolls the action back, so events can never reference
+  work that did not happen.
+- **Relay safety:** a scheduled relay claims due PENDING events with
+  `FOR UPDATE SKIP LOCKED` (safe across multiple instances), processes each
+  event in its own transaction (notification insert + PROCESSED commit
+  atomically), marks terminally-broken payloads FAILED, and retries
+  transient failures with `attempts` + bounded `available_at` backoff up to
+  `OUTBOX_RELAY_MAX_ATTEMPTS`. A poison event can never wedge the queue or
+  roll back unrelated events.
+- **Notification vocabulary** (`chk_notifications_type`):
+  APPLICATION_STATUS_CHANGED / INTERVIEW_SCHEDULED / INTERVIEW_UPDATED /
+  INTERVIEW_CANCELLED. The relay only ever creates in-app notification rows
+  — no external delivery occurs in this phase.
+- **No infrastructure additions:** no Kafka/RabbitMQ/Redis/WebSockets, no
+  `ApplicationEventPublisher`/`@TransactionalEventListener` — direct,
+  service-level transactional integration only.
+- Relay behavior is configurable via `OUTBOX_RELAY_*` environment variables
+  (defaults in the table above; `polling-interval-seconds=0` or
+  `enabled=false` disables the relay entirely).
 - **A7.6 — Resume/File Storage — is NOT implemented.**
 
 ## Frontend Setup & Run

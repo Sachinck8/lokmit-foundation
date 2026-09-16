@@ -24,14 +24,16 @@ authentication phase onward) must match it.
 | `V13__projects_permission.sql` | Admin projects management | adds `projects:manage` permission granted to SUPER_ADMIN and ADMIN (A6) |
 | `V14__employment_permissions.sql` | Admin employment foundation | adds `employment:manage` and `candidates:manage` permissions granted to SUPER_ADMIN and ADMIN (A7.1) |
 | `V15__application_history_interviews.sql` | Application history + interviews | `application_status_history`, `interviews` (A7.4) |
+| `V16__notifications_audit_outbox.sql` | Notifications + audit + outbox | `notifications`, `audit_logs`, `outbox_events` + `notifications:manage` permission (A7.5) |
 | — | Admin user management | no new migration: the existing `users:manage` permission (V2, SUPER_ADMIN) guards `/api/v1/admin/users`; role/status data comes from the existing identity tables (A3) |
 | — | Admin CMS management | no new migration: existing V2 permissions guard `/api/v1/admin/cms` (`settings:manage` → site settings; `content:manage` → website content/SEO reads & edits; `content:publish` → content lifecycle & deletion); data comes from the V3 `site_settings`, `website_content`, `seo_metadata` tables (A4) |
 | — | Admin employment foundation | V14 adds `employment:manage` and `candidates:manage` (both granted to SUPER_ADMIN and ADMIN) guarding `/api/v1/admin/employers|candidates|skills|job-categories` and the nested candidate-skill assignments; no new tables — data comes from the V8 employment tables (A7.1) |
 | — | Admin job management | no new migration: the existing `employment:manage` permission (V14, SUPER_ADMIN and ADMIN) guards `/api/v1/admin/jobs` CRUD + publish/close/archive lifecycle and the nested job-skill requirements; no new tables — data comes from the V8 `jobs` and `job_skills` tables (A7.2) |
 | — | Admin application management | no new migration: the existing `employment:manage` permission (V14, SUPER_ADMIN and ADMIN) guards `/api/v1/admin/applications` review lifecycle (start-review/shortlist/decide/withdraw) + note/resume-reference patch; no new tables — data comes from the V8 `job_applications` table (A7.3) |
 | — | Admin application history + interviews | V15 adds `application_status_history` (automatic audit of lifecycle transitions, written in the same transaction as the status change) and `interviews` (scheduling records per application); the existing `employment:manage` permission (V14) guards the read/write endpoints (A7.4) |
+| — | Admin notifications + audit + outbox | V16 adds `notifications` (personal in-app notices, recipient-scoped, `notifications:manage` granted to SUPER_ADMIN + ADMIN), `audit_logs` (append-only administrative trail written by backend services, reads SUPER_ADMIN-only via `users:manage`) and `outbox_events` (transactional outbox relayed into in-app notifications; no public API) (A7.5) |
 
-43 domain tables + `flyway_schema_history` (managed by Flyway itself).
+46 domain tables + `flyway_schema_history` (managed by Flyway itself).
 
 Payments/donations tables are **deferred** (Phase 0 decision) and are not part
 of this schema.
@@ -211,4 +213,59 @@ Join tables (`user_roles`, `role_permissions`, `blog_post_categories`,
 - Indexes: `idx_application_status_history_application (application_id,
   changed_at DESC)` and `idx_interviews_application (application_id,
   scheduled_at)` back the paginated list endpoints.
+
+## A7.5 — Notifications, Audit Logs & Transactional Outbox (V16)
+
+V16 adds three tables plus one permission seed (`notifications:manage`,
+granted to SUPER_ADMIN and ADMIN):
+
+### notifications
+
+Personal in-app notices addressed to ONE user. MVP delivery is IN-APP ONLY
+— no delivery-channel columns exist by design (email/SMS/WhatsApp are
+explicitly out of scope for this phase).
+
+- Columns: `recipient_user_id` (FK → `users.id`, **ON DELETE CASCADE** —
+  personal data), `type` (`chk_notifications_type`:
+  APPLICATION_STATUS_CHANGED / INTERVIEW_SCHEDULED / INTERVIEW_UPDATED /
+  INTERVIEW_CANCELLED), `title`, `body`, `entity_type`, `entity_id`,
+  `read_at` (NULL = unread), `created_at`.
+- Indexes: `idx_notifications_recipient_read (recipient_user_id, read_at)`
+  backs the unread count and recipient list; `idx_notifications_created
+  (created_at DESC)` backs retention-style ordering.
+
+### audit_logs
+
+Append-only administrative action trail, backend-written only. There is
+NO `updated_at` and no update/delete API — records are immutable.
+
+- Columns: `actor_user_id` (FK → `users.id`, **NO ON DELETE action**,
+  NULLable for system actions — same rationale as V15's history actor),
+  `action`, `entity_type`, `entity_id`, `details` (validated, redacted JSON
+  TEXT), `created_at`.
+- Security: `details` never contains passwords, tokens, JWTs, secrets or
+  credentials — the service redacts such keys before persistence and fails
+  the transaction on unserializable payloads.
+- Indexes: `idx_audit_logs_created (created_at DESC)`,
+  `idx_audit_logs_entity (entity_type, entity_id)`,
+  `idx_audit_logs_actor (actor_user_id)`.
+
+### outbox_events
+
+Transactional outbox. Business services persist an event row in the SAME
+transaction as the originating action; a scheduled relay claims rows
+atomically and materializes in-app notifications. No external delivery
+occurs from the relay.
+
+- Columns: `aggregate_type`, `aggregate_id` (**no FK** — aggregates span
+  domains and must not create destructive coupling), `event_type`,
+  `payload` (valid JSON **TEXT**, not JSONB — validated in application
+  code), `status` (`chk_outbox_events_status`: PENDING / PROCESSED /
+  FAILED, default PENDING), `attempts` (`chk_outbox_events_attempts`:
+  >= 0), `available_at` (retry gate), `processed_at`, `created_at`.
+- Multi-instance safety: the relay claims due rows with
+  `FOR UPDATE SKIP LOCKED`; retries use `attempts` + `available_at` with
+  bounded backoff; events past max attempts are marked FAILED (terminal).
+- Index: `idx_outbox_events_status_available (status, available_at)` backs
+  the claim query.
 

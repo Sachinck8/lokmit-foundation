@@ -1,5 +1,7 @@
 package com.lokmit.foundation.employment.controller;
 
+import com.lokmit.foundation.audit.repository.AuditLogRepository;
+import com.lokmit.foundation.audit.service.AuditLogService;
 import com.lokmit.foundation.common.constants.ApiPaths;
 import com.lokmit.foundation.employment.application.controller.ApplicationController;
 import com.lokmit.foundation.employment.application.dto.ApplicationResponse;
@@ -14,6 +16,11 @@ import com.lokmit.foundation.employment.employer.entity.Employer;
 import com.lokmit.foundation.employment.job.entity.Job;
 import com.lokmit.foundation.employment.job.repository.JobRepository;
 import com.lokmit.foundation.employment.jobcategory.entity.JobCategory;
+import com.lokmit.foundation.notification.repository.NotificationRepository;
+import com.lokmit.foundation.outbox.config.OutboxRelayConfig;
+import com.lokmit.foundation.outbox.repository.OutboxEventRepository;
+import com.lokmit.foundation.outbox.service.OutboxEventProcessor;
+import com.lokmit.foundation.outbox.service.OutboxService;
 import com.lokmit.foundation.security.config.CorsConfig;
 import com.lokmit.foundation.security.config.JwtKeyConfig;
 import com.lokmit.foundation.security.config.SecurityConfig;
@@ -70,7 +77,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = ApplicationController.class)
 @Import({SecurityConfig.class, CorsConfig.class, JwtKeyConfig.class,
         JwtTokenProvider.class, CustomUserDetailsService.class, SecurityUtils.class,
-        ApplicationService.class, ApplicationStatusHistoryService.class})
+        ApplicationService.class, ApplicationStatusHistoryService.class,
+        AuditLogService.class, OutboxService.class, OutboxEventProcessor.class,
+        OutboxRelayConfig.class})
 @AutoConfigureMockMvc
 class AdminApplicationsSecurityTest {
 
@@ -82,6 +91,15 @@ class AdminApplicationsSecurityTest {
 
     @MockitoBean
     private ApplicationStatusHistoryRepository historyRepository;
+
+    @MockitoBean
+    private AuditLogRepository auditLogRepository;
+
+    @MockitoBean
+    private NotificationRepository notificationRepository;
+
+    @MockitoBean
+    private OutboxEventRepository outboxEventRepository;
 
     @MockitoBean
     private JobRepository jobRepository;
@@ -105,7 +123,8 @@ class AdminApplicationsSecurityTest {
 
     @BeforeEach
     void resetStubs() {
-        reset(applicationRepository, historyRepository, jobRepository,
+        reset(applicationRepository, historyRepository, auditLogRepository,
+                notificationRepository, outboxEventRepository, jobRepository,
                 candidateRepository, userRepository);
     }
 

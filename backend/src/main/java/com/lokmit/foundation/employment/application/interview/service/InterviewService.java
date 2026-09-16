@@ -12,6 +12,10 @@ import com.lokmit.foundation.employment.application.interview.dto.InterviewUpdat
 import com.lokmit.foundation.employment.application.interview.entity.Interview;
 import com.lokmit.foundation.employment.application.interview.repository.InterviewRepository;
 import com.lokmit.foundation.employment.application.repository.JobApplicationRepository;
+import com.lokmit.foundation.employment.application.service.support.OutboxPayloads;
+import com.lokmit.foundation.audit.service.AuditLogService;
+import com.lokmit.foundation.notification.entity.Notification;
+import com.lokmit.foundation.outbox.service.OutboxService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,11 +49,17 @@ public class InterviewService {
 
     private final InterviewRepository interviewRepository;
     private final JobApplicationRepository applicationRepository;
+    private final AuditLogService auditLogService;
+    private final OutboxService outboxService;
 
     public InterviewService(InterviewRepository interviewRepository,
-                            JobApplicationRepository applicationRepository) {
+                            JobApplicationRepository applicationRepository,
+                            AuditLogService auditLogService,
+                            OutboxService outboxService) {
         this.interviewRepository = interviewRepository;
         this.applicationRepository = applicationRepository;
+        this.auditLogService = auditLogService;
+        this.outboxService = outboxService;
     }
 
     // ------------------------------------------------------------------
@@ -93,7 +103,10 @@ public class InterviewService {
         interview.setNotes(request.getNotes());
         interview.setCreatedAt(OffsetDateTime.now());
         interview.setUpdatedAt(OffsetDateTime.now());
-        return toResponse(interviewRepository.save(interview));
+        Interview saved = interviewRepository.save(interview);
+        recordSideEffects(saved, app, "INTERVIEW_CREATED",
+                Notification.TYPE_INTERVIEW_SCHEDULED);
+        return toResponse(saved);
     }
 
     @Transactional
@@ -117,13 +130,23 @@ public class InterviewService {
         if (request.getNotes() != null) {
             interview.setNotes(request.getNotes());
         }
+        String statusBefore = interview.getStatus();
         if (request.getStatus() != null
                 && !request.getStatus().equals(interview.getStatus())) {
             validateTransition(interview.getStatus(), request.getStatus());
             interview.setStatus(request.getStatus());
         }
         interview.setUpdatedAt(OffsetDateTime.now());
-        return toResponse(interviewRepository.save(interview));
+        Interview saved = interviewRepository.save(interview);
+        // Cancellation gets its own audit action + notification type; other
+        // updates share INTERVIEW_UPDATED / INTERVIEW_UPDATED.
+        boolean cancelled = Interview.STATUS_CANCELLED.equals(saved.getStatus())
+                && !Interview.STATUS_CANCELLED.equals(statusBefore);
+        recordSideEffects(saved, saved.getApplication(),
+                cancelled ? "INTERVIEW_CANCELLED" : "INTERVIEW_UPDATED",
+                cancelled ? Notification.TYPE_INTERVIEW_CANCELLED
+                          : Notification.TYPE_INTERVIEW_UPDATED);
+        return toResponse(saved);
     }
 
     /**
@@ -141,6 +164,8 @@ public class InterviewService {
                     "Only CANCELLED interviews can be deleted (current status: "
                             + interview.getStatus() + "); cancel it first");
         }
+        recordSideEffects(interview, interview.getApplication(), "INTERVIEW_DELETED",
+                Notification.TYPE_INTERVIEW_CANCELLED);
         interviewRepository.delete(interview);
     }
 
@@ -165,6 +190,24 @@ public class InterviewService {
                     "Application is terminal (" + status + "); cannot " + action);
         }
         return app;
+    }
+
+    /**
+     * A7.5 side effects for one interview operation, executed in the
+     * caller's transaction: audit row (administrative action) + outbox row
+     * (in-app notification to the owning candidate's linked user).
+     */
+    private void recordSideEffects(Interview interview, JobApplication app,
+                                   String auditAction, String notificationType) {
+        auditLogService.record(auditAction, "INTERVIEW", interview.getId(),
+                java.util.Map.of("applicationId", app.getId(),
+                        "interviewStatus", interview.getStatus()));
+        Long recipientUserId = app.getCandidate().getUser() != null
+                ? app.getCandidate().getUser().getId() : null;
+        outboxService.enqueue("INTERVIEW", interview.getId(), notificationType,
+                OutboxPayloads.interviewEvent(notificationType, recipientUserId,
+                        interview.getId(), app.getId(),
+                        interview.getScheduledAt().toString(), interview.getMode()));
     }
 
     /** Conservative interview lifecycle: the three closed states are final. */

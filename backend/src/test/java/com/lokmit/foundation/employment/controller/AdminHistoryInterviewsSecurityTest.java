@@ -1,5 +1,7 @@
 package com.lokmit.foundation.employment.controller;
 
+import com.lokmit.foundation.audit.repository.AuditLogRepository;
+import com.lokmit.foundation.audit.service.AuditLogService;
 import com.lokmit.foundation.common.constants.ApiPaths;
 import com.lokmit.foundation.employment.application.controller.ApplicationController;
 import com.lokmit.foundation.employment.application.entity.JobApplication;
@@ -13,6 +15,11 @@ import com.lokmit.foundation.employment.application.interview.dto.InterviewRespo
 import com.lokmit.foundation.employment.application.interview.entity.Interview;
 import com.lokmit.foundation.employment.application.interview.repository.InterviewRepository;
 import com.lokmit.foundation.employment.application.interview.service.InterviewService;
+import com.lokmit.foundation.notification.repository.NotificationRepository;
+import com.lokmit.foundation.outbox.config.OutboxRelayConfig;
+import com.lokmit.foundation.outbox.repository.OutboxEventRepository;
+import com.lokmit.foundation.outbox.service.OutboxEventProcessor;
+import com.lokmit.foundation.outbox.service.OutboxService;
 import com.lokmit.foundation.employment.application.repository.JobApplicationRepository;
 import com.lokmit.foundation.employment.application.service.ApplicationService;
 import com.lokmit.foundation.employment.candidate.entity.Candidate;
@@ -78,7 +85,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({SecurityConfig.class, CorsConfig.class, JwtKeyConfig.class,
         JwtTokenProvider.class, CustomUserDetailsService.class, SecurityUtils.class,
         ApplicationService.class, ApplicationStatusHistoryService.class,
-        InterviewService.class})
+        InterviewService.class, AuditLogService.class, OutboxService.class,
+        OutboxEventProcessor.class, OutboxRelayConfig.class})
 @AutoConfigureMockMvc
 class AdminHistoryInterviewsSecurityTest {
 
@@ -93,6 +101,15 @@ class AdminHistoryInterviewsSecurityTest {
 
     @MockitoBean
     private InterviewRepository interviewRepository;
+
+    @MockitoBean
+    private AuditLogRepository auditLogRepository;
+
+    @MockitoBean
+    private NotificationRepository notificationRepository;
+
+    @MockitoBean
+    private OutboxEventRepository outboxEventRepository;
 
     @MockitoBean
     private JobRepository jobRepository;
@@ -120,6 +137,7 @@ class AdminHistoryInterviewsSecurityTest {
     @BeforeEach
     void resetStubs() {
         reset(applicationRepository, historyRepository, interviewRepository,
+                auditLogRepository, notificationRepository, outboxEventRepository,
                 jobRepository, candidateRepository, userRepository);
     }
 

@@ -7,6 +7,10 @@ import com.lokmit.foundation.employment.application.dto.ApplicationResponse;
 import com.lokmit.foundation.employment.application.dto.ApplicationReviewRequest;
 import com.lokmit.foundation.employment.application.entity.JobApplication;
 import com.lokmit.foundation.employment.application.history.service.ApplicationStatusHistoryService;
+import com.lokmit.foundation.employment.application.service.support.OutboxPayloads;
+import com.lokmit.foundation.notification.entity.Notification;
+import com.lokmit.foundation.audit.service.AuditLogService;
+import com.lokmit.foundation.outbox.service.OutboxService;
 import com.lokmit.foundation.employment.application.repository.JobApplicationRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +21,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.OffsetDateTime;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Admin application review management (A7.3) on the existing V8
@@ -40,6 +45,11 @@ import java.util.Locale;
  *       application_status_history (A7.4) INSIDE the same transaction — a
  *       failed history insert rolls the status change back, so a status
  *       change without history can never be observed.</li>
+ *   <li>A7.5: each transition additionally writes an audit_logs row
+ *       (administrative action trail) and one outbox_events row (in-app
+ *       notification to the owning candidate's user), all in the SAME
+ *       transaction. The outbox is only persisted here — the relay
+ *       materializes the notification separately.</li>
  * </ul>
  */
 @Service
@@ -47,11 +57,17 @@ public class ApplicationService {
 
     private final JobApplicationRepository applicationRepository;
     private final ApplicationStatusHistoryService historyService;
+    private final AuditLogService auditLogService;
+    private final OutboxService outboxService;
 
     public ApplicationService(JobApplicationRepository applicationRepository,
-                              ApplicationStatusHistoryService historyService) {
+                              ApplicationStatusHistoryService historyService,
+                              AuditLogService auditLogService,
+                              OutboxService outboxService) {
         this.applicationRepository = applicationRepository;
         this.historyService = historyService;
+        this.auditLogService = auditLogService;
+        this.outboxService = outboxService;
     }
 
     // ------------------------------------------------------------------
@@ -150,6 +166,7 @@ public class ApplicationService {
         JobApplication saved = applicationRepository.save(app);
         historyService.recordTransition(app.getId(),
                 JobApplication.STATUS_SUBMITTED, JobApplication.STATUS_UNDER_REVIEW, null);
+        recordSideEffects(saved, JobApplication.STATUS_SUBMITTED, "START_REVIEW", null);
         return toResponse(saved);
     }
 
@@ -166,6 +183,7 @@ public class ApplicationService {
         JobApplication saved = applicationRepository.save(app);
         historyService.recordTransition(app.getId(),
                 JobApplication.STATUS_UNDER_REVIEW, JobApplication.STATUS_SHORTLISTED, null);
+        recordSideEffects(saved, JobApplication.STATUS_UNDER_REVIEW, "SHORTLIST", null);
         return toResponse(saved);
     }
 
@@ -196,6 +214,8 @@ public class ApplicationService {
         app.setUpdatedAt(OffsetDateTime.now());
         JobApplication saved = applicationRepository.save(app);
         historyService.recordTransition(app.getId(), current, saved.getStatus(), decisionNote);
+        recordSideEffects(saved, current,
+                hire ? "DECIDE_HIRED" : "DECIDE_REJECTED", decisionNote);
         return toResponse(saved);
     }
 
@@ -220,12 +240,39 @@ public class ApplicationService {
         JobApplication saved = applicationRepository.save(app);
         historyService.recordTransition(app.getId(), current,
                 JobApplication.STATUS_WITHDRAWN, null);
+        recordSideEffects(saved, current, "WITHDRAW", null);
         return toResponse(saved);
     }
 
     // ------------------------------------------------------------------
     // helpers
     // ------------------------------------------------------------------
+
+    /**
+     * A7.5 side effects for one lifecycle transition, executed in the
+     * caller's transaction: audit row (administrative action) + outbox row
+     * (in-app notification to the owning candidate's linked user).
+     * Application status history is written separately by the caller via
+     * the A7.4 history service; nothing here duplicates it.
+     */
+    private void recordSideEffects(JobApplication app, String previousStatus,
+                                   String auditAction, String note) {
+        String newStatus = app.getStatus();
+        auditLogService.record(auditAction, "JOB_APPLICATION", app.getId(),
+                Map.of("previousStatus", previousStatus, "newStatus", newStatus));
+
+        // Recipient: the candidate's linked platform user. The candidate's
+        // user linkage is guaranteed by V8 (fk_candidates_user NOT NULL); if
+        // it is somehow absent the outbox processing marks the event FAILED
+        // rather than creating a broken notification.
+        Long recipientUserId = app.getCandidate().getUser() != null
+                ? app.getCandidate().getUser().getId() : null;
+        outboxService.enqueue("JOB_APPLICATION", app.getId(),
+                Notification.TYPE_APPLICATION_STATUS_CHANGED,
+                OutboxPayloads.applicationStatusChanged(
+                        recipientUserId, app.getId(), app.getJob().getTitle(),
+                        previousStatus, newStatus, note));
+    }
 
     private JobApplication requireTransitionable(long id, String action) {
         return applicationRepository.findById(id)

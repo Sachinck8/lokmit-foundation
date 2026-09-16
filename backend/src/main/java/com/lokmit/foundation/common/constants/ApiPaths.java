@@ -66,6 +66,10 @@ public final class ApiPaths {
     public static final String ADMIN_APPLICATION_INTERVIEW =
             ADMIN_APPLICATION_INTERVIEWS + "/{interviewId}";
 
+    /** Admin notification + audit APIs (A7.5). The outbox has NO public API. */
+    public static final String ADMIN_NOTIFICATIONS = API_V1 + "/admin/notifications";
+    public static final String ADMIN_AUDIT_LOGS = API_V1 + "/admin/audit-logs";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }
