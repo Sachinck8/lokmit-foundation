@@ -420,6 +420,47 @@ Server-enforced rules:
   phase. A project/image mismatch is a 404 — an image is always managed
   through its owning project.
 
+### Admin Employment Foundation (A7.1)
+
+Endpoints under `/api/v1/admin`, mapped to the existing V8 employment
+tables — no new tables, two new permissions:
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/employers` | `employment:manage` (SUPER_ADMIN, ADMIN) | list (search + verificationStatus/status filters + pagination, newest first), get by id, create (links an EXISTING user; one profile per user, duplicates → 409; unknown user → 404), PATCH (partial; linked user immutable). **NO DELETE endpoint** |
+| `/admin/candidates` | `candidates:manage` (SUPER_ADMIN, ADMIN) | list (search + availability/gender filters + pagination, newest first), get by id, create (links an EXISTING user; one profile per user), PATCH (partial; salary pair min ≤ max validated). **NO DELETE endpoint** |
+| `/admin/candidates/{candidateId}/skills` | `candidates:manage` | list a candidate's skill assignments, POST assign (skillId + optional proficiency BEGINNER/INTERMEDIATE/ADVANCED/EXPERT; unknown candidate/skill → 404; duplicate assignment → 409) |
+| `/admin/candidates/{candidateId}/skills/{skillId}` | `candidates:manage` | DELETE assignment (unknown pair → 404) |
+| `/admin/skills` | `employment:manage` | list (name search + status filter + pagination, name-ordered), get by id, create (duplicate name → 409), PATCH (partial), DELETE (see cascade note below) |
+| `/admin/job-categories` | `employment:manage` | list (name/slug search + status filter + pagination, displayOrder then name), get by id, create (duplicate name or slug → 409), PATCH (slug immutable), DELETE (jobs are detached, never deleted — existing FK ON DELETE SET NULL) |
+
+Server-enforced rules:
+
+- **No employer/candidate hard delete.** The existing V8 foreign keys
+  `fk_employers_user` and `fk_candidates_user` are `ON DELETE CASCADE` into
+  `users`; deleting a profile row would also delete the owning user identity
+  (and transitively `user_roles`, `refresh_tokens`, and other user-owned
+  data). The API therefore exposes create/read/update plus lifecycle fields
+  only — employer `status` (ACTIVE/SUSPENDED) and
+  `verificationStatus` (UNVERIFIED/PENDING/VERIFIED/REJECTED), candidate
+  `availability_status` (ACTIVELY_LOOKING/OPEN_TO_OFFERS/NOT_LOOKING).
+  There is no DELETED state in the schema and none was invented. If profile
+  removal is ever required it must be a separate, explicitly designed
+  identity/data-retention workflow.
+- Profiles always link an existing user (`userId` in create); users are
+  never created implicitly, and `userId` cannot be changed through PATCH.
+- Skill DELETE is intentionally exposed: the V8 FKs
+  `fk_candidate_skills_skill` and `fk_job_skills_skill` are
+  `ON DELETE CASCADE`, so deleting a skill also removes its candidate
+  assignments and job requirements — a documented cleanup semantic.
+- Job-category DELETE detaches jobs (`jobs.category_id` is
+  `ON DELETE SET NULL`); jobs are never deleted.
+- `employment:manage` and `candidates:manage` were added in V14 because the
+  V2 seed covers neither employment profiles nor skills, and reusing
+  `users:manage` or `jobs:manage` would blur distinct administrative
+  domains. Granted only to SUPER_ADMIN and ADMIN; MODERATOR, EDITOR,
+  CANDIDATE, EMPLOYER and CLIENT deliberately receive neither.
+
 ## Frontend Setup & Run
 
 ```powershell

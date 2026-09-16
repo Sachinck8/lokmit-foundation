@@ -42,6 +42,14 @@ public final class ApiPaths {
     public static final String ADMIN_PROJECT_CATEGORIES = API_V1 + "/admin/project-categories";
     public static final String ADMIN_PROJECTS = API_V1 + "/admin/projects";
 
+    /** Admin employment foundation APIs (A7.1) — employers, candidates, skills, job categories. */
+    public static final String ADMIN_EMPLOYERS = API_V1 + "/admin/employers";
+    public static final String ADMIN_CANDIDATES = API_V1 + "/admin/candidates";
+    public static final String ADMIN_CANDIDATE_SKILLS = ADMIN_CANDIDATES + "/{candidateId}/skills";
+    public static final String ADMIN_CANDIDATE_SKILL = ADMIN_CANDIDATE_SKILLS + "/{skillId}";
+    public static final String ADMIN_SKILLS = API_V1 + "/admin/skills";
+    public static final String ADMIN_JOB_CATEGORIES = API_V1 + "/admin/job-categories";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

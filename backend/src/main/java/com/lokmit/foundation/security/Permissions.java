@@ -88,6 +88,14 @@ public final class Permissions {
     /** Manage project categories, projects and project image metadata. */
     public static final String PROJECTS_MANAGE = "projects:manage";
 
+    // Seeded in V14__employment_permissions.sql (A7.1).
+
+    /** Manage employers, skills and job categories (admin-side). */
+    public static final String EMPLOYMENT_MANAGE = "employment:manage";
+
+    /** Manage candidate profiles and candidate↔skill assignments (admin-side). */
+    public static final String CANDIDATES_MANAGE = "candidates:manage";
+
     private Permissions() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

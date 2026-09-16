@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class FlywayMigrationIntegrationTest {
 
     private static final String IT_SCHEMA = "lokmit_it";
-    private static final int EXPECTED_MIGRATIONS = 13;
+    private static final int EXPECTED_MIGRATIONS = 14;
     private static final int EXPECTED_TABLES = 42; // 41 domain tables + flyway_schema_history
 
     private static final String URL = resolve("DB_URL",
@@ -75,6 +75,8 @@ class FlywayMigrationIntegrationTest {
             "employers", "candidates", "resumes", "skills", "candidate_skills",
             "candidate_educations", "candidate_experiences", "job_categories",
             "jobs", "job_skills", "job_applications",
+            // V14 employment permissions (no new tables)
+
             // managed by Flyway
             "flyway_schema_history");
 

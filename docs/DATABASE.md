@@ -22,8 +22,10 @@ authentication phase onward) must match it.
 | `V11__dashboard_permission.sql` | Admin dashboard access | adds `dashboard:view` permission granted to SUPER_ADMIN and ADMIN (A2) |
 | `V12__services_permission.sql` | Admin services & expertise management | adds `services:manage` permission granted to SUPER_ADMIN and ADMIN (A5) |
 | `V13__projects_permission.sql` | Admin projects management | adds `projects:manage` permission granted to SUPER_ADMIN and ADMIN (A6) |
+| `V14__employment_permissions.sql` | Admin employment foundation | adds `employment:manage` and `candidates:manage` permissions granted to SUPER_ADMIN and ADMIN (A7.1) |
 | — | Admin user management | no new migration: the existing `users:manage` permission (V2, SUPER_ADMIN) guards `/api/v1/admin/users`; role/status data comes from the existing identity tables (A3) |
 | — | Admin CMS management | no new migration: existing V2 permissions guard `/api/v1/admin/cms` (`settings:manage` → site settings; `content:manage` → website content/SEO reads & edits; `content:publish` → content lifecycle & deletion); data comes from the V3 `site_settings`, `website_content`, `seo_metadata` tables (A4) |
+| — | Admin employment foundation | V14 adds `employment:manage` and `candidates:manage` (both granted to SUPER_ADMIN and ADMIN) guarding `/api/v1/admin/employers|candidates|skills|job-categories` and the nested candidate-skill assignments; no new tables — data comes from the V8 employment tables (A7.1) |
 
 41 domain tables + `flyway_schema_history` (managed by Flyway itself).
 
@@ -79,7 +81,7 @@ of this schema.
 `FlywayMigrationIntegrationTest` (test profile, skipped automatically when
 PostgreSQL is unreachable) applies the full migration chain to a throwaway
 schema `lokmit_it`, asserts all 41 tables exist, asserts history rows
-`V1..V13` succeeded, and verifies a second migrate run is a no-op.
+`V1..V14` succeeded, and verifies a second migrate run is a no-op.
 
 ## Authentication Schema (Phase 4)
 
@@ -149,4 +151,17 @@ Join tables (`user_roles`, `role_permissions`, `blog_post_categories`,
 `contact_messages`, `site_settings`, `website_content`, `seo_metadata`,
 `team_members`, `certifications`, `partners`, `downloads`, `faqs`,
 `testimonials` are standalone tables with no foreign keys.
+
+### V8 employment delete semantics (admin API A7.1)
+
+- `fk_employers_user` / `fk_candidates_user` are `ON DELETE CASCADE` into
+  `users` — deleting an employer/candidate profile would delete the owning
+  user identity (and transitively `user_roles`, `refresh_tokens`, etc.).
+  The admin API therefore does NOT expose hard-delete endpoints for these
+  profiles; lifecycle is managed via status fields instead.
+- `fk_candidate_skills_skill` / `fk_job_skills_skill` are
+  `ON DELETE CASCADE` — deleting a skill removes its candidate assignments
+  and job requirements (intentional, documented cleanup).
+- `fk_jobs_category` is `ON DELETE SET NULL` — deleting a job category
+  detaches jobs, never deletes them.
 
