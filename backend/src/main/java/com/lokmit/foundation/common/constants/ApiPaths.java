@@ -55,6 +55,9 @@ public final class ApiPaths {
     public static final String ADMIN_JOB_SKILLS = ADMIN_JOBS + "/{jobId}/skills";
     public static final String ADMIN_JOB_SKILL = ADMIN_JOB_SKILLS + "/{skillId}";
 
+    /** Admin application review APIs (A7.3) — job application lifecycle. */
+    public static final String ADMIN_APPLICATIONS = API_V1 + "/admin/applications";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

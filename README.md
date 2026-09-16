@@ -498,8 +498,46 @@ Server-enforced rules:
 - Employer/category data in job responses is embedded as safe summaries
   (company name / verification state, category name / slug) — no linked-user
   identity or security material is ever serialized.
-- **A7.3 application management is NOT implemented yet** — job_applications
-  has no API in this phase.
+- Employer/category data in job responses is embedded as safe summaries
+  (company name / verification state, category name / slug) — no linked-user
+  identity or security material is ever serialized.
+- **A7.4+ (application history, interviews, notifications) are NOT
+  implemented** — those capabilities have no API in this phase.
+
+### Admin Application Management (A7.3)
+
+Endpoints under `/api/v1/admin/applications`, mapped to the existing V8
+`job_applications` table — no new tables, no new migration, no new
+permission (reuses `employment:manage`, SUPER_ADMIN + ADMIN):
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/applications` | `employment:manage` | list (jobId/candidateId/employerId/status filters + cover/employer-note search + pagination, newest first; employerId resolved via a single grouped COUNT query on the join path), get by id, PATCH review notes (`employerNote`, optional `resumeId` reference; job/candidate identity immutable; status NOT patchable) |
+| `/admin/applications/{id}/start-review` | `employment:manage` | SUBMITTED → UNDER_REVIEW; other states → 400 |
+| `/admin/applications/{id}/shortlist` | `employment:manage` | UNDER_REVIEW → SHORTLISTED; other states → 400 |
+| `/admin/applications/{id}/decide` | `employment:manage` | terminal HIRED/REJECTED decision (`{"decision":"HIRED"\|"REJECTED","note":optional}`); stamps `decided_at`; already-decided → 409; WITHDRAWN → 400 |
+| `/admin/applications/{id}/withdraw` | `employment:manage` | any pre-decision state → WITHDRAWN; already-decided or already-withdrawn → 409 |
+
+Server-enforced rules:
+
+- The V8 status model is used exactly: `chk_job_applications_status`
+  (SUBMITTED/UNDER_REVIEW/SHORTLISTED/HIRED/REJECTED/WITHDRAWN). Status and
+  `decided_at` are controllable ONLY through the lifecycle endpoints — PATCH
+  cannot change them, so the review lifecycle cannot be bypassed.
+- There is deliberately NO delete endpoint: applications are the project's
+  hiring audit trail; WITHDRAWN/REJECTED lifecycle is the supported
+  retirement path. The V8 FKs give applications no cascade into candidates,
+  users, employers or jobs.
+- Job/candidate identity is immutable (the `uq_job_applications_job_candidate`
+  pair IS the application's identity); no reassignment operation exists.
+- Related data is embedded as safe summaries — the candidate exposes only
+  phone/location/availability, the employer only company name, the job only
+  posting identity. No linked-user email, password hash, lockout or token
+  material is ever serialized.
+- The optional `resumeId` reference maps to the existing
+  `fk_job_applications_resume` (ON DELETE SET NULL); resumes have no JPA
+  entity/management API yet (a later phase) and A7.3 never creates resumes.
+- **A7.4 — Application History + Interviews — is NOT implemented.**
 
 ## Frontend Setup & Run
 

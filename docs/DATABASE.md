@@ -27,6 +27,7 @@ authentication phase onward) must match it.
 | — | Admin CMS management | no new migration: existing V2 permissions guard `/api/v1/admin/cms` (`settings:manage` → site settings; `content:manage` → website content/SEO reads & edits; `content:publish` → content lifecycle & deletion); data comes from the V3 `site_settings`, `website_content`, `seo_metadata` tables (A4) |
 | — | Admin employment foundation | V14 adds `employment:manage` and `candidates:manage` (both granted to SUPER_ADMIN and ADMIN) guarding `/api/v1/admin/employers|candidates|skills|job-categories` and the nested candidate-skill assignments; no new tables — data comes from the V8 employment tables (A7.1) |
 | — | Admin job management | no new migration: the existing `employment:manage` permission (V14, SUPER_ADMIN and ADMIN) guards `/api/v1/admin/jobs` CRUD + publish/close/archive lifecycle and the nested job-skill requirements; no new tables — data comes from the V8 `jobs` and `job_skills` tables (A7.2) |
+| — | Admin application management | no new migration: the existing `employment:manage` permission (V14, SUPER_ADMIN and ADMIN) guards `/api/v1/admin/applications` review lifecycle (start-review/shortlist/decide/withdraw) + note/resume-reference patch; no new tables — data comes from the V8 `job_applications` table (A7.3) |
 
 41 domain tables + `flyway_schema_history` (managed by Flyway itself).
 
@@ -172,6 +173,11 @@ Join tables (`user_roles`, `role_permissions`, `blog_post_categories`,
 - `fk_job_applications_job` has NO ON DELETE action — the database refuses
   to delete a job that already has applications. Job deletion is therefore
   effectively blocked once applications exist; the archive lifecycle is the
-  supported retirement path. Application management itself is A7.3 (not
-  implemented yet).
+  supported retirement path. Application management itself is A7.3.
+- `fk_job_applications_resume` is `ON DELETE SET NULL` — removing a resume
+  detaches the application's resume reference, never deletes the
+  application.
+- A7.3 exposes NO application delete endpoint: applications are the hiring
+  audit trail, and WITHDRAWN/REJECTED lifecycle is the supported retirement
+  path. Application history and interviews remain unimplemented (A7.4).
 
