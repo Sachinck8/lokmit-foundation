@@ -6,6 +6,7 @@ import com.lokmit.foundation.common.exception.NotFoundException;
 import com.lokmit.foundation.employment.application.dto.ApplicationResponse;
 import com.lokmit.foundation.employment.application.dto.ApplicationReviewRequest;
 import com.lokmit.foundation.employment.application.entity.JobApplication;
+import com.lokmit.foundation.employment.application.history.service.ApplicationStatusHistoryService;
 import com.lokmit.foundation.employment.application.repository.JobApplicationRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,15 +36,22 @@ import java.util.Locale;
  *       trail; lifecycle (WITHDRAWN/REJECTED) is the supported retirement
  *       path, and fk_job_applications has no cascade into candidates,
  *       users, employers or jobs.</li>
+ *   <li>Every successful lifecycle transition also writes one row to
+ *       application_status_history (A7.4) INSIDE the same transaction — a
+ *       failed history insert rolls the status change back, so a status
+ *       change without history can never be observed.</li>
  * </ul>
  */
 @Service
 public class ApplicationService {
 
     private final JobApplicationRepository applicationRepository;
+    private final ApplicationStatusHistoryService historyService;
 
-    public ApplicationService(JobApplicationRepository applicationRepository) {
+    public ApplicationService(JobApplicationRepository applicationRepository,
+                              ApplicationStatusHistoryService historyService) {
         this.applicationRepository = applicationRepository;
+        this.historyService = historyService;
     }
 
     // ------------------------------------------------------------------
@@ -139,7 +147,10 @@ public class ApplicationService {
         }
         app.setStatus(JobApplication.STATUS_UNDER_REVIEW);
         app.setUpdatedAt(OffsetDateTime.now());
-        return toResponse(applicationRepository.save(app));
+        JobApplication saved = applicationRepository.save(app);
+        historyService.recordTransition(app.getId(),
+                JobApplication.STATUS_SUBMITTED, JobApplication.STATUS_UNDER_REVIEW, null);
+        return toResponse(saved);
     }
 
     @Transactional
@@ -152,7 +163,10 @@ public class ApplicationService {
         }
         app.setStatus(JobApplication.STATUS_SHORTLISTED);
         app.setUpdatedAt(OffsetDateTime.now());
-        return toResponse(applicationRepository.save(app));
+        JobApplication saved = applicationRepository.save(app);
+        historyService.recordTransition(app.getId(),
+                JobApplication.STATUS_UNDER_REVIEW, JobApplication.STATUS_SHORTLISTED, null);
+        return toResponse(saved);
     }
 
     /**
@@ -180,7 +194,9 @@ public class ApplicationService {
         }
         app.setDecidedAt(OffsetDateTime.now());
         app.setUpdatedAt(OffsetDateTime.now());
-        return toResponse(applicationRepository.save(app));
+        JobApplication saved = applicationRepository.save(app);
+        historyService.recordTransition(app.getId(), current, saved.getStatus(), decisionNote);
+        return toResponse(saved);
     }
 
     /**
@@ -201,7 +217,10 @@ public class ApplicationService {
         }
         app.setStatus(JobApplication.STATUS_WITHDRAWN);
         app.setUpdatedAt(OffsetDateTime.now());
-        return toResponse(applicationRepository.save(app));
+        JobApplication saved = applicationRepository.save(app);
+        historyService.recordTransition(app.getId(), current,
+                JobApplication.STATUS_WITHDRAWN, null);
+        return toResponse(saved);
     }
 
     // ------------------------------------------------------------------

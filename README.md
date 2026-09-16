@@ -537,9 +537,53 @@ Server-enforced rules:
 - The optional `resumeId` reference maps to the existing
   `fk_job_applications_resume` (ON DELETE SET NULL); resumes have no JPA
   entity/management API yet (a later phase) and A7.3 never creates resumes.
-- **A7.4 — Application History + Interviews — is NOT implemented.**
 
-## Frontend Setup & Run
+### Admin Application History + Interviews (A7.4)
+
+New V15 tables (`application_status_history`, `interviews`) behind the
+existing `employment:manage` permission (SUPER_ADMIN + ADMIN; no new
+permission, no A7.5/A7.6 features):
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/applications/{id}/history` | `employment:manage` | list status history — newest transition first, DB-side pagination (default 20, cap 100); unknown application → 404 |
+| `/admin/applications/{id}/interviews` | `employment:manage` | list (newest `scheduled_at` first) + create (scheduledAt/mode/location/notes) |
+| `/admin/applications/{id}/interviews/{interviewId}` | `employment:manage` | get, PATCH (`scheduledAt`/`mode`/`location`/`status`/`notes` partial), DELETE (CANCELLED only → 409 otherwise) |
+
+Server-enforced rules:
+
+- **Automatic history:** every A7.3 lifecycle transition (start-review,
+  shortlist, decide, withdraw) writes one history row inside the SAME
+  transaction as the status change — a failed history insert rolls the
+  transition back, so a status change without history can never be observed.
+  `previous_status` is NULL only for a hypothetical initial observation; no
+  backfilled records exist for applications created before A7.4.
+- **Actor integrity:** `changed_by` is always the authenticated admin's
+  database user id (via `SecurityUtils`); it is never accepted from request
+  body/query/path and is nullable by design so audit survival is not coupled
+  to user retention.
+- **Interview statuses** (`chk_interviews_status`): SCHEDULED →
+  COMPLETED/CANCELLED/NO_SHOW; COMPLETED, CANCELLED and NO_SHOW are final —
+  changing out of them → 409. New interviews always start SCHEDULED; status
+  is not client-writable at creation.
+- **Interview modes** (`chk_interviews_mode`): ONSITE / REMOTE / PHONE
+  (reuses the V8 work-mode vocabulary).
+- **Terminal applications** (HIRED/REJECTED/WITHDRAWN) reject new interviews
+  with 400; existing interviews stay readable. Creating an interview never
+  changes application status.
+- **Cross-application protection:** a mismatched (applicationId,
+  interviewId) pair is a plain 404 — no existence leak about another
+  application's interviews.
+- **Delete rule:** only CANCELLED interviews may be deleted (409 for
+  SCHEDULED/COMPLETED/NO_SHOW); deletion never touches the application.
+- **Time handling:** `scheduled_at` is TIMESTAMPTZ mapped to
+  `OffsetDateTime`; malformed date-times fail with 400 and offsets are
+  preserved (the API serializes instants normalized to UTC, e.g.
+  `10:30+05:45` → `04:45Z`).
+- History/interview responses expose only schema-backed scheduling/audit
+  data — never User entities, passwords, tokens or lockout fields.
+- **A7.5 — Notifications + Audit/Outbox — is NOT implemented.**
+- **A7.6 — Resume/File Storage — is NOT implemented.**
 
 ## Frontend Setup & Run
 

@@ -58,6 +58,14 @@ public final class ApiPaths {
     /** Admin application review APIs (A7.3) — job application lifecycle. */
     public static final String ADMIN_APPLICATIONS = API_V1 + "/admin/applications";
 
+    /** Admin application history + interview APIs (A7.4). */
+    public static final String ADMIN_APPLICATION_HISTORY =
+            ADMIN_APPLICATIONS + "/{id}/history";
+    public static final String ADMIN_APPLICATION_INTERVIEWS =
+            ADMIN_APPLICATIONS + "/{id}/interviews";
+    public static final String ADMIN_APPLICATION_INTERVIEW =
+            ADMIN_APPLICATION_INTERVIEWS + "/{interviewId}";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

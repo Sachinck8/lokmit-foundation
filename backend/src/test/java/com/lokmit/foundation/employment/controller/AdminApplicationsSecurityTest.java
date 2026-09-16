@@ -4,6 +4,8 @@ import com.lokmit.foundation.common.constants.ApiPaths;
 import com.lokmit.foundation.employment.application.controller.ApplicationController;
 import com.lokmit.foundation.employment.application.dto.ApplicationResponse;
 import com.lokmit.foundation.employment.application.entity.JobApplication;
+import com.lokmit.foundation.employment.application.history.repository.ApplicationStatusHistoryRepository;
+import com.lokmit.foundation.employment.application.history.service.ApplicationStatusHistoryService;
 import com.lokmit.foundation.employment.application.repository.JobApplicationRepository;
 import com.lokmit.foundation.employment.application.service.ApplicationService;
 import com.lokmit.foundation.employment.candidate.entity.Candidate;
@@ -68,7 +70,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = ApplicationController.class)
 @Import({SecurityConfig.class, CorsConfig.class, JwtKeyConfig.class,
         JwtTokenProvider.class, CustomUserDetailsService.class, SecurityUtils.class,
-        ApplicationService.class})
+        ApplicationService.class, ApplicationStatusHistoryService.class})
 @AutoConfigureMockMvc
 class AdminApplicationsSecurityTest {
 
@@ -77,6 +79,9 @@ class AdminApplicationsSecurityTest {
 
     @MockitoBean
     private JobApplicationRepository applicationRepository;
+
+    @MockitoBean
+    private ApplicationStatusHistoryRepository historyRepository;
 
     @MockitoBean
     private JobRepository jobRepository;
@@ -100,7 +105,8 @@ class AdminApplicationsSecurityTest {
 
     @BeforeEach
     void resetStubs() {
-        reset(applicationRepository, jobRepository, candidateRepository, userRepository);
+        reset(applicationRepository, historyRepository, jobRepository,
+                candidateRepository, userRepository);
     }
 
     // ------------------------------------------------------------------

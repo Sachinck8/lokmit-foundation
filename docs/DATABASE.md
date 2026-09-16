@@ -23,13 +23,15 @@ authentication phase onward) must match it.
 | `V12__services_permission.sql` | Admin services & expertise management | adds `services:manage` permission granted to SUPER_ADMIN and ADMIN (A5) |
 | `V13__projects_permission.sql` | Admin projects management | adds `projects:manage` permission granted to SUPER_ADMIN and ADMIN (A6) |
 | `V14__employment_permissions.sql` | Admin employment foundation | adds `employment:manage` and `candidates:manage` permissions granted to SUPER_ADMIN and ADMIN (A7.1) |
+| `V15__application_history_interviews.sql` | Application history + interviews | `application_status_history`, `interviews` (A7.4) |
 | — | Admin user management | no new migration: the existing `users:manage` permission (V2, SUPER_ADMIN) guards `/api/v1/admin/users`; role/status data comes from the existing identity tables (A3) |
 | — | Admin CMS management | no new migration: existing V2 permissions guard `/api/v1/admin/cms` (`settings:manage` → site settings; `content:manage` → website content/SEO reads & edits; `content:publish` → content lifecycle & deletion); data comes from the V3 `site_settings`, `website_content`, `seo_metadata` tables (A4) |
 | — | Admin employment foundation | V14 adds `employment:manage` and `candidates:manage` (both granted to SUPER_ADMIN and ADMIN) guarding `/api/v1/admin/employers|candidates|skills|job-categories` and the nested candidate-skill assignments; no new tables — data comes from the V8 employment tables (A7.1) |
 | — | Admin job management | no new migration: the existing `employment:manage` permission (V14, SUPER_ADMIN and ADMIN) guards `/api/v1/admin/jobs` CRUD + publish/close/archive lifecycle and the nested job-skill requirements; no new tables — data comes from the V8 `jobs` and `job_skills` tables (A7.2) |
 | — | Admin application management | no new migration: the existing `employment:manage` permission (V14, SUPER_ADMIN and ADMIN) guards `/api/v1/admin/applications` review lifecycle (start-review/shortlist/decide/withdraw) + note/resume-reference patch; no new tables — data comes from the V8 `job_applications` table (A7.3) |
+| — | Admin application history + interviews | V15 adds `application_status_history` (automatic audit of lifecycle transitions, written in the same transaction as the status change) and `interviews` (scheduling records per application); the existing `employment:manage` permission (V14) guards the read/write endpoints (A7.4) |
 
-41 domain tables + `flyway_schema_history` (managed by Flyway itself).
+43 domain tables + `flyway_schema_history` (managed by Flyway itself).
 
 Payments/donations tables are **deferred** (Phase 0 decision) and are not part
 of this schema.
@@ -82,8 +84,9 @@ of this schema.
 
 `FlywayMigrationIntegrationTest` (test profile, skipped automatically when
 PostgreSQL is unreachable) applies the full migration chain to a throwaway
-schema `lokmit_it`, asserts all 41 tables exist, asserts history rows
-`V1..V14` succeeded, and verifies a second migrate run is a no-op.
+schema `lokmit_it`, asserts all 43 domain tables exist (44 including
+`flyway_schema_history`), asserts history rows `V1..V15` succeeded, and
+verifies a second migrate run is a no-op.
 
 ## Authentication Schema (Phase 4)
 
@@ -129,6 +132,9 @@ erDiagram
     JOBS ||--o{ JOB_SKILLS : "requires"
     JOBS ||--o{ JOB_APPLICATIONS : "receives"
     RESUMES |o--o| JOB_APPLICATIONS : "attached to (snapshot)"
+    JOB_APPLICATIONS ||--o{ APPLICATION_STATUS_HISTORY : "records"
+    JOB_APPLICATIONS ||--o{ INTERVIEWS : "schedules"
+    USERS |o--o{ APPLICATION_STATUS_HISTORY : "changed by"
 
     SERVICE_CATEGORIES ||--o{ SERVICES : "categorizes"
 
@@ -179,5 +185,30 @@ Join tables (`user_roles`, `role_permissions`, `blog_post_categories`,
   application.
 - A7.3 exposes NO application delete endpoint: applications are the hiring
   audit trail, and WITHDRAWN/REJECTED lifecycle is the supported retirement
-  path. Application history and interviews remain unimplemented (A7.4).
+  path.
+
+### V15 application history + interviews delete semantics (admin API A7.4)
+
+- `fk_application_status_history_application` is `ON DELETE CASCADE` —
+  history rows are owned by their application and are meaningless without
+  it (same ownership-cleanup semantics as V8's `fk_job_skills_job`). A7.3
+  exposes no application-delete endpoint, so in practice rows only disappear
+  alongside their (FK-blocked) application.
+- `fk_interviews_application` is `ON DELETE CASCADE` for the same reason —
+  deleting an interview can never delete the application (the ownership
+  direction is application → interviews).
+- `fk_application_status_history_actor` (`changed_by` → `users.id`) has
+  **NO ON DELETE action** and is NULLable: audit survival is never coupled to
+  user retention, and the database refuses to delete a user that authored
+  history rows. The actor id is written by the backend from the
+  authenticated principal (`SecurityUtils`); it is never client-supplied.
+- Status integrity: `chk_application_status_history_new`/
+  `chk_application_status_history_previous` restrict values to the six V8
+  application statuses; `chk_application_status_history_transition` requires
+  `previous_status IS DISTINCT FROM new_status`. Interview mode/status are
+  constrained by `chk_interviews_mode` (ONSITE/REMOTE/PHONE) and
+  `chk_interviews_status` (SCHEDULED/COMPLETED/CANCELLED/NO_SHOW).
+- Indexes: `idx_application_status_history_application (application_id,
+  changed_at DESC)` and `idx_interviews_application (application_id,
+  scheduled_at)` back the paginated list endpoints.
 
