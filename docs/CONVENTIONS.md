@@ -115,7 +115,8 @@ and take effect from Phase 1 onward.
   `OUTBOX_RELAY_ENABLED`, `OUTBOX_RELAY_POLLING_INTERVAL_SECONDS`,
   `OUTBOX_RELAY_BATCH_SIZE`, `OUTBOX_RELAY_RETRY_BACKOFF_SECONDS`,
   `OUTBOX_RELAY_MAX_ATTEMPTS`,
-  later `MAIL_*`, `STORAGE_*`.
+  `STORAGE_TYPE` (A7.6.1, default `db` — resume bytes live in PostgreSQL;
+  later `MAIL_*`, plus remaining `STORAGE_*` keys as upload phases land).
 - `application.yml` reads them with safe, non-secret defaults:
   `${DB_USERNAME:lokmit_app}`, `${DB_PASSWORD:}` etc.
 - `.env.example` files contain placeholders only and are committed.

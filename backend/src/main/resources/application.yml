@@ -100,6 +100,12 @@ app:
         batch-size: ${OUTBOX_RELAY_BATCH_SIZE:50}
         retry-backoff-seconds: ${OUTBOX_RELAY_RETRY_BACKOFF_SECONDS:60}
         max-attempts: ${OUTBOX_RELAY_MAX_ATTEMPTS:5}
+    # Resume file storage (A7.6). Database-blob decision: bytes live in
+    # PostgreSQL (resumes_file_blobs, V17) — no filesystem paths, no
+    # object-storage SDKs. 'db' = DatabaseFileStorage. Upload/download
+    # endpoints, validation policy and limits arrive in later A7.6 phases.
+    storage:
+      type: ${STORAGE_TYPE:db}
 
 logging:
   level:

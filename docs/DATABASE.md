@@ -25,6 +25,7 @@ authentication phase onward) must match it.
 | `V14__employment_permissions.sql` | Admin employment foundation | adds `employment:manage` and `candidates:manage` permissions granted to SUPER_ADMIN and ADMIN (A7.1) |
 | `V15__application_history_interviews.sql` | Application history + interviews | `application_status_history`, `interviews` (A7.4) |
 | `V16__notifications_audit_outbox.sql` | Notifications + audit + outbox | `notifications`, `audit_logs`, `outbox_events` + `notifications:manage` permission (A7.5) |
+| `V17__resume_file_blobs.sql` | Resume file storage foundation | `resumes_file_blobs` (BYTEA companion, 1:1 with `resumes`) + `resumes.checksum_sha256` / `resumes.storage_key` (A7.6.1) |
 | — | Admin user management | no new migration: the existing `users:manage` permission (V2, SUPER_ADMIN) guards `/api/v1/admin/users`; role/status data comes from the existing identity tables (A3) |
 | — | Admin CMS management | no new migration: existing V2 permissions guard `/api/v1/admin/cms` (`settings:manage` → site settings; `content:manage` → website content/SEO reads & edits; `content:publish` → content lifecycle & deletion); data comes from the V3 `site_settings`, `website_content`, `seo_metadata` tables (A4) |
 | — | Admin employment foundation | V14 adds `employment:manage` and `candidates:manage` (both granted to SUPER_ADMIN and ADMIN) guarding `/api/v1/admin/employers|candidates|skills|job-categories` and the nested candidate-skill assignments; no new tables — data comes from the V8 employment tables (A7.1) |
@@ -32,8 +33,9 @@ authentication phase onward) must match it.
 | — | Admin application management | no new migration: the existing `employment:manage` permission (V14, SUPER_ADMIN and ADMIN) guards `/api/v1/admin/applications` review lifecycle (start-review/shortlist/decide/withdraw) + note/resume-reference patch; no new tables — data comes from the V8 `job_applications` table (A7.3) |
 | — | Admin application history + interviews | V15 adds `application_status_history` (automatic audit of lifecycle transitions, written in the same transaction as the status change) and `interviews` (scheduling records per application); the existing `employment:manage` permission (V14) guards the read/write endpoints (A7.4) |
 | — | Admin notifications + audit + outbox | V16 adds `notifications` (personal in-app notices, recipient-scoped, `notifications:manage` granted to SUPER_ADMIN + ADMIN), `audit_logs` (append-only administrative trail written by backend services, reads SUPER_ADMIN-only via `users:manage`) and `outbox_events` (transactional outbox relayed into in-app notifications; no public API) (A7.5) |
+| — | Resume & file storage foundation | V17 adds `resumes_file_blobs` (PostgreSQL BYTEA companion table, 1:1 with `resumes`, FK CASCADE) and two `resumes` columns (`checksum_sha256`, `storage_key`); no new tables beyond that, no new permissions — the upload/download API, validation policy and candidate-facing authorization arrive in later A7.6 phases (A7.6.1) |
 
-46 domain tables + `flyway_schema_history` (managed by Flyway itself).
+47 domain tables + `flyway_schema_history` (managed by Flyway itself).
 
 Payments/donations tables are **deferred** (Phase 0 decision) and are not part
 of this schema.
@@ -274,4 +276,45 @@ The claim query locks rows with `PESSIMISTIC_WRITE` plus the
 `LockOptions.SKIP_LOCKED`), which PostgreSQL executes as a literal
 `SELECT ... FOR UPDATE SKIP LOCKED` — concurrent relay instances claim
 disjoint rows and never block each other.
+
+## A7.6.1 — Resume File Storage Foundation (V17)
+
+**Storage decision (locked):** resume bytes are stored in PostgreSQL
+(`BYTEA`) — no filesystem paths, no object-storage SDKs, no external
+providers. The database is the single source of truth: metadata and bytes
+commit in the same transaction, deletion cascades are structural, and
+backups are just database backups.
+
+### resumes_file_blobs
+
+1:1 companion table keeping BYTEA payloads OUT of ordinary resume
+metadata queries (the `Resume` entity has no association to it — blob
+access goes only through `ResumeFileBlobRepository`).
+
+- Columns: `resume_id` (PRIMARY KEY, shared with `resumes.id`),
+  `content` (`BYTEA NOT NULL`).
+- Constraints: `fk_resumes_file_blobs_resume → resumes(id) ON DELETE
+  CASCADE` (Candidate → Resume → Blob is a complete cascade chain),
+  `chk_resumes_file_blobs_size`: `octet_length(content) > 0 AND
+  octet_length(content) <= 5242880` (non-empty, ≤ 5 MB — the DB-level
+  backstop behind the application limits added in A7.6.2).
+
+### resumes — added columns
+
+- `checksum_sha256 VARCHAR(64) NULL` — hex SHA-256 of the stored bytes;
+  populated by A7.6.2 upload validation, never fabricated.
+- `storage_key VARCHAR(500) NULL` — provider-neutral storage identity
+  (`resumes/{resumeId}/{opaque-uuid}`); metadata only, NOT a public URL;
+  original filenames are never used as storage paths.
+
+### Legacy note — resumes.file_url
+
+The V8 `file_url VARCHAR(500) NOT NULL` column is LEGACY metadata kept
+only for schema compatibility (V8 must not be rewritten). Database-backed
+storage does NOT use it as an access mechanism; it is not exposed through
+new API DTOs.
+
+No new permissions in this phase: A7.6.1 creates no endpoints;
+candidate-facing authorization (`resumes:manage`, PROPOSED) belongs to
+A7.6.3.
 

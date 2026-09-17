@@ -74,6 +74,11 @@ app:
       batch-size: ${OUTBOX_RELAY_BATCH_SIZE:50}
       retry-backoff-seconds: ${OUTBOX_RELAY_RETRY_BACKOFF_SECONDS:60}
       max-attempts: ${OUTBOX_RELAY_MAX_ATTEMPTS:5}
+  # Resume file storage (A7.6): PostgreSQL BYTEA (resumes_file_blobs, V17).
+  # 'db' = DatabaseFileStorage — bytes ride existing DB backups, cascade
+  # with candidate/resume deletion, and are never publicly addressable.
+  storage:
+    type: ${STORAGE_TYPE:db}
 
 # Logging: production keeps noise low; no secrets are logged by the app.
 logging:

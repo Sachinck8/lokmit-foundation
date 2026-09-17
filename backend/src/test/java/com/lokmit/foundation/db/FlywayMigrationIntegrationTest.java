@@ -45,8 +45,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class FlywayMigrationIntegrationTest {
 
     private static final String IT_SCHEMA = "lokmit_it";
-    private static final int EXPECTED_MIGRATIONS = 16;
-    private static final int EXPECTED_TABLES = 47; // 46 domain tables + flyway_schema_history
+    private static final int EXPECTED_MIGRATIONS = 17;
+    private static final int EXPECTED_TABLES = 48; // 47 domain tables + flyway_schema_history
 
     private static final String URL = resolve("DB_URL",
             "jdbc:postgresql://localhost:5432/lokmit_foundation");
@@ -79,6 +79,8 @@ class FlywayMigrationIntegrationTest {
             "application_status_history", "interviews",
             // V16 notifications + audit + outbox (A7.5)
             "notifications", "audit_logs", "outbox_events",
+            // V17 resume file storage foundation (A7.6.1)
+            "resumes_file_blobs",
             // V14 employment permissions (no new tables)
 
             // managed by Flyway
