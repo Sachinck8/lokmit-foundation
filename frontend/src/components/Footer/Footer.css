@@ -1,7 +1,10 @@
 .footer {
-  background: var(--color-primary-dark);
-  color: var(--color-surface);
-  padding: var(--section-spacing) 0 var(--spacing-6);
+  background:
+    radial-gradient(900px 360px at 90% 0%, rgba(26, 127, 70, 0.12), transparent 60%),
+    var(--blue-900);
+  color: #ffffff;
+  padding: var(--spacing-16) 0 var(--spacing-6);
+  border-top: 3px solid var(--green-700);
 }
 
 .footer__wrapper {
@@ -13,72 +16,83 @@
 .footer__grid {
   display: grid;
   gap: var(--spacing-10);
-  margin-bottom: var(--spacing-10);
+  margin-bottom: var(--spacing-12);
+  grid-template-columns: 1fr;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 700px) {
   .footer__grid {
-    grid-template-columns: 2fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1060px) {
   .footer__grid {
-    gap: var(--spacing-12);
+    grid-template-columns: 2.1fr 1fr 1fr 1.2fr 1fr;
+    gap: var(--spacing-8);
   }
 }
 
+/* --- Brand column --- */
+/* Primary footer brand: the official reverse logo contains the full
+   wordmark, so it is rendered prominently with no duplicate text block. */
 .footer__logo {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-3);
-  color: var(--color-surface);
   text-decoration: none;
   margin-bottom: var(--spacing-4);
 }
 
-.footer__logo-mark {
-  display: inline-flex;
-  color: var(--color-accent);
+.footer__logo-img {
+  height: 64px;
+  width: auto;
+  object-fit: contain;
 }
 
-.footer__logo-text {
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.04em;
-  font-size: clamp(1rem, 1.4vw, 1.15rem);
+.footer__descriptor {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.95rem;
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-2);
+  max-width: 320px;
 }
 
-.footer__tagline {
-  color: rgba(255, 255, 255, 0.75);
-  font-size: clamp(0.9rem, 1.2vw, 1rem);
+.footer__slogan {
+  color: var(--gold-500);
+  font-size: 0.88rem;
+  font-weight: var(--font-weight-semibold);
   margin-bottom: var(--spacing-5);
-  line-height: var(--line-height-relaxed);
 }
 
 .footer__address {
   font-style: normal;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: clamp(0.85rem, 1.1vw, 0.95rem);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.88rem;
   line-height: var(--line-height-relaxed);
-  margin-bottom: var(--spacing-2);
+}
+
+.footer__address p {
+  margin: 0 0 var(--spacing-2);
 }
 
 .footer__address a {
-  color: var(--color-accent);
+  color: var(--gold-500);
   text-decoration: none;
 }
 
 .footer__address a:hover {
   text-decoration: underline;
+  color: var(--gold-100);
 }
 
+/* --- Nav columns --- */
 .footer__nav-heading {
-  color: var(--color-surface);
-  font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+  color: #ffffff;
+  font-size: 0.85rem;
   margin-bottom: var(--spacing-4);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
 }
 
 .footer__nav-list {
@@ -87,47 +101,48 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-3);
+  gap: 10px;
 }
 
 .footer__nav-link {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.78);
   text-decoration: none;
-  font-size: clamp(0.88rem, 1.15vw, 0.95rem);
+  font-size: 0.9rem;
   transition: color var(--transition-fast);
 }
 
 .footer__nav-link:hover {
-  color: var(--color-accent);
+  color: var(--gold-500);
 }
 
+/* --- Bottom strip --- */
 .footer__bottom {
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
   padding-top: var(--spacing-5);
-}
-
-.footer__bottom-inner {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2);
-  align-items: flex-start;
 }
 
-@media (min-width: 640px) {
-  .footer__bottom-inner {
+@media (min-width: 900px) {
+  .footer__bottom {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    gap: var(--spacing-8);
   }
 }
 
 .footer__legal-status {
-  font-size: clamp(0.78rem, 1vw, 0.85rem);
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.62);
   line-height: var(--line-height-relaxed);
+  margin: 0;
 }
 
 .footer__copyright {
-  font-size: clamp(0.78rem, 1vw, 0.85rem);
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.62);
+  margin: 0;
+  white-space: nowrap;
 }

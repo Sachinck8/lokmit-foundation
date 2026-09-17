@@ -1,47 +1,64 @@
-.directors-message-page__message {
-  padding: var(--spacing-10) 0;
-  background: var(--color-bg-alt);
-  text-align: center;
+.dm__section {
+  padding-top: var(--spacing-12);
 }
 
-.directors-message-page__quote {
+.dm__panel {
+  position: relative;
+  max-width: 860px;
   margin: 0 auto;
-  max-width: 780px;
-  font-size: clamp(1.05rem, 1.6vw, 1.2rem);
-  color: var(--color-text);
-  line-height: var(--line-height-relaxed);
-  font-style: italic;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-10) var(--spacing-8) var(--spacing-8);
+  box-shadow: var(--shadow-sm);
 }
 
-.directors-message-page__signature {
-  margin-top: var(--spacing-6);
+.dm__quote-mark {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  color: var(--gold-500);
+  margin-bottom: var(--spacing-4);
+}
+
+.dm__quote {
+  margin: 0 0 var(--spacing-7);
+  font-size: clamp(1.1rem, 2.2vw, 1.4rem);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.dm__signature {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-1);
+  gap: 4px;
+  padding-top: var(--spacing-5);
+  border-top: 1px solid var(--color-border-light);
 }
 
-.directors-message-page__name {
+.dm__name {
   font-style: normal;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-primary-dark);
+  font-weight: var(--font-weight-bold);
+  font-size: 1.05rem;
+  color: var(--blue-800);
 }
 
-.directors-message-page__title {
-  color: var(--color-text-light);
-  font-size: 0.95rem;
+.dm__title {
+  font-style: normal;
+  font-size: 0.88rem;
+  color: var(--color-muted);
 }
 
-.directors-message-page__legal {
-  padding: var(--spacing-5) 0;
-  background: var(--color-surface);
+.dm__legal {
+  max-width: 860px;
+  margin: var(--spacing-6) auto 0;
 }
 
-.directors-message-page__actions {
-  padding: var(--spacing-8) 0;
-  background: var(--color-primary);
+.dm__actions {
   display: flex;
   gap: var(--spacing-4);
   justify-content: center;
   flex-wrap: wrap;
+  margin-top: var(--spacing-8);
 }

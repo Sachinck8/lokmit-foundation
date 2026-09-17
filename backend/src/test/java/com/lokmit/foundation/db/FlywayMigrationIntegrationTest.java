@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Integration test for the full Flyway migration chain (V1–V8).
+ * Integration test for the full Flyway migration chain (V1–V16).
  *
  * <p>Runs the migrations against a throwaway schema {@code lokmit_it} in the
  * configured development database, asserts that every expected table exists,
@@ -45,8 +45,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class FlywayMigrationIntegrationTest {
 
     private static final String IT_SCHEMA = "lokmit_it";
-    private static final int EXPECTED_MIGRATIONS = 8;
-    private static final int EXPECTED_TABLES = 42; // 41 domain tables + flyway_schema_history
+    private static final int EXPECTED_MIGRATIONS = 16;
+    private static final int EXPECTED_TABLES = 47; // 46 domain tables + flyway_schema_history
 
     private static final String URL = resolve("DB_URL",
             "jdbc:postgresql://localhost:5432/lokmit_foundation");
@@ -75,6 +75,12 @@ class FlywayMigrationIntegrationTest {
             "employers", "candidates", "resumes", "skills", "candidate_skills",
             "candidate_educations", "candidate_experiences", "job_categories",
             "jobs", "job_skills", "job_applications",
+            // V15 application history + interviews (A7.4)
+            "application_status_history", "interviews",
+            // V16 notifications + audit + outbox (A7.5)
+            "notifications", "audit_logs", "outbox_events",
+            // V14 employment permissions (no new tables)
+
             // managed by Flyway
             "flyway_schema_history");
 

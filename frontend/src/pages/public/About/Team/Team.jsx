@@ -1,7 +1,5 @@
 import PageHero from '../../../../components/PageHero/PageHero.jsx'
 import Container from '../../../../components/Container/Container.jsx'
-import TeamCard from '../../../../components/TeamCard/TeamCard.jsx'
-import TeamCardGrid from '../../../../components/TeamCardGrid/TeamCardGrid.jsx'
 import { teamContent } from '../../../../constants/aboutContent.js'
 import './Team.css'
 
@@ -11,23 +9,25 @@ export default function Team() {
       <PageHero
         title={teamContent.hero.title}
         subtitle={teamContent.hero.subtitle}
-        background="linear-gradient(135deg, #0d3d21 0%, #14532d 100%)"
       />
-      <Container>
-        <TeamCardGrid>
-          {teamContent.members.map(member => (
-            <TeamCard
-              key={member.name}
-              name={member.name}
-              role={member.role}
-              bio={member.bio}
-            />
-          ))}
-        </TeamCardGrid>
-        {teamContent.placeholderNote && (
-          <p className="team-page__note">{teamContent.placeholderNote}</p>
-        )}
-      </Container>
+
+      <section className="section team__section">
+        <Container>
+          <div className="team__grid">
+            {teamContent.members.map(member => (
+              <article key={member.name} className="team__card">
+                <div className="team__avatar" aria-hidden="true">
+                  <span>{member.name.split(' ').map(part => part[0]).slice(0, 2).join('')}</span>
+                </div>
+                <h2 className="team__name">{member.name}</h2>
+                <p className="team__role">{member.role}</p>
+                <p className="team__bio">{member.bio}</p>
+              </article>
+            ))}
+          </div>
+          <p className="team__note">{teamContent.placeholderNote}</p>
+        </Container>
+      </section>
     </div>
   )
 }

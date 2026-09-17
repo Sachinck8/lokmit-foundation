@@ -1,11 +1,17 @@
 .legal-marker {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   color: var(--color-text-light);
   line-height: var(--line-height-relaxed);
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--blue-50);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-sm);
 }
 
 .legal-marker--compact {
   font-size: 0.82rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+  border-left-color: var(--gold-500);
 }

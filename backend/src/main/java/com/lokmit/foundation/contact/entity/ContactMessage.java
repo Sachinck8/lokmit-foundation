@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.OffsetDateTime;
+import java.util.Set;
 
 /**
  * Maps to the existing 'contact_messages' table created in V7__communication_schema.sql.
@@ -29,6 +30,10 @@ public class ContactMessage {
     public static final String STATUS_READ = "READ";
     public static final String STATUS_REPLIED = "REPLIED";
     public static final String STATUS_ARCHIVED = "ARCHIVED";
+
+    /** All status values accepted by the admin update endpoint, matching the V7 CHECK constraint. */
+    public static final Set<String> ALLOWED_STATUSES =
+            Set.of(STATUS_NEW, STATUS_READ, STATUS_REPLIED, STATUS_ARCHIVED);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

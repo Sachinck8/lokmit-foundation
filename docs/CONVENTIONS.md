@@ -104,6 +104,17 @@ and take effect from Phase 1 onward.
 - Express config via variables: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`,
   `SERVER_PORT`, `JWT_SECRET`, `JWT_ACCESS_TOKEN_EXPIRATION`,
   `JWT_REFRESH_TOKEN_EXPIRATION`, `BOOTSTRAP_ADMIN_PASSWORD`,
+  `APP_CORS_ALLOWED_ORIGINS`, `APP_HSTS_ENABLED`,
+  `APP_HSTS_MAX_AGE_SECONDS`, `APP_HSTS_INCLUDE_SUBDOMAINS`,
+  `LOGIN_MAX_FAILED_ATTEMPTS`,
+  `LOGIN_LOCKOUT_DURATION_MINUTES`, `REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES`,
+  `RATE_LIMIT_LOGIN_ENABLED`, `RATE_LIMIT_LOGIN_CAPACITY`,
+  `RATE_LIMIT_LOGIN_WINDOW_SECONDS`, `RATE_LIMIT_CONTACT_ENABLED`,
+  `RATE_LIMIT_CONTACT_CAPACITY`, `RATE_LIMIT_CONTACT_WINDOW_SECONDS`,
+  `RATE_LIMIT_MAX_TRACKED_KEYS`,
+  `OUTBOX_RELAY_ENABLED`, `OUTBOX_RELAY_POLLING_INTERVAL_SECONDS`,
+  `OUTBOX_RELAY_BATCH_SIZE`, `OUTBOX_RELAY_RETRY_BACKOFF_SECONDS`,
+  `OUTBOX_RELAY_MAX_ATTEMPTS`,
   later `MAIL_*`, `STORAGE_*`.
 - `application.yml` reads them with safe, non-secret defaults:
   `${DB_USERNAME:lokmit_app}`, `${DB_PASSWORD:}` etc.
@@ -125,6 +136,51 @@ and take effect from Phase 1 onward.
 - Logs must not contain passwords, tokens, or personal data.
 - File uploads are validated for type, size, and allowed extensions before
   storage.
+
+### 10.1 RBAC enforcement (Admin APIs)
+
+- The authorization model is `User → roles → permissions`; permissions are
+  seeded in `V2__identity_schema.sql` and mirrored as Java constants in
+  `security/Permissions.java` (single source of truth for endpoint checks).
+- Authority materialization happens server-side on every request:
+  `CustomUserDetailsService` loads the user from the database and exposes
+  `ROLE_<code>` plus each granted permission code as Spring Security
+  authorities. JWT `roles` claims are informational only — never trusted for
+  authorization decisions.
+- Management/admin endpoints declare
+  `@PreAuthorize("hasAuthority('" + Permissions.X + "')")` (method security),
+  e.g. `messages:manage`, `users:manage`. Prefer permission checks over
+  `hasRole(...)` so role re-grants never require code changes.
+- Authorization failures return 403 `FORBIDDEN`; missing/invalid credentials
+  return 401 `UNAUTHORIZED` — both in the standard error envelope.
+- Account status is enforced fail-closed on every request: only `ACTIVE`
+  accounts are authenticated; `LOCKED`/`SUSPENDED`/`DELETED` (or unknown)
+  statuses disable the principal, so deactivation takes effect immediately
+  without waiting for token expiry.
+- Never accept user/role/permission identity from client input (body, query,
+  path, or token claims) as authorization input; the principal always comes
+  from the validated security context.
+
+### 10.2 User-management safety rules (A3)
+
+- The whole `/api/v1/admin/users` surface is guarded by `users:manage`
+  (V2 seed: SUPER_ADMIN only). Additional in-service rules protect against
+  self-inflicted lockout and privilege destruction — they must stay in the
+  backend, never the frontend:
+  - an administrator cannot move their own account to a non-ACTIVE status or
+    change their own roles (400);
+  - the last active SUPER_ADMIN cannot be disabled or stripped of the
+    SUPER_ADMIN role (400) — the system always retains one active
+    SUPER_ADMIN;
+  - granting the SUPER_ADMIN role requires the caller to hold
+    `ROLE_SUPER_ADMIN` (403), established from database-backed authorities.
+- Moving an account out of ACTIVE revokes all its refresh tokens so sessions
+  end immediately; the fail-closed JWT filter (10.1) already refuses
+  non-ACTIVE accounts on the next request.
+- Status/role filter values validate against the seeded domains; unknown
+  values return 400 rather than silently matching nothing.
+- Admin user responses are DTOs; password hashes, brute-force bookkeeping
+  (I-2) and refresh-token material (I-8) never appear in any payload.
 
 ## 11. Git Commit Conventions
 

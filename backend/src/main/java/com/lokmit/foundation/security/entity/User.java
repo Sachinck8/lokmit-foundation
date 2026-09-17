@@ -43,6 +43,27 @@ public class User {
     @Column(name = "last_login_at")
     private OffsetDateTime lastLoginAt;
 
+    /**
+     * Consecutive failed login attempts recorded against this account.
+     * Reset to 0 by a successful login; drives the temporary lockout.
+     */
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts = 0;
+
+    /**
+     * Start of the window during which the failed attempts above accumulated.
+     * NULL when there are no recorded failures.
+     */
+    @Column(name = "failed_login_window_started_at")
+    private OffsetDateTime failedLoginWindowStartedAt;
+
+    /**
+     * Until when login attempts are rejected by the temporary brute-force lock.
+     * NULL when the account is not temporarily locked.
+     */
+    @Column(name = "locked_until")
+    private OffsetDateTime lockedUntil;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
