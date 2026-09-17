@@ -90,7 +90,9 @@ app:
     # notifications from outbox_events rows written in the SAME transaction
     # as the originating business action. No external delivery (email/SMS)
     # happens here. Set polling-interval-seconds to 0 (or enabled=false) to
-    # disable the relay entirely — pending events simply stay queued.
+    # disable all relay work — the scheduled method still fires on its
+    # interval (clamped to >= 1s) but exits immediately as a no-op, so
+    # pending events simply stay queued.
     outbox:
       relay:
         enabled: ${OUTBOX_RELAY_ENABLED:true}

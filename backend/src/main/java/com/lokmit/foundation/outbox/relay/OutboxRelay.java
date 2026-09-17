@@ -14,9 +14,13 @@ import java.util.List;
  * Scheduled outbox relay (A7.5). Follows the
  * {@link com.lokmit.foundation.security.service.RefreshTokenCleanupScheduler}
  * conventions: config-driven interval, no-op when disabled, safe to run on
- * every instance — claiming uses {@code FOR UPDATE SKIP LOCKED} so
- * concurrent instances lock disjoint subsets of due rows and never process
- * the same event twice.
+ * every instance.
+ *
+ * <p>Multi-instance safety relies on PostgreSQL-level row locking: claiming
+ * uses {@code SELECT ... FOR UPDATE SKIP LOCKED} (see
+ * {@link com.lokmit.foundation.outbox.repository.OutboxEventRepository}), so
+ * concurrent instances claim disjoint subsets of due rows and never process
+ * the same event twice.</p>
  *
  * <p>Transaction topology (why this orchestrator exists): the claim runs in
  * one short transaction; each claimed event is then processed in its own
@@ -27,6 +31,15 @@ import java.util.List;
  * poison event would roll back the entire batch and permanently wedge the
  * queue. {@code claim → process → bookkeep} therefore lives here as plain
  * orchestration over three injected beans.</p>
+ *
+ * <p>Scheduling: the fixed delay is derived from
+ * {@code app.outbox.relay.polling-interval-seconds} and clamped to a minimum
+ * of 1 second, so a misconfigured sub-second value can never produce a
+ * degenerate zero-delay schedule. {@code enabled=false} or
+ * {@code polling-interval-seconds <= 0} then disables all work via the body
+ * guard in {@link #relayPass()} — the scheduled method still fires on its
+ * interval but is a cheap no-op, matching the RefreshTokenCleanupScheduler
+ * convention.</p>
  *
  * <p>The relay ONLY materializes in-app notifications. No external
  * delivery (email/SMS/WhatsApp) occurs here, per the locked A7.5
@@ -50,12 +63,13 @@ public class OutboxRelay {
     }
 
     /**
-     * One relay pass. Disabled when {@code app.outbox.relay.enabled=false}
+     * One relay pass. The polling interval is clamped to >= 1 second (see
+     * the class javadoc); disabled when {@code app.outbox.relay.enabled=false}
      * or the polling interval is <= 0, which also keeps tests deterministic
      * when they invoke {@link #relayPass()} directly.
      */
     @Scheduled(fixedDelayString =
-            "#{T(java.time.Duration).ofSeconds(${app.outbox.relay.polling-interval-seconds:30}).toMillis()}")
+            "#{T(java.time.Duration).ofSeconds(Math.max(${app.outbox.relay.polling-interval-seconds:30}, 1)).toMillis()}")
     public void relayPass() {
         if (!config.isEnabled() || config.getPollingIntervalSeconds() <= 0) {
             return;

@@ -109,7 +109,7 @@ Secrets and environment-specific values are never hard-coded.
 | `LOGIN_LOCKOUT_DURATION_MINUTES` | backend | Temporary lockout duration in minutes (default `15`) |
 | `REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES` | backend | Refresh-token cleanup interval (default `60`, `0` disables) |
 | `OUTBOX_RELAY_ENABLED` | backend | Enable the outbox relay that materializes in-app notifications (default `true`) |
-| `OUTBOX_RELAY_POLLING_INTERVAL_SECONDS` | backend | Seconds between relay passes (default `30`, `0` disables) |
+| `OUTBOX_RELAY_POLLING_INTERVAL_SECONDS` | backend | Seconds between relay passes (default `30`; `0` disables all relay work — the scheduler fires but no-ops, interval clamped to >= 1s) |
 | `OUTBOX_RELAY_BATCH_SIZE` | backend | Max outbox events claimed per relay pass (default `50`) |
 | `OUTBOX_RELAY_RETRY_BACKOFF_SECONDS` | backend | Base backoff after a failed processing attempt (default `60`, scaled by attempt count) |
 | `OUTBOX_RELAY_MAX_ATTEMPTS` | backend | Attempts before an outbox event is marked FAILED and never retried (default `5`) |
@@ -630,12 +630,12 @@ Server-enforced rules:
   a failed side effect rolls the action back, so events can never reference
   work that did not happen.
 - **Relay safety:** a scheduled relay claims due PENDING events with
-  `FOR UPDATE SKIP LOCKED` (safe across multiple instances), processes each
-  event in its own transaction (notification insert + PROCESSED commit
-  atomically), marks terminally-broken payloads FAILED, and retries
-  transient failures with `attempts` + bounded `available_at` backoff up to
-  `OUTBOX_RELAY_MAX_ATTEMPTS`. A poison event can never wedge the queue or
-  roll back unrelated events.
+  `SELECT ... FOR UPDATE SKIP LOCKED` (safe across multiple instances),
+  processes each event in its own transaction (notification insert +
+  PROCESSED commit atomically), marks terminally-broken payloads FAILED, and
+  retries transient failures with `attempts` + bounded `available_at` backoff
+  up to `OUTBOX_RELAY_MAX_ATTEMPTS`. A poison event can never wedge the queue
+  or roll back unrelated events.
 - **Notification vocabulary** (`chk_notifications_type`):
   APPLICATION_STATUS_CHANGED / INTERVIEW_SCHEDULED / INTERVIEW_UPDATED /
   INTERVIEW_CANCELLED. The relay only ever creates in-app notification rows
@@ -645,7 +645,9 @@ Server-enforced rules:
   service-level transactional integration only.
 - Relay behavior is configurable via `OUTBOX_RELAY_*` environment variables
   (defaults in the table above; `polling-interval-seconds=0` or
-  `enabled=false` disables the relay entirely).
+  `enabled=false` disables all relay work — the scheduled method still fires
+  on its interval, clamped to >= 1s, but exits as a no-op, so pending events
+  simply stay queued).
 - **A7.6 — Resume/File Storage — is NOT implemented.**
 
 ## Frontend Setup & Run

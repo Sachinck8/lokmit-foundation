@@ -2,11 +2,13 @@ package com.lokmit.foundation.outbox.repository;
 
 import com.lokmit.foundation.outbox.entity.OutboxEvent;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
@@ -20,11 +22,14 @@ import java.util.Optional;
  *
  * <ul>
  *   <li>{@link #claimDuePendingEventIds} — the <em>claim</em> query. Rows are
- *       locked with {@code FOR UPDATE SKIP LOCKED} inside a short transaction
- *       that returns only their IDs and commits immediately, releasing the
- *       locks. Concurrent relay instances each lock a disjoint subset of due
- *       PENDING rows — no row is claimed twice and no instance blocks
- *       another. Backed by idx_outbox_events_status_available.</li>
+ *       locked with {@code FOR UPDATE SKIP LOCKED} — {@code PESSIMISTIC_WRITE}
+ *       plus the {@code jakarta.persistence.lock.timeout = -2} hint, which
+ *       Hibernate 6 maps to {@code LockOptions.SKIP_LOCKED} and PostgreSQL
+ *       renders as the literal {@code SKIP LOCKED} clause — inside a short
+ *       transaction that returns only their IDs and commits immediately,
+ *       releasing the locks. Concurrent relay instances each lock a disjoint
+ *       subset of due PENDING rows — no row is claimed twice and no instance
+ *       blocks another. Backed by idx_outbox_events_status_available.</li>
  *   <li>{@link #acquireForProcessing} — the <em>processing</em> re-read. Each
  *       claimed ID is re-fetched with a blocking {@code FOR UPDATE} inside
  *       that event's own short transaction. Under READ_COMMITTED the SELECT
@@ -42,12 +47,18 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> 
 
     /**
      * Claims due PENDING rows: locks them with {@code FOR UPDATE SKIP LOCKED}
-     * and returns their IDs. The calling transaction must commit immediately
-     * after (releasing the row locks) and process the returned IDs one by one
-     * in their own transactions. The Pageable bounds the claim to the
-     * configured batch size (limit only — no offset, oldest IDs first).
+     * and returns their IDs. The lock timeout hint of {@code -2} is
+     * Hibernate's {@link org.hibernate.LockOptions#SKIP_LOCKED} sentinel —
+     * PostgreSQL executes the claim as a literal {@code SELECT ... FOR UPDATE
+     * SKIP LOCKED}, so concurrent instances skip rows another pass already
+     * holds and never block each other. The calling transaction must commit
+     * immediately after (releasing the row locks) and process the returned
+     * IDs one by one in their own transactions. The Pageable bounds the claim
+     * to the configured batch size (limit only — no offset, oldest IDs
+     * first).
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
     @Query("""
             SELECT e.id FROM OutboxEvent e
             WHERE e.status = 'PENDING' AND e.availableAt <= :now

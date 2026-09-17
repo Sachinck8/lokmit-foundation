@@ -38,11 +38,14 @@ public final class OutboxPayloads {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("recipientUserId", recipientUserId);
         payload.put("notificationType", notificationType);
-        payload.put("title", "Interview " + notificationType
-                .substring("INTERVIEW_".length()).toLowerCase() + "d");
+        // Past-tense action word: SCHEDULED -> "scheduled", UPDATED -> "updated",
+        // CANCELLED -> "cancelled" (the enum value is already past tense, so no
+        // suffix is appended — see OutboxPayloadsTest for the wording contract).
+        String interviewAction = notificationType
+                .substring("INTERVIEW_".length()).toLowerCase();
+        payload.put("title", "Interview " + interviewAction);
         payload.put("body", "An interview scheduled at " + scheduledAt
-                + " (" + mode + ") was " + notificationType
-                .substring("INTERVIEW_".length()).toLowerCase() + "d.");
+                + " (" + mode + ") was " + interviewAction + ".");
         payload.put("entityType", "INTERVIEW");
         payload.put("entityId", interviewId);
         payload.put("applicationId", applicationId);

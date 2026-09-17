@@ -62,8 +62,11 @@ app:
         capacity: ${RATE_LIMIT_CONTACT_CAPACITY:5}
         window-seconds: ${RATE_LIMIT_CONTACT_WINDOW_SECONDS:60}
   # Transactional outbox relay (A7.5): materializes in-app notifications
-  # from outbox_events. Safe with multiple instances (FOR UPDATE SKIP LOCKED
-  # claiming). polling-interval-seconds <= 0 or enabled=false disables it.
+  # from outbox_events. Safe with multiple instances: the claim query is
+  # SELECT ... FOR UPDATE SKIP LOCKED, so concurrent instances claim
+  # disjoint rows and never block each other. polling-interval-seconds <= 0
+  # or enabled=false disables all relay work (the scheduled method still
+  # fires on its interval — clamped to >= 1s — but exits as a no-op).
   outbox:
     relay:
       enabled: ${OUTBOX_RELAY_ENABLED:true}

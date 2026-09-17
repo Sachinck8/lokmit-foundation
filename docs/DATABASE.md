@@ -264,8 +264,14 @@ occurs from the relay.
   FAILED, default PENDING), `attempts` (`chk_outbox_events_attempts`:
   >= 0), `available_at` (retry gate), `processed_at`, `created_at`.
 - Multi-instance safety: the relay claims due rows with
-  `FOR UPDATE SKIP LOCKED`; retries use `attempts` + `available_at` with
+  `SELECT ... FOR UPDATE SKIP LOCKED`; retries use `attempts` + `available_at` with
   bounded backoff; events past max attempts are marked FAILED (terminal).
 - Index: `idx_outbox_events_status_available (status, available_at)` backs
   the claim query.
+
+The claim query locks rows with `PESSIMISTIC_WRITE` plus the
+`jakarta.persistence.lock.timeout = -2` hint (Hibernate's
+`LockOptions.SKIP_LOCKED`), which PostgreSQL executes as a literal
+`SELECT ... FOR UPDATE SKIP LOCKED` — concurrent relay instances claim
+disjoint rows and never block each other.
 
