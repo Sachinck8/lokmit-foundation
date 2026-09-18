@@ -70,6 +70,9 @@ public final class ApiPaths {
     public static final String ADMIN_NOTIFICATIONS = API_V1 + "/admin/notifications";
     public static final String ADMIN_AUDIT_LOGS = API_V1 + "/admin/audit-logs";
 
+    /** Candidate self-service resume APIs (A7.6.3) — authenticated candidate ownership. */
+    public static final String CANDIDATE_ME_RESUMES = API_V1 + "/candidates/me/resumes";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

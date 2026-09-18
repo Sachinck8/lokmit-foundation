@@ -648,7 +648,42 @@ Server-enforced rules:
   `enabled=false` disables all relay work — the scheduled method still fires
   on its interval, clamped to >= 1s, but exits as a no-op, so pending events
   simply stay queued).
-- **A7.6 — Resume/File Storage — is NOT implemented.**
+
+### Candidate Resume Upload API (A7.6.3)
+
+The first candidate self-service employment endpoint. Storage internals
+(resumes_file_blobs, A7.6.1) and byte-level validation (A7.6.2) are
+implementation details and are deliberately not part of the public API
+surface:
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/candidates/me/resumes` | POST | authenticated candidate (ownership) | Upload or replace the caller's resume |
+
+- **Request:** `multipart/form-data` with a single `file` part. PDF, DOC
+  and DOCX only, maximum 5 MiB (`UPLOAD_MAX_FILE_SIZE_BYTES`). Content is
+  validated from the ACTUAL file bytes — a client-declared content type is
+  cross-checked only and never trusted.
+- **Authentication:** the standard stateless JWT bearer chain. Anonymous or
+  invalid-token requests are rejected 401 by the security filter chain.
+- **Ownership (IDOR-safe):** the candidate profile is resolved server-side
+  from the authenticated user's database id; the request has NO candidate id
+  parameter at all. A user without a candidate profile (including admins and
+  employers) receives a plain 404 — no existence leak. No new permission was
+  seeded: self-service ownership is the established authorization model for
+  non-administrative roles.
+- **Behavior:** the previous active resume is deactivated (history rows are
+  retained, `uq_resumes_one_active_per_candidate` always holds). The upload
+  is transactional — a rejected file persists nothing.
+- **Response:** `201 Created` with the standard envelope and a safe DTO (id,
+  candidateId, fileName, fileType as detected from the bytes, fileSizeBytes,
+  active, createdAt, checksumSha256). `storageKey`, `fileUrl` and any blob
+  or provider information are never exposed. Download/viewing endpoints are
+  future phases (A7.6.4+).
+- **Errors:** 400 (missing/empty file or filename, invalid
+  PDF/DOC/DOCX content, invalid filename, MIME/content contradiction),
+  404 (no candidate profile), 413 `PAYLOAD_TOO_LARGE` (over 5 MiB). All
+  errors use the standard error envelope with the existing `ErrorCodes`.
 
 ## Frontend Setup & Run
 

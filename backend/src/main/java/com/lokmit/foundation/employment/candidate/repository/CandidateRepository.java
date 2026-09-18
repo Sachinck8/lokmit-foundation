@@ -11,4 +11,7 @@ public interface CandidateRepository
         extends JpaRepository<Candidate, Long>, JpaSpecificationExecutor<Candidate> {
 
     boolean existsByUserId(Long userId);
+
+    /** The candidate profile owned by the given user (uq_candidates_user guarantees ≤ 1). */
+    Optional<Candidate> findByUserId(Long userId);
 }
