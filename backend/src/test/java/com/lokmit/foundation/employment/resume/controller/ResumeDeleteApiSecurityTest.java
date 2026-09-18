@@ -58,7 +58,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = ResumeDownloadController.class)
 @Import({SecurityConfig.class, CorsConfig.class, JwtKeyConfig.class,
         JwtTokenProvider.class, CustomUserDetailsService.class, SecurityUtils.class,
-        ResumeDeleteService.class, ResumeDownloadService.class, ResumeOwnershipService.class})
+        ResumeDeleteService.class, ResumeDownloadService.class, ResumeOwnershipService.class,
+        com.lokmit.foundation.audit.service.AuditLogService.class})
 @AutoConfigureMockMvc
 class ResumeDeleteApiSecurityTest {
 
@@ -79,6 +80,9 @@ class ResumeDeleteApiSecurityTest {
 
     @MockitoBean
     private FileStorage fileStorage;
+
+    @MockitoBean
+    private com.lokmit.foundation.audit.repository.AuditLogRepository auditLogRepository;
 
     private static final String ENDPOINT = ApiPaths.RESUMES;
 

@@ -94,6 +94,12 @@ app:
         capacity: ${RATE_LIMIT_CONTACT_CAPACITY:5}
         window-seconds: ${RATE_LIMIT_CONTACT_WINDOW_SECONDS:60}
         max-tracked-keys: ${RATE_LIMIT_MAX_TRACKED_KEYS:10000}
+      # A7.6.6: authenticated resume upload limiting (per client IP).
+      resume-upload:
+        enabled: ${RATE_LIMIT_RESUME_UPLOAD_ENABLED:true}
+        capacity: ${RATE_LIMIT_RESUME_UPLOAD_CAPACITY:30}
+        window-seconds: ${RATE_LIMIT_RESUME_UPLOAD_WINDOW_SECONDS:60}
+        max-tracked-keys: ${RATE_LIMIT_MAX_TRACKED_KEYS:10000}
     # Transactional outbox relay (A7.5). The relay materializes in-app
     # notifications from outbox_events rows written in the SAME transaction
     # as the originating business action. No external delivery (email/SMS)

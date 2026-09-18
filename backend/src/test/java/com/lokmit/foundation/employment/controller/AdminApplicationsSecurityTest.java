@@ -16,6 +16,8 @@ import com.lokmit.foundation.employment.employer.entity.Employer;
 import com.lokmit.foundation.employment.job.entity.Job;
 import com.lokmit.foundation.employment.job.repository.JobRepository;
 import com.lokmit.foundation.employment.jobcategory.entity.JobCategory;
+import com.lokmit.foundation.employment.resume.entity.Resume;
+import com.lokmit.foundation.employment.resume.repository.ResumeRepository;
 import com.lokmit.foundation.notification.repository.NotificationRepository;
 import com.lokmit.foundation.outbox.config.OutboxRelayConfig;
 import com.lokmit.foundation.outbox.repository.OutboxEventRepository;
@@ -110,6 +112,9 @@ class AdminApplicationsSecurityTest {
     @MockitoBean
     private UserRepository userRepository;
 
+    @MockitoBean
+    private ResumeRepository resumeRepository;
+
     private static final String APPLICATIONS = ApiPaths.ADMIN_APPLICATIONS;
 
     private static final String SUPER_ADMIN_EMAIL = "superadmin@lokmitfoundation.org";
@@ -125,7 +130,7 @@ class AdminApplicationsSecurityTest {
     void resetStubs() {
         reset(applicationRepository, historyRepository, auditLogRepository,
                 notificationRepository, outboxEventRepository, jobRepository,
-                candidateRepository, userRepository);
+                candidateRepository, userRepository, resumeRepository);
     }
 
     // ------------------------------------------------------------------
@@ -379,7 +384,16 @@ class AdminApplicationsSecurityTest {
         mockMvc.perform(get(APPLICATIONS + "/99").header("Authorization", auth))
                 .andExpect(status().isNotFound());
 
-        // patch — employer note + resume reference
+        // patch — employer note + resume reference. The A7.6.6 ownership
+        // cross-check requires the referenced resume to exist AND belong to
+        // the application's own candidate (20).
+        Resume ownResume = new Resume();
+        ownResume.setId(5L);
+        ownResume.setCandidateId(20L);
+        ownResume.setFileName("cv.pdf");
+        ownResume.setActive(true);
+        ownResume.setCreatedAt(OffsetDateTime.now());
+        when(resumeRepository.findById(5L)).thenReturn(Optional.of(ownResume));
         when(applicationRepository.save(any(JobApplication.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
         mockMvc.perform(patch(APPLICATIONS + "/30").header("Authorization", auth)

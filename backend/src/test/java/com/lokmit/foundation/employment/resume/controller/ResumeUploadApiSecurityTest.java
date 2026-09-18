@@ -65,6 +65,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({SecurityConfig.class, CorsConfig.class, JwtKeyConfig.class,
         JwtTokenProvider.class, CustomUserDetailsService.class, SecurityUtils.class,
         ResumeUploadService.class, ResumeOwnershipService.class,
+        com.lokmit.foundation.audit.service.AuditLogService.class,
         ResumeContentValidator.class, ResumeFilenameValidator.class, UploadProperties.class})
 @AutoConfigureMockMvc
 class ResumeUploadApiSecurityTest {
@@ -86,6 +87,9 @@ class ResumeUploadApiSecurityTest {
 
     @MockitoBean
     private FileStorage fileStorage;
+
+    @MockitoBean
+    private com.lokmit.foundation.audit.repository.AuditLogRepository auditLogRepository;
 
     private static final String ENDPOINT = ApiPaths.CANDIDATE_ME_RESUMES;
 

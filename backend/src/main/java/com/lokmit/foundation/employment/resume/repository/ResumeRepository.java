@@ -1,6 +1,8 @@
 package com.lokmit.foundation.employment.resume.repository;
 
 import com.lokmit.foundation.employment.resume.entity.Resume;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -25,6 +27,9 @@ public interface ResumeRepository extends JpaRepository<Resume, Long> {
 
     /** All resumes of one candidate, newest first (idx_resumes_candidate). */
     List<Resume> findByCandidateIdOrderByCreatedAtDesc(Long candidateId);
+
+    /** Paginated metadata-only page for one candidate, newest first (A7.6.6 admin listing). */
+    Page<Resume> findByCandidateIdOrderByCreatedAtDesc(Long candidateId, Pageable pageable);
 
     /** The candidate's active resume, if any (partial unique index guarantees ≤ 1). */
     Optional<Resume> findByCandidateIdAndIsActiveTrue(Long candidateId);

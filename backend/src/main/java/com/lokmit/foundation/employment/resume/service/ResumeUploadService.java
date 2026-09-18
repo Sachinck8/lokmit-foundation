@@ -4,6 +4,7 @@ import com.lokmit.foundation.employment.candidate.repository.CandidateRepository
 import com.lokmit.foundation.employment.resume.config.UploadProperties;
 import com.lokmit.foundation.employment.resume.entity.Resume;
 import com.lokmit.foundation.employment.resume.repository.ResumeRepository;
+import com.lokmit.foundation.audit.service.AuditLogService;
 import com.lokmit.foundation.employment.resume.service.storage.FileStorage;
 import com.lokmit.foundation.employment.resume.service.validation.ResumeContentValidator;
 import com.lokmit.foundation.employment.resume.service.validation.ResumeFilenameValidator;
@@ -14,6 +15,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 import java.util.HexFormat;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -48,8 +50,31 @@ import java.util.UUID;
  * no public URL is produced — the legacy {@code file_url} column keeps a
  * non-dereferenceable internal marker because V8 made it NOT NULL.</p>
  *
- * <p>No HTTP surface, no authorization, no audit/outbox events in this
- * phase — A7.6.3+ concerns.</p>
+ * <p><b>A7.6.6 audit/outbox policy:</b> every successful upload records
+ * exactly one {@code audit_logs} row via {@link AuditLogService#record},
+ * written INSIDE the same transaction as the upload (REQUIRED
+ * propagation) — a failed audit insert rolls the upload back. The action
+ * is {@code RESUME_UPLOADED} for a first upload or {@code RESUME_REPLACED}
+ * when an existing active resume was deactivated, with details limited to
+ * {@code candidateId} and {@code replacedPrevious} — never bytes, storage
+ * keys, checksums or any resume content.</p>
+ *
+ * <p><b>Outbox policy:</b> no {@code outbox_events} row is written for
+ * resume lifecycle actions. The A7.5 outbox exists to materialize
+ * <em>recipient-directed in-app notifications</em>; an upload/replacement
+ * has no notification recipient (the only interested party is the actor
+ * themselves), so routing it through the outbox would manufacture
+ * notifications nobody asked for. The immutable audit row is the durable
+ * lifecycle record. This mirrors the A7.3/A7.4 decision to enqueue outbox
+ * events only when a status transition actually notifies a specific
+ * application's candidate.</p>
+ *
+ * <p><b>Download auditing decision:</b> resume downloads are deliberately
+ * NOT audited. The established platform policy (A7.5) audits administrative
+ * state changes, not reads; a candidate viewing their own resume would
+ * generate a high-volume, low-signal audit trail, and admin case-review
+ * reads are already captured by admin-side state actions. Revisiting this
+ * requires a product-level policy change, not a code change.</p>
  */
 @Service
 public class ResumeUploadService {
@@ -68,19 +93,22 @@ public class ResumeUploadService {
     private final CandidateRepository candidateRepository;
     private final FileStorage fileStorage;
     private final UploadProperties uploadProperties;
+    private final AuditLogService auditLogService;
 
     public ResumeUploadService(ResumeContentValidator contentValidator,
                                ResumeFilenameValidator filenameValidator,
                                ResumeRepository resumeRepository,
                                CandidateRepository candidateRepository,
                                FileStorage fileStorage,
-                               UploadProperties uploadProperties) {
+                               UploadProperties uploadProperties,
+                               AuditLogService auditLogService) {
         this.contentValidator = contentValidator;
         this.filenameValidator = filenameValidator;
         this.resumeRepository = resumeRepository;
         this.candidateRepository = candidateRepository;
         this.fileStorage = fileStorage;
         this.uploadProperties = uploadProperties;
+        this.auditLogService = auditLogService;
     }
 
     /**
@@ -125,8 +153,11 @@ public class ResumeUploadService {
         }
 
         // 3. Deactivate the previous active resume BEFORE inserting the new
-        //    row (explicit ordering vs. the partial unique index).
-        resumeRepository.deactivateActiveResume(candidateId);
+        //    row (explicit ordering vs. the partial unique index). The result
+        //    distinguishes a first upload from a replacement for the audit
+        //    trail.
+        int deactivated = resumeRepository.deactivateActiveResume(candidateId);
+        String auditAction = deactivated > 0 ? "RESUME_REPLACED" : "RESUME_UPLOADED";
 
         // 4-6. Persist metadata (id assigned on flush), then store the exact
         //       validated bytes under the server-generated key and record
@@ -146,7 +177,16 @@ public class ResumeUploadService {
 
         resume.setStorageKey(storageKey);
         resume.setChecksumSha256(sha256Hex(content));
-        return resumeRepository.saveAndFlush(resume);
+        Resume saved = resumeRepository.saveAndFlush(resume);
+
+        // A7.6.6: audit trail for the resume lifecycle — one row per upload,
+        // written in the SAME transaction (REQUIRED propagation). Details
+        // are metadata only: no bytes, no storage key, no checksum.
+        auditLogService.record(auditAction, "RESUME", saved.getId(),
+                Map.of("candidateId", candidateId,
+                        "replacedPrevious", deactivated > 0));
+
+        return saved;
     }
 
     /** Server-generated opaque storage key — never user-controlled. */

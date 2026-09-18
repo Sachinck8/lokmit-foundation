@@ -21,6 +21,21 @@ public class RateLimitProperties {
 
     private EndpointRateLimit login = new EndpointRateLimit();
     private EndpointRateLimit contact = new EndpointRateLimit();
+    /**
+     * Authenticated resume upload policy (A7.6.6). Keyed by client IP like
+     * the public limiters; defaults are deliberately permissive (30/60s)
+     * because legitimate candidates rarely upload more than a few times per
+     * hour — the limiter only bounds abuse, not normal use.
+     */
+    private EndpointRateLimit resumeUpload = new EndpointRateLimit();
+
+    public EndpointRateLimit getResumeUpload() {
+        return resumeUpload;
+    }
+
+    public void setResumeUpload(EndpointRateLimit resumeUpload) {
+        this.resumeUpload = resumeUpload;
+    }
 
     /** Policy for one protected endpoint category. */
     @Getter

@@ -45,6 +45,7 @@ public final class ApiPaths {
     /** Admin employment foundation APIs (A7.1) — employers, candidates, skills, job categories. */
     public static final String ADMIN_EMPLOYERS = API_V1 + "/admin/employers";
     public static final String ADMIN_CANDIDATES = API_V1 + "/admin/candidates";
+    public static final String ADMIN_CANDIDATE_RESUMES = ADMIN_CANDIDATES + "/{candidateId}/resumes";
     public static final String ADMIN_CANDIDATE_SKILLS = ADMIN_CANDIDATES + "/{candidateId}/skills";
     public static final String ADMIN_CANDIDATE_SKILL = ADMIN_CANDIDATE_SKILLS + "/{skillId}";
     public static final String ADMIN_SKILLS = API_V1 + "/admin/skills";

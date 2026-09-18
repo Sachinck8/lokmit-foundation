@@ -60,6 +60,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
     private volatile FixedWindowRateLimiter loginLimiter;
     private volatile FixedWindowRateLimiter contactLimiter;
+    private volatile FixedWindowRateLimiter resumeUploadLimiter;
     private volatile boolean limitersInitialized;
 
     public RateLimitFilter(RateLimitProperties properties, ObjectMapper objectMapper) {
@@ -120,6 +121,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (ApiPaths.CONTACT_MESSAGES.equals(request.getRequestURI())) {
             return contactLimiter(properties.getContact(), "contact");
         }
+        if (ApiPaths.CANDIDATE_ME_RESUMES.equals(request.getRequestURI())) {
+            return resumeUploadLimiter(properties.getResumeUpload(), "resumeUpload");
+        }
         return null;
     }
 
@@ -151,6 +155,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
                     contactLimiter = build(policy);
                 }
                 limiter = contactLimiter;
+            }
+        }
+        return limiter;
+    }
+
+    private FixedWindowRateLimiter resumeUploadLimiter(RateLimitProperties.EndpointRateLimit policy, String name) {
+        if (!policy.isEnabled()) {
+            return null;
+        }
+        FixedWindowRateLimiter limiter = resumeUploadLimiter;
+        if (limiter == null) {
+            synchronized (this) {
+                if (resumeUploadLimiter == null) {
+                    resumeUploadLimiter = build(policy);
+                }
+                limiter = resumeUploadLimiter;
             }
         }
         return limiter;

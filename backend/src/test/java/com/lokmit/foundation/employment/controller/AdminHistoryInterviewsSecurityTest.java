@@ -120,6 +120,12 @@ class AdminHistoryInterviewsSecurityTest {
     @MockitoBean
     private UserRepository userRepository;
 
+    // A7.6.6: ApplicationService now cross-checks resume ownership in
+    // updateReview; the service bean is imported here, so its repository
+    // dependency must be present in the slice.
+    @MockitoBean
+    private com.lokmit.foundation.employment.resume.repository.ResumeRepository resumeRepository;
+
     private static final String APPLICATIONS = ApiPaths.ADMIN_APPLICATIONS;
     private static final String HISTORY = APPLICATIONS + "/{id}/history";
     private static final String INTERVIEWS = APPLICATIONS + "/{id}/interviews";
@@ -138,7 +144,7 @@ class AdminHistoryInterviewsSecurityTest {
     void resetStubs() {
         reset(applicationRepository, historyRepository, interviewRepository,
                 auditLogRepository, notificationRepository, outboxEventRepository,
-                jobRepository, candidateRepository, userRepository);
+                jobRepository, candidateRepository, userRepository, resumeRepository);
     }
 
     // ------------------------------------------------------------------

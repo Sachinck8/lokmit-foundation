@@ -1,14 +1,19 @@
 package com.lokmit.foundation.employment.resume.service;
 
+import com.lokmit.foundation.audit.service.AuditLogService;
 import com.lokmit.foundation.common.exception.NotFoundException;
 import com.lokmit.foundation.employment.candidate.entity.Candidate;
 import com.lokmit.foundation.employment.resume.entity.Resume;
 import com.lokmit.foundation.employment.resume.repository.ResumeRepository;
 import com.lokmit.foundation.employment.resume.service.storage.FileStorage;
+import com.lokmit.foundation.security.Permissions;
+import com.lokmit.foundation.security.util.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
 
 /**
  * Secure resume delete service (A7.6.5). Physical deletion, consistent
@@ -43,6 +48,18 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>Repeated DELETE: the second call finds no row and returns the
  * established 404 — no second deletion state exists.</p>
+ *
+ * <p><b>A7.6.6 audit/outbox policy:</b> every successful deletion records
+ * one {@code audit_logs} row in the SAME transaction via
+ * {@link AuditLogService#record} — a failed audit insert rolls the
+ * deletion back. The action distinguishes the actor class:
+ * {@code RESUME_DELETED} for candidate self-service deletion and
+ * {@code RESUME_DELETED_ADMIN} when the principal holds
+ * {@code candidates:manage}, with details limited to {@code candidateId}
+ * and {@code wasActive} — never bytes, storage keys or checksums. As with
+ * upload/replacement, no outbox event is written: deletion has no
+ * notification recipient (the actor already knows), and the audit row is
+ * the durable record.</p>
  */
 @Service
 public class ResumeDeleteService {
@@ -52,13 +69,19 @@ public class ResumeDeleteService {
     private final ResumeRepository resumeRepository;
     private final ResumeOwnershipService ownershipService;
     private final FileStorage fileStorage;
+    private final AuditLogService auditLogService;
+    private final SecurityUtils securityUtils;
 
     public ResumeDeleteService(ResumeRepository resumeRepository,
                                ResumeOwnershipService ownershipService,
-                               FileStorage fileStorage) {
+                               FileStorage fileStorage,
+                               AuditLogService auditLogService,
+                               SecurityUtils securityUtils) {
         this.resumeRepository = resumeRepository;
         this.ownershipService = ownershipService;
         this.fileStorage = fileStorage;
+        this.auditLogService = auditLogService;
+        this.securityUtils = securityUtils;
     }
 
     /**
@@ -106,6 +129,9 @@ public class ResumeDeleteService {
      */
     private void deleteVerified(Resume resume) {
         String storageKey = resume.getStorageKey();
+        long candidateId = resume.getCandidateId();
+        boolean wasActive = resume.isActive();
+        boolean admin = securityUtils.hasAuthority(Permissions.CANDIDATES_MANAGE);
         resumeRepository.delete(resume);
         resumeRepository.flush();
         if (storageKey != null && !storageKey.isBlank()) {
@@ -113,6 +139,12 @@ public class ResumeDeleteService {
             // future external provider. Never logged, never echoed.
             fileStorage.delete(storageKey);
         }
+        // A7.6.6: audit trail for deletion — same transaction, metadata only
+        // (actor is resolved inside AuditLogService from the security context).
+        auditLogService.record(
+                admin ? "RESUME_DELETED_ADMIN" : "RESUME_DELETED",
+                "RESUME", resume.getId(),
+                Map.of("candidateId", candidateId, "wasActive", wasActive));
         LOG.info("Resume {} deleted", resume.getId());
     }
 }

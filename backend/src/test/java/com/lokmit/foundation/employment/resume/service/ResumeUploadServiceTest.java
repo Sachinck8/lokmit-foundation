@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -24,6 +25,7 @@ import org.mockito.quality.Strictness;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -61,6 +63,11 @@ class ResumeUploadServiceTest {
     private CandidateRepository candidateRepository;
     @Mock
     private FileStorage fileStorage;
+    @Mock
+    private com.lokmit.foundation.audit.service.AuditLogService auditLogService;
+
+    @Captor
+    private ArgumentCaptor<Map<String, Object>> auditDetailsCaptor;
 
     private ResumeUploadService service;
 
@@ -70,7 +77,8 @@ class ResumeUploadServiceTest {
         ResumeFilenameValidator filenameValidator = new ResumeFilenameValidator();
         UploadProperties uploadProperties = new UploadProperties();
         service = new ResumeUploadService(contentValidator, filenameValidator,
-                resumeRepository, candidateRepository, fileStorage, uploadProperties);
+                resumeRepository, candidateRepository, fileStorage, uploadProperties,
+                auditLogService);
 
         when(candidateRepository.existsById(10L)).thenReturn(true);
         when(resumeRepository.saveAndFlush(any(Resume.class))).thenAnswer(inv -> {
@@ -294,6 +302,67 @@ class ResumeUploadServiceTest {
         // tests); the checksum-recording save NEVER ran.
         verify(resumeRepository, times(1)).saveAndFlush(any(Resume.class));
         verify(fileStorage).store(anyString(), any(byte[].class));
+    }
+
+    // ------------------------------------------------------------------
+    // A7.6.6 audit integration (same transaction, metadata only)
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("first upload audits RESUME_UPLOADED with candidateId + replacedPrevious=false, in transaction")
+    void firstUploadAuditsUploaded() {
+        when(resumeRepository.deactivateActiveResume(10L)).thenReturn(0);
+
+        service.upload(10L, "cv.pdf", "application/pdf", validPdf());
+
+        verify(auditLogService).record(org.mockito.ArgumentMatchers.eq("RESUME_UPLOADED"),
+                org.mockito.ArgumentMatchers.eq("RESUME"), org.mockito.ArgumentMatchers.eq(77L),
+                auditDetailsCaptor.capture());
+        assertThat(auditDetailsCaptor.getValue())
+                .containsEntry("candidateId", 10L)
+                .containsEntry("replacedPrevious", false);
+        // No outbox events for resume lifecycle: the audit row is the record.
+        // (Upload service has no OutboxService dependency to call.)
+    }
+
+    @Test
+    @DisplayName("replacement upload audits RESUME_REPLACED with replacedPrevious=true")
+    void replacementUploadAuditsReplaced() {
+        when(resumeRepository.deactivateActiveResume(10L)).thenReturn(1);
+
+        service.upload(10L, "new.pdf", "application/pdf", validPdf());
+
+        verify(auditLogService).record(org.mockito.ArgumentMatchers.eq("RESUME_REPLACED"),
+                org.mockito.ArgumentMatchers.eq("RESUME"), org.mockito.ArgumentMatchers.eq(77L),
+                auditDetailsCaptor.capture());
+        assertThat(auditDetailsCaptor.getValue())
+                .containsEntry("candidateId", 10L)
+                .containsEntry("replacedPrevious", true);
+    }
+
+    @Test
+    @DisplayName("audit happens AFTER the metadata is committed to the persistence path")
+    void auditRunsAfterPersistence() {
+        InOrder order = inOrder(resumeRepository, auditLogService);
+        order.verify(resumeRepository, never()).saveAndFlush(any(Resume.class)); // precondition sanity
+        org.mockito.Mockito.clearInvocations(resumeRepository);
+
+        service.upload(10L, "cv.pdf", "application/pdf", validPdf());
+
+        order = inOrder(resumeRepository, auditLogService);
+        order.verify(resumeRepository, org.mockito.Mockito.atLeastOnce()).saveAndFlush(any(Resume.class));
+        order.verify(auditLogService).record(
+                org.mockito.ArgumentMatchers.eq("RESUME_UPLOADED"), anyString(), any(), any());
+    }
+
+    @Test
+    @DisplayName("validation failure → NO audit row (audit only records successful uploads)")
+    void failedUploadAuditsNothing() {
+        assertThatThrownBy(() -> service.upload(10L, "evil.pdf", "application/pdf",
+                "not a resume".getBytes(StandardCharsets.UTF_8)))
+                .isInstanceOf(BadRequestException.class);
+
+        verify(auditLogService, never()).record(anyString(), anyString(), any(), any());
     }
 
     // ------------------------------------------------------------------

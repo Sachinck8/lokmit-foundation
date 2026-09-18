@@ -61,6 +61,10 @@ app:
         enabled: ${RATE_LIMIT_CONTACT_ENABLED:true}
         capacity: ${RATE_LIMIT_CONTACT_CAPACITY:5}
         window-seconds: ${RATE_LIMIT_CONTACT_WINDOW_SECONDS:60}
+      resume-upload:
+        enabled: ${RATE_LIMIT_RESUME_UPLOAD_ENABLED:true}
+        capacity: ${RATE_LIMIT_RESUME_UPLOAD_CAPACITY:30}
+        window-seconds: ${RATE_LIMIT_RESUME_UPLOAD_WINDOW_SECONDS:60}
   # Transactional outbox relay (A7.5): materializes in-app notifications
   # from outbox_events. Safe with multiple instances: the claim query is
   # SELECT ... FOR UPDATE SKIP LOCKED, so concurrent instances claim

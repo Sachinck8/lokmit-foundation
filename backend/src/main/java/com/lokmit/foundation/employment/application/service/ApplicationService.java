@@ -7,6 +7,8 @@ import com.lokmit.foundation.employment.application.dto.ApplicationResponse;
 import com.lokmit.foundation.employment.application.dto.ApplicationReviewRequest;
 import com.lokmit.foundation.employment.application.entity.JobApplication;
 import com.lokmit.foundation.employment.application.history.service.ApplicationStatusHistoryService;
+import com.lokmit.foundation.employment.resume.entity.Resume;
+import com.lokmit.foundation.employment.resume.repository.ResumeRepository;
 import com.lokmit.foundation.employment.application.service.support.OutboxPayloads;
 import com.lokmit.foundation.notification.entity.Notification;
 import com.lokmit.foundation.audit.service.AuditLogService;
@@ -59,15 +61,18 @@ public class ApplicationService {
     private final ApplicationStatusHistoryService historyService;
     private final AuditLogService auditLogService;
     private final OutboxService outboxService;
+    private final ResumeRepository resumeRepository;
 
     public ApplicationService(JobApplicationRepository applicationRepository,
                               ApplicationStatusHistoryService historyService,
                               AuditLogService auditLogService,
-                              OutboxService outboxService) {
+                              OutboxService outboxService,
+                              ResumeRepository resumeRepository) {
         this.applicationRepository = applicationRepository;
         this.historyService = historyService;
         this.auditLogService = auditLogService;
         this.outboxService = outboxService;
+        this.resumeRepository = resumeRepository;
     }
 
     // ------------------------------------------------------------------
@@ -140,9 +145,18 @@ public class ApplicationService {
             app.setEmployerNote(request.getEmployerNote());
         }
         if (request.getResumeId() != null) {
-            // fk_job_applications_resume: the DB enforces existence; invalid
-            // references surface as a constraint violation → 409, never a
-            // silently orphaned reference.
+            // A7.6.6: the resume must EXIST and belong to the application's
+            // OWN candidate — a cross-candidate resume reference is rejected
+            // with the standard 404 (existence-masked, consistent with the
+            // resume endpoints' ownership masking). The DB FK alone only
+            // proves existence, never ownership.
+            Resume resume = resumeRepository.findById(request.getResumeId())
+                    .orElseThrow(() -> new NotFoundException(
+                            "Resume not found: " + request.getResumeId()));
+            if (!resume.getCandidateId().equals(app.getCandidate().getId())) {
+                throw new NotFoundException(
+                        "Resume not found: " + request.getResumeId());
+            }
             app.setResumeId(request.getResumeId());
         }
         app.setUpdatedAt(OffsetDateTime.now());
