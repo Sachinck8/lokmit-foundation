@@ -149,6 +149,12 @@ public class GlobalExceptionHandler {
                 "HTTP method not supported: " + ex.getMethod());
     }
 
+    @ExceptionHandler(com.lokmit.foundation.common.exception.PayloadTooLargeException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePayloadTooLarge(
+            com.lokmit.foundation.common.exception.PayloadTooLargeException ex) {
+        return build(HttpStatus.PAYLOAD_TOO_LARGE, ErrorCodes.PAYLOAD_TOO_LARGE, ex.getMessage());
+    }
+
     @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnsupportedMediaType(
             org.springframework.web.HttpMediaTypeNotSupportedException ex) {

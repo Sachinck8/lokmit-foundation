@@ -34,6 +34,7 @@ authentication phase onward) must match it.
 | — | Admin application history + interviews | V15 adds `application_status_history` (automatic audit of lifecycle transitions, written in the same transaction as the status change) and `interviews` (scheduling records per application); the existing `employment:manage` permission (V14) guards the read/write endpoints (A7.4) |
 | — | Admin notifications + audit + outbox | V16 adds `notifications` (personal in-app notices, recipient-scoped, `notifications:manage` granted to SUPER_ADMIN + ADMIN), `audit_logs` (append-only administrative trail written by backend services, reads SUPER_ADMIN-only via `users:manage`) and `outbox_events` (transactional outbox relayed into in-app notifications; no public API) (A7.5) |
 | — | Resume & file storage foundation | V17 adds `resumes_file_blobs` (PostgreSQL BYTEA companion table, 1:1 with `resumes`, FK CASCADE) and two `resumes` columns (`checksum_sha256`, `storage_key`); no new tables beyond that, no new permissions — the upload/download API, validation policy and candidate-facing authorization arrive in later A7.6 phases (A7.6.1) |
+| — | Secure resume upload validation | no new migration: the A7.6.1 schema is sufficient. Byte-level content validation (PDF header + `%%EOF` trailer, OLE2 DOC signature, DOCX ZIP with WordprocessingML content-type + `word/document.xml`, bounded ZIP inspection), filename security, MIME cross-check and the 5 MiB limit live in the service/validation layer; the upload lifecycle (validate → deactivate previous active → persist metadata → store bytes → record SHA-256 + storage key → commit) is atomic in one transaction (A7.6.2) |
 
 47 domain tables + `flyway_schema_history` (managed by Flyway itself).
 
@@ -317,4 +318,51 @@ new API DTOs.
 No new permissions in this phase: A7.6.1 creates no endpoints;
 candidate-facing authorization (`resumes:manage`, PROPOSED) belongs to
 A7.6.3.
+
+## A7.6.2 — Secure Resume Upload Validation (service layer, no migration)
+
+No new migration and no schema change: the V8 `resumes` + V17
+`resumes_file_blobs` foundation is sufficient. A7.6.2 adds the
+security/validation layer that writes into it:
+
+- **Content validation (bytes only)** — the client MIME type is never the
+  security decision. PDF requires `%PDF-` within the first 1 KiB AND
+  `%%EOF` within the final 1 KiB (truncated/renamed fragments rejected);
+  DOC requires the OLE2/Compound File Binary signature; DOCX requires a
+  valid ZIP whose `[Content_Types].xml` declares the WordprocessingML
+  main-document content type AND containing `word/document.xml`
+  (XLSX/PPTX/arbitrary ZIPs rejected). ZIP inspection is bounded: entry
+  count, entry-name length, per-entry and TOTAL decompressed bytes are
+  capped (no decompression bombs). Unknown content is rejected, never
+  guessed.
+- **Filename security** — traversal, path separators, drive-qualified
+  paths, control and Windows-illegal characters and names over 255
+  characters are REJECTED (no silent rewriting). The filename is display
+  metadata only and never a storage path.
+- **MIME cross-check** — a declared MIME contradicting the detected
+  format is rejected; neutral `application/octet-stream` (or a blank
+  declaration) is accepted. MIME never overrides content detection.
+- **Size** — 5 MiB application limit (`app.upload.max-file-size-bytes`,
+  env `UPLOAD_MAX_FILE_SIZE_BYTES`, default `5242880`), enforced as a
+  controlled 413 `PAYLOAD_TOO_LARGE` domain error; servlet multipart
+  limits (6 MB file / 7 MB request) sit just above so the service limit
+  decides.
+- **Upload lifecycle (one transaction)** — validate filename + bytes →
+  verify the candidate exists → deactivate the previous active resume
+  (explicit UPDATE-before-INSERT ordering so
+  `uq_resumes_one_active_per_candidate` cannot be violated by Hibernate
+  write ordering; the partial unique index remains the final arbiter) →
+  persist metadata to obtain the resume id → store the EXACT validated
+  bytes under the server-generated key `resumes/{resumeId}/{uuid}` via
+  the A7.6.1 `FileStorage` abstraction → record SHA-256 (of the validated
+  bytes), size and storage key → commit. Validation failures persist
+  nothing; a storage failure rolls back the metadata insert (metadata and
+  bytes share the transaction).
+- **Legacy `file_url`** — V8 requires NOT NULL; new rows are written with
+  the non-dereferenceable marker `internal:db-blob`. No public URL is
+  ever created or exposed.
+
+No endpoints, no RBAC changes and no audit/outbox/notification behavior
+in this phase — HTTP surface and candidate-facing authorization are
+A7.6.3+.
 

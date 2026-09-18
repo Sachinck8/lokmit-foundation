@@ -115,6 +115,8 @@ and take effect from Phase 1 onward.
   `OUTBOX_RELAY_ENABLED`, `OUTBOX_RELAY_POLLING_INTERVAL_SECONDS`,
   `OUTBOX_RELAY_BATCH_SIZE`, `OUTBOX_RELAY_RETRY_BACKOFF_SECONDS`,
   `OUTBOX_RELAY_MAX_ATTEMPTS`,
+  `UPLOAD_MAX_FILE_SIZE_BYTES` (A7.6.2, default `5242880` — the 5 MiB
+  resume upload limit, enforced as a controlled 413),
   `STORAGE_TYPE` (A7.6.1, default `db` — resume bytes live in PostgreSQL;
   later `MAIL_*`, plus remaining `STORAGE_*` keys as upload phases land).
 - `application.yml` reads them with safe, non-secret defaults:

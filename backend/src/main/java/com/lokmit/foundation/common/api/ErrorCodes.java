@@ -29,6 +29,9 @@ public final class ErrorCodes {
     // I-6: public endpoint request rate limiting
     public static final String RATE_LIMITED = "RATE_LIMITED";
 
+    // A7.6.2: oversized resume uploads (413 PAYLOAD_TOO_LARGE)
+    public static final String PAYLOAD_TOO_LARGE = "PAYLOAD_TOO_LARGE";
+
     private ErrorCodes() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

@@ -79,6 +79,10 @@ app:
   # with candidate/resume deletion, and are never publicly addressable.
   storage:
     type: ${STORAGE_TYPE:db}
+  # Secure resume upload validation (A7.6.2): service-level limit; the
+  # multipart envelope above it is inherited from application.yml.
+  upload:
+    max-file-size-bytes: ${UPLOAD_MAX_FILE_SIZE_BYTES:5242880}
 
 # Logging: production keeps noise low; no secrets are logged by the app.
 logging:

@@ -9,6 +9,14 @@ spring:
     username: ${DB_USERNAME:lokmit_app}
     password: ${DB_PASSWORD:}
 
+  servlet:
+    # Multipart limits sit just above the A7.6.2 service limit so oversized
+    # uploads reach the service and get the controlled 413 error envelope
+    # (not a raw Tomcat MaxUploadSizeExceededException response).
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 7MB
+
   jpa:
     open-in-view: false
     hibernate:
@@ -102,10 +110,18 @@ app:
         max-attempts: ${OUTBOX_RELAY_MAX_ATTEMPTS:5}
     # Resume file storage (A7.6). Database-blob decision: bytes live in
     # PostgreSQL (resumes_file_blobs, V17) — no filesystem paths, no
-    # object-storage SDKs. 'db' = DatabaseFileStorage. Upload/download
-    # endpoints, validation policy and limits arrive in later A7.6 phases.
+    # object-storage SDKs. 'db' = DatabaseFileStorage. Download endpoints,
+    # candidate-facing authorization and rate limiting arrive in later
+    # A7.6 phases.
     storage:
       type: ${STORAGE_TYPE:db}
+    # Secure resume upload validation (A7.6.2). The 5 MiB SERVICE-level
+    # limit produces the controlled PAYLOAD_TOO_LARGE error; the multipart
+    # limits sit just above it so the service limit decides. Validation
+    # rules themselves (PDF/DOC/DOCX content checks, MIME cross-check,
+    # filename security) are code, not tunable policy.
+    upload:
+      max-file-size-bytes: ${UPLOAD_MAX_FILE_SIZE_BYTES:5242880}
 
 logging:
   level:
