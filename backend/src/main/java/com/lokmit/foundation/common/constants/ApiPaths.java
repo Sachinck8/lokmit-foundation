@@ -73,6 +73,10 @@ public final class ApiPaths {
     /** Candidate self-service resume APIs (A7.6.3) — authenticated candidate ownership. */
     public static final String CANDIDATE_ME_RESUMES = API_V1 + "/candidates/me/resumes";
 
+    /** Secure resume download API (A7.6.4) — candidate ownership or candidates:manage. */
+    public static final String RESUMES = API_V1 + "/resumes";
+    public static final String RESUME_DOWNLOAD = RESUMES + "/{resumeId}/download";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

@@ -678,12 +678,49 @@ surface:
 - **Response:** `201 Created` with the standard envelope and a safe DTO (id,
   candidateId, fileName, fileType as detected from the bytes, fileSizeBytes,
   active, createdAt, checksumSha256). `storageKey`, `fileUrl` and any blob
-  or provider information are never exposed. Download/viewing endpoints are
-  future phases (A7.6.4+).
+  or provider information are never exposed.
 - **Errors:** 400 (missing/empty file or filename, invalid
   PDF/DOC/DOCX content, invalid filename, MIME/content contradiction),
   404 (no candidate profile), 413 `PAYLOAD_TOO_LARGE` (over 5 MiB). All
   errors use the standard error envelope with the existing `ErrorCodes`.
+
+### Resume Download API (A7.6.4)
+
+Secure binary retrieval of stored resumes. Storage internals (blob table,
+storage keys) remain implementation details and never appear in responses,
+headers or logs:
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/resumes/{resumeId}/download` | GET | candidate ownership or `candidates:manage` | Download one resume's stored bytes |
+
+- **Authentication:** standard stateless JWT bearer chain; anonymous or
+  invalid-token requests are rejected 401 before any authorization logic.
+- **Authorization (IDOR-safe):** the resume id is the only client input.
+  A candidate may download ONLY their own currently ACTIVE resume; a
+  foreign or inactive resume is a plain 404, indistinguishable from a
+  nonexistent one. Administrators with the existing `candidates:manage`
+  permission (V14 seed: SUPER_ADMIN + ADMIN) may download any resume
+  including inactive ones (case-review semantics) — no broad new
+  permission was created. Employers/clients/moderators get no access:
+  authentication alone grants nothing, and ownership cannot be overridden
+  by any request parameter.
+- **Binary response:** the stored bytes with a content type derived from
+  the server-validated upload metadata (`application/pdf`,
+  `application/msword`, or the DOCX wordprocessingml type) — never from a
+  client header. Served as an attachment with an RFC 5987/6266-safe
+  `Content-Disposition` (percent-encoded `filename*` plus an ASCII
+  fallback), so header injection via filenames is impossible.
+- **Caching:** `Cache-Control: no-store` and `Pragma: no-cache` — resume
+  bytes are never publicly or privately cacheable.
+- **Integrity:** the SHA-256 recorded at upload (A7.6.2) is re-verified
+  against the loaded bytes before serving; a mismatch or a missing
+  checksum fails closed with a safe 500 — bytes are never served
+  unverified.
+- **Errors:** 401 (unauthenticated), 404 (nonexistent, foreign, inactive,
+  or bytes-missing resume — masked), 500 `INTERNAL_ERROR` (storage or
+  integrity failure, generic message, no internals). No error ever exposes
+  storage keys, blob details, or exception internals.
 
 ## Frontend Setup & Run
 
