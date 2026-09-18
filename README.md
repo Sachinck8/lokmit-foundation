@@ -722,6 +722,44 @@ headers or logs:
   integrity failure, generic message, no internals). No error ever exposes
   storage keys, blob details, or exception internals.
 
+### Resume Delete API (A7.6.5)
+
+Secure deletion completing the candidate resume lifecycle. Same
+authorization model as download; storage internals never appear in
+responses or errors:
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/resumes/{resumeId}` | DELETE | candidate ownership or `candidates:manage` | Delete one resume (metadata + stored bytes) |
+
+- **Authentication:** standard stateless JWT bearer chain; anonymous or
+  invalid-token requests are rejected 401 before any authorization logic.
+- **Authorization (IDOR-safe):** identical to download. A candidate may
+  delete ONLY their own currently ACTIVE resume; a foreign or inactive
+  resume is a plain 404, indistinguishable from a nonexistent one. The
+  resume id is the only client input — `candidateId`/`userId` parameters
+  cannot override ownership. Administrators with the existing
+  `candidates:manage` permission may delete any resume (active or
+  inactive). No new permission was created.
+- **Lifecycle behavior (physical deletion):** the resume metadata row and
+  the stored bytes are removed together; the V17 foreign key
+  (`ON DELETE CASCADE`) removes the blob row in the SAME database
+  transaction, and the provider-neutral storage delete runs through the
+  A7.6.1 FileStorage abstraction (an idempotent no-op for the database
+  provider; the cleanup hook for a future external provider). A failure
+  rolls back the whole operation — metadata and bytes can never become
+  silently inconsistent. Deleting the active resume leaves the candidate
+  with zero active resumes (a valid state); a new upload afterwards works
+  exactly as before. No soft-delete state or new enum was introduced.
+- **Response:** `204 No Content` (matching the existing deletion
+  convention). No body, no storage internals.
+- **Repeated DELETE:** the second call finds no row and returns the
+  established 404 — no second deletion state exists.
+- **Errors:** 401 (unauthenticated), 404 (nonexistent, foreign, or
+  inactive resume — masked), 500 `INTERNAL_ERROR` (storage failure,
+  generic message). No error exposes storage keys, blob details, SQL, or
+  stack traces.
+
 ## Frontend Setup & Run
 
 ```powershell

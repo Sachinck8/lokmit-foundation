@@ -2,6 +2,7 @@ package com.lokmit.foundation.employment.resume.controller;
 
 import com.lokmit.foundation.common.constants.ApiPaths;
 import com.lokmit.foundation.employment.resume.entity.Resume;
+import com.lokmit.foundation.employment.resume.service.ResumeDeleteService;
 import com.lokmit.foundation.employment.resume.service.ResumeDownloadService;
 import com.lokmit.foundation.security.Permissions;
 import com.lokmit.foundation.security.util.SecurityUtils;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,11 +47,14 @@ import java.nio.charset.StandardCharsets;
 public class ResumeDownloadController {
 
     private final ResumeDownloadService downloadService;
+    private final ResumeDeleteService deleteService;
     private final SecurityUtils securityUtils;
 
     public ResumeDownloadController(ResumeDownloadService downloadService,
+                                    ResumeDeleteService deleteService,
                                     SecurityUtils securityUtils) {
         this.downloadService = downloadService;
+        this.deleteService = deleteService;
         this.securityUtils = securityUtils;
     }
 
@@ -108,5 +113,31 @@ public class ResumeDownloadController {
             // Safe fallback for legacy rows with unusual stored types.
             return MediaType.APPLICATION_OCTET_STREAM;
         }
+    }
+
+    /**
+     * Deletes one resume (A7.6.5). Same server-side authorization model as
+     * download: candidate ownership (own ACTIVE resume only) or the existing
+     * {@code candidates:manage} permission (any row). The resume id is the
+     * only client input; ownership, the active rule and the storage cleanup
+     * are resolved server-side. Physical deletion: the V17 ON DELETE CASCADE
+     * removes the blob row in the same transaction; the provider-neutral
+     * storage delete runs through the A7.6.1 FileStorage abstraction.
+     * Repeated DELETE on an already-deleted resume is the established 404.
+     */
+    @DeleteMapping(ApiPaths.RESUME)
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Delete a resume by id",
+            description = "Candidates may delete ONLY their own ACTIVE resume; foreign or "
+                    + "inactive resumes are masked as 404. Administrators with "
+                    + "candidates:manage may delete any resume. Stored bytes are removed "
+                    + "with the metadata in one transaction.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<Void> deleteResume(@PathVariable long resumeId) {
+        Long userId = securityUtils.getCurrentUserId();
+        boolean isAdmin = securityUtils.hasAuthority(Permissions.CANDIDATES_MANAGE);
+
+        deleteService.deleteForPrincipal(resumeId, userId, isAdmin);
+        return ResponseEntity.noContent().build();
     }
 }

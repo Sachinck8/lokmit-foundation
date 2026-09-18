@@ -6,6 +6,7 @@ import com.lokmit.foundation.employment.candidate.repository.CandidateRepository
 import com.lokmit.foundation.employment.resume.entity.Resume;
 import com.lokmit.foundation.employment.resume.repository.ResumeRepository;
 import com.lokmit.foundation.employment.resume.service.ResumeDownloadService;
+import com.lokmit.foundation.employment.resume.service.ResumeDeleteService;
 import com.lokmit.foundation.employment.resume.service.ResumeOwnershipService;
 import com.lokmit.foundation.employment.resume.service.storage.FileStorage;
 import com.lokmit.foundation.security.config.CorsConfig;
@@ -59,7 +60,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = ResumeDownloadController.class)
 @Import({SecurityConfig.class, CorsConfig.class, JwtKeyConfig.class,
         JwtTokenProvider.class, CustomUserDetailsService.class, SecurityUtils.class,
-        ResumeDownloadService.class, ResumeOwnershipService.class})
+        ResumeDownloadService.class, ResumeDeleteService.class, ResumeOwnershipService.class})
 @AutoConfigureMockMvc
 class ResumeDownloadApiSecurityTest {
 
