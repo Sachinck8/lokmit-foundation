@@ -587,7 +587,9 @@ Server-enforced rules:
   `10:30+05:45` → `04:45Z`).
 - History/interview responses expose only schema-backed scheduling/audit
   data — never User entities, passwords, tokens or lockout fields.
-- **A7.6 — Resume/File Storage — is NOT implemented.**
+- **A7.6 — Resume/File Storage — is NOT implemented here; it shipped in the
+  dedicated A7.6 phase (secure upload/download/delete APIs + closeout, see
+  the A7.6.3/A7.6.4/A7.6.5/A7.6.6 sections above).**
 
 ### Admin Notifications + Audit Logs + Outbox (A7.5)
 
@@ -759,6 +761,53 @@ responses or errors:
   inactive resume — masked), 500 `INTERNAL_ERROR` (storage failure,
   generic message). No error exposes storage keys, blob details, SQL, or
   stack traces.
+
+### Resume Epic Closeout (A7.6.6)
+
+A7.6 closed out with: admin candidate resume listing
+(`GET /api/v1/admin/candidates/{candidateId}/resumes`, `candidates:manage`,
+paginated, metadata-only); an `updateReview` resume-ownership guard
+(rejecting cross-candidate resumeIds server-side); resume lifecycle audit +
+outbox events through the existing A7.5 services (downloads are
+intentionally NOT audited — they are high-frequency reads); and
+authenticated resume-upload rate limiting reusing the I-6 limiter
+(`RATE_LIMIT_RESUME_UPLOAD_*`, default 30 requests/60s per client IP).
+
+### Public Jobs API + /jobs Integration (A8)
+
+A8 opens the job domain to anonymous website visitors. No schema change,
+no new permission, and no security weakening: the admin job management
+family (A7.2) keeps working exactly as before.
+
+- **Endpoints** (both anonymous, read-only):
+  - `GET /api/v1/jobs` — published jobs, newest first. Pagination via the
+    standard `page`/`size` params (default 20, cap 100) and the standard
+    `PageResponse` envelope. Supported filters, all backed by existing
+    schema fields: `categoryId`, `employmentType`, `workMode` and keyword
+    `search` over title/slug/work location.
+  - `GET /api/v1/jobs/{jobId}` — one published job, including its public
+    skills list and safe employer/category summaries.
+- **Visibility rules:** only jobs in the `PUBLISHED` lifecycle state are
+  public. DRAFT, CLOSED and ARCHIVED jobs are invisible — the detail
+  endpoint answers unknown and non-public ids with the identical 404, so
+  it never reveals whether an unpublished job exists. Listings can never
+  contain them because the repository query itself is status-filtered.
+- **Public DTO:** a dedicated `PublicJobResponse` (never the entity, never
+  the admin DTO). It omits status and record-management timestamps and
+  renders the employer as its company name only — no verification
+  workflow, linked user, or security fields.
+- **Security:** the security chain permits ONLY `GET` on the public job
+  collection and single-job paths anonymously (the same method-specific
+  matcher pattern as the public contact form). POST/PATCH/PUT/DELETE on
+  `/api/v1/jobs/**` remain authenticated, and all admin job endpoints keep
+  their `employment:manage` `@PreAuthorize`.
+- **Frontend /jobs:** the existing public jobs page now consumes the real
+  API (no mock data): loading skeleton, error state with retry, empty
+  state when no jobs are published or filters match nothing, search +
+  employment type + work mode controls, and pagination. Each listing
+  links to a new `/jobs/:jobId` detail page built with the same design
+  system. Job browsing requires no login. If the database has no
+  published jobs, the page shows its empty state.
 
 ## Frontend Setup & Run
 

@@ -79,6 +79,10 @@ public final class ApiPaths {
     public static final String RESUME_DOWNLOAD = RESUMES + "/{resumeId}/download";
     public static final String RESUME = RESUMES + "/{resumeId}";
 
+    /** Public job browsing APIs (A8) — anonymous, published jobs only. */
+    public static final String JOBS = API_V1 + "/jobs";
+    public static final String JOB = JOBS + "/{jobId}";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

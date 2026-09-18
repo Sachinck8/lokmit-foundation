@@ -12,6 +12,7 @@ import Impact from '../pages/public/Impact/Impact.jsx'
 import Clients from '../pages/public/Clients/Clients.jsx'
 import Careers from '../pages/public/Careers/Careers.jsx'
 import Jobs from '../pages/public/Jobs/Jobs.jsx'
+import JobDetail from '../pages/public/Jobs/JobDetail.jsx'
 import Downloads from '../pages/public/Downloads/Downloads.jsx'
 import Gallery from '../pages/public/Gallery/Gallery.jsx'
 import News from '../pages/public/News/News.jsx'
@@ -56,6 +57,7 @@ const router = createBrowserRouter([
       { path: '/clients', element: <Clients /> },
       { path: '/careers', element: <Careers /> },
       { path: '/jobs', element: <Jobs /> },
+      { path: '/jobs/:jobId', element: <JobDetail /> },
       { path: '/downloads', element: <Downloads /> },
       { path: '/gallery', element: <Gallery /> },
       { path: '/news', element: <News /> },

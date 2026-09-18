@@ -25,7 +25,7 @@ export const jobsContent = {
   hero: {
     title: 'Job Portal',
     subtitle:
-      'A job portal for candidates and employers is under development.',
+      'Browse current openings with LOKMIT FOUNDATION and partner employers. Candidate and employer portals are coming soon.',
     background: 'linear-gradient(135deg, #0d3d21 0%, #14532d 100%)',
   },
   candidatePortal: {

@@ -155,6 +155,13 @@ public class SecurityConfig {
                         // callers get 401 (not 403) on the management endpoints. The
                         // messages:manage permission is then enforced by @PreAuthorize.
                         .requestMatchers(HttpMethod.POST, ApiPaths.CONTACT_MESSAGES).permitAll()
+                        // A8: public job browsing — ONLY the read methods on the
+                        // /jobs collection and single-job paths are anonymous. POST/
+                        // PATCH/PUT/DELETE and every admin job endpoint remain under
+                        // anyRequest().authenticated() + employment:manage exactly
+                        // as before; no security weakening.
+                        .requestMatchers(HttpMethod.GET, ApiPaths.JOBS).permitAll()
+                        .requestMatchers(HttpMethod.GET, ApiPaths.JOB).permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions
