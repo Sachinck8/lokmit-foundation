@@ -1044,6 +1044,26 @@ and no change to outbox event generation or the admin controllers.
   plus nav entries, following the existing design system via
   `candidateService`.
 
+### Candidate Notification Surfacing (A16)
+
+A16 is a frontend-only presentation phase over the existing A14
+notification APIs — no backend change, no migration, no auth change.
+
+- **Unread badge:** the candidate portal shell fetches the existing
+  `GET /candidates/me/notifications/unread-count` on layout mount (and
+  again when the candidate navigates to the Notifications page) and shows
+  a badge on the Notifications nav item. Zero hides the badge; a failed
+  request silently degrades to no badge and never blocks the portal.
+  After a mark-read action the page refreshes the badge through the
+  layout — no page reload.
+- **Deep links:** notifications whose `entityType`/`entityId` resolve to
+  a portal route are clickable (whole row, keyboard accessible).
+  `JOB_APPLICATION` opens `/candidate/applications/{entityId}`;
+  `INTERVIEW` opens the interviews page. Unknown/missing/invalid entity
+  data leaves the notification non-actionable — no crash, no malformed
+  route. Clicking an unread notification marks it read first (existing
+  mark-read behavior), keeping one request per action.
+
 ## Frontend Setup & Run
 
 ```powershell
