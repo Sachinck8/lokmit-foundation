@@ -1,0 +1,401 @@
+/*
+ * A18 Stage 1 admin console styles. Mirrors the candidate portal's visual
+ * language (same spacing/color tokens, same status chip treatment) without
+ * touching the public site or candidate portal stylesheets.
+ */
+
+.admin-portal {
+  min-height: 100vh;
+  background: #fafaf8;
+  color: var(--color-text, #1a2b3c);
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-portal__header {
+  background: #ffffff;
+  border-bottom: 1px solid #e3e6dd;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.admin-portal__header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-4, 1rem);
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6, 2rem);
+  flex-wrap: wrap;
+}
+
+.admin-portal__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3, 0.75rem);
+}
+
+.admin-portal__brand-label {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-heading, #12314a);
+  border-left: 1px solid #e3e6dd;
+  padding-left: var(--spacing-3, 0.75rem);
+}
+
+.admin-portal__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.admin-portal__nav-link {
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  text-decoration: none;
+  color: #40505e;
+}
+
+.admin-portal__nav-link:hover {
+  background: #f0f3ec;
+  color: #12314a;
+}
+
+.admin-portal__nav-link--active {
+  background: var(--color-surface, #f0f4ea);
+  color: #12314a;
+  font-weight: 600;
+}
+
+.admin-portal__user {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3, 0.75rem);
+}
+
+.admin-portal__user-email {
+  font-size: 0.85rem;
+  color: #5a6a76;
+}
+
+.admin-portal__main {
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-6, 2rem) var(--spacing-4, 1rem) var(--spacing-8, 4rem);
+}
+
+/* Back link ----------------------------------------------------------- */
+
+.admin-portal__back {
+  margin: 0 0 var(--spacing-2, 0.5rem);
+}
+
+.admin-portal__back-link {
+  color: #5a6a76;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.admin-portal__back-link:hover {
+  color: #12314a;
+  text-decoration: underline;
+}
+
+/* Panels ------------------------------------------------------------- */
+
+.admin-portal__panel {
+  background: #ffffff;
+  border: 1px solid #e3e6dd;
+  border-radius: 12px;
+  padding: var(--spacing-6, 2rem);
+}
+
+.admin-portal__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-heading, #12314a);
+  margin: 0 0 var(--spacing-2, 0.5rem);
+}
+
+.admin-portal__panel-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-heading, #12314a);
+  margin: 0 0 var(--spacing-3, 0.75rem);
+}
+
+.admin-portal__muted {
+  color: #5a6a76;
+}
+
+.admin-portal__error {
+  color: #8f1f1f;
+  margin-top: var(--spacing-2, 0.5rem);
+}
+
+.admin-portal__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3, 0.75rem);
+  flex-wrap: wrap;
+}
+
+/* Facts grid (application/candidate detail fields) ------------------- */
+
+.admin-portal__facts {
+  margin: var(--spacing-4, 1.5rem) 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--spacing-4, 1.5rem);
+}
+
+.admin-portal__fact dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7a8791;
+  margin-bottom: 0.15rem;
+}
+
+.admin-portal__fact dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* Status chips — identical palette to the candidate portal chips ----- */
+
+.admin-portal__status {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.admin-portal__status--SUBMITTED { background: #eef2fb; border-color: #ccd8f2; color: #26418f; }
+.admin-portal__status--UNDER_REVIEW { background: #fdf6e7; border-color: #f0dfae; color: #8a6116; }
+.admin-portal__status--SHORTLISTED { background: #e9f7ee; border-color: #bfe4cb; color: #1e6b3a; }
+.admin-portal__status--HIRED { background: #e6f4ea; border-color: #b6e0c2; color: #14532d; font-weight: 700; }
+.admin-portal__status--REJECTED { background: #fdeeee; border-color: #f2c6c6; color: #8f1f1f; }
+.admin-portal__status--WITHDRAWN { background: #f1f1f1; border-color: #dddddd; color: #555555; }
+.admin-portal__status--SCHEDULED { background: #eef2fb; border-color: #ccd8f2; color: #26418f; }
+.admin-portal__status--COMPLETED { background: #e9f7ee; border-color: #bfe4cb; color: #1e6b3a; }
+.admin-portal__status--CANCELLED { background: #f1f1f1; border-color: #dddddd; color: #555555; }
+.admin-portal__status--NO_SHOW { background: #fdf6e7; border-color: #f0dfae; color: #8a6116; }
+
+/* Applications table -------------------------------------------------- */
+
+.admin-portal__table-wrap {
+  background: #ffffff;
+  border: 1px solid #e3e6dd;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.admin-portal__table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.admin-portal__table th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7a8791;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #e3e6dd;
+  white-space: nowrap;
+}
+
+.admin-portal__table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #f0f2ec;
+  font-size: 0.95rem;
+  vertical-align: top;
+}
+
+.admin-portal__table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-portal__table tbody tr {
+  cursor: pointer;
+}
+
+.admin-portal__table tbody tr:hover {
+  background: #f7f9f3;
+}
+
+.admin-portal__cell-strong {
+  font-weight: 600;
+  color: var(--color-heading, #12314a);
+}
+
+.admin-portal__cell-muted {
+  color: #5a6a76;
+  font-size: 0.85rem;
+}
+
+/* Filters + pagination ------------------------------------------------ */
+
+.admin-portal__filters {
+  display: flex;
+  gap: var(--spacing-3, 0.75rem);
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-4, 1.5rem);
+}
+
+.admin-portal__filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-portal__filter-field span {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7a8791;
+}
+
+.admin-portal__filter-input,
+.admin-portal__filter-select {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #d5dacd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #ffffff;
+  color: inherit;
+  min-width: 160px;
+}
+
+.admin-portal__pagination {
+  margin-top: var(--spacing-4, 1.5rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3, 0.75rem);
+  flex-wrap: wrap;
+}
+
+.admin-portal__page-note {
+  color: #5a6a76;
+  font-size: 0.9rem;
+}
+
+.admin-portal__page-actions {
+  display: flex;
+  gap: var(--spacing-2, 0.5rem);
+}
+
+/* Sections, actions, timeline ---------------------------------------- */
+
+.admin-portal__section {
+  margin-top: var(--spacing-6, 2rem);
+  padding-top: var(--spacing-4, 1.5rem);
+  border-top: 1px solid #eef0e9;
+}
+
+.admin-portal__section:first-of-type {
+  margin-top: var(--spacing-4, 1.5rem);
+  padding-top: 0;
+  border-top: none;
+}
+
+.admin-portal__actions-row {
+  display: flex;
+  gap: var(--spacing-2, 0.5rem);
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: var(--spacing-3, 0.75rem);
+}
+
+.admin-portal__sublist {
+  margin: 0.25rem 0 0;
+  padding-left: 1.2rem;
+  color: #40505e;
+}
+
+.admin-portal__sublist li {
+  margin-bottom: 0.3rem;
+}
+
+.admin-portal__subitem-title {
+  font-weight: 600;
+  color: var(--color-heading, #12314a);
+}
+
+.admin-portal__subitem-meta {
+  color: #5a6a76;
+  font-size: 0.85rem;
+}
+
+.admin-portal__timeline {
+  list-style: none;
+  margin: var(--spacing-3, 0.75rem) 0 0;
+  padding: 0;
+}
+
+.admin-portal__timeline-item {
+  position: relative;
+  padding: 0 0 var(--spacing-4, 1.5rem) 1.4rem;
+  border-left: 2px solid #e3e6dd;
+  margin-left: 0.35rem;
+}
+
+.admin-portal__timeline-item:last-child {
+  padding-bottom: 0.25rem;
+}
+
+.admin-portal__timeline-marker {
+  position: absolute;
+  left: -0.45rem;
+  top: 0.2rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--color-surface, #f0f4ea);
+  border: 2px solid #7d9b76;
+}
+
+.admin-portal__timeline-transition {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.admin-portal__timeline-from {
+  color: #5a6a76;
+  font-size: 0.9rem;
+}
+
+.admin-portal__timeline-date {
+  margin: 0.2rem 0 0;
+  color: #7a8791;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 720px) {
+  .admin-portal__user-email {
+    display: none;
+  }
+  .admin-portal__panel {
+    padding: var(--spacing-4, 1.5rem);
+  }
+}

@@ -6,6 +6,7 @@ import com.lokmit.foundation.employment.experience.entity.CandidateExperience;
 import com.lokmit.foundation.employment.experience.dto.CandidateExperienceCreateRequest;
 import com.lokmit.foundation.employment.experience.dto.CandidateExperienceResponse;
 import com.lokmit.foundation.employment.experience.dto.CandidateExperienceUpdateRequest;
+import com.lokmit.foundation.employment.candidate.repository.CandidateRepository;
 import com.lokmit.foundation.employment.experience.repository.CandidateExperienceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,13 +26,22 @@ import java.util.List;
 public class CandidateExperienceService {
 
     private final CandidateExperienceRepository repository;
+    private final CandidateRepository candidateRepository;
 
-    public CandidateExperienceService(CandidateExperienceRepository repository) {
+    public CandidateExperienceService(CandidateExperienceRepository repository,
+                                      CandidateRepository candidateRepository) {
         this.repository = repository;
+        this.candidateRepository = candidateRepository;
     }
 
     @Transactional(readOnly = true)
     public List<CandidateExperienceResponse> list(Long candidateId) {
+        // A18: read path is now shared with the admin applications-review
+        // console, so an unknown candidate must not silently return an empty
+        // list — same explicit 404 guard the admin skills list already has.
+        if (!candidateRepository.existsById(candidateId)) {
+            throw new NotFoundException("Candidate not found: " + candidateId);
+        }
         return repository.findByCandidateIdOrderByCreatedAtDesc(candidateId).stream()
                 .map(CandidateExperienceResponse::from)
                 .toList();

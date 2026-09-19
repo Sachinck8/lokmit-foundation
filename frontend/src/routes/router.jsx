@@ -43,6 +43,10 @@ import CandidateApplicationDetail from '../pages/candidate/CandidateApplicationD
 import CandidateNotifications from '../pages/candidate/CandidateNotifications.jsx'
 import CandidateInterviews from '../pages/candidate/CandidateInterviews.jsx'
 import RequireCandidate from '../auth/RequireCandidate.jsx'
+import RequireAdmin from '../auth/RequireAdmin.jsx'
+import AdminLayout from '../layouts/AdminLayout/AdminLayout.jsx'
+import AdminApplications from '../pages/admin/AdminApplications.jsx'
+import AdminApplicationDetail from '../pages/admin/AdminApplicationDetail.jsx'
 
 const candidateRoutes = [
   { path: '/candidate', element: <CandidateDashboard /> },
@@ -52,6 +56,11 @@ const candidateRoutes = [
   { path: '/candidate/applications/:applicationId', element: <CandidateApplicationDetail /> },
   { path: '/candidate/interviews', element: <CandidateInterviews /> },
   { path: '/candidate/notifications', element: <CandidateNotifications /> },
+]
+
+const adminRoutes = [
+  { path: '/admin-panel/applications', element: <AdminApplications /> },
+  { path: '/admin-panel/applications/:applicationId', element: <AdminApplicationDetail /> },
 ]
 
 const router = createBrowserRouter([
@@ -103,6 +112,15 @@ const router = createBrowserRouter([
       </RequireCandidate>
     ),
     children: candidateRoutes,
+  },
+  {
+    path: '/',
+    element: (
+      <RequireAdmin>
+        <AdminLayout />
+      </RequireAdmin>
+    ),
+    children: adminRoutes,
   },
 ])
 

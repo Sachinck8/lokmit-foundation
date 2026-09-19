@@ -303,8 +303,15 @@ public class ApplicationService {
                 .job(new ApplicationResponse.JobSummary(
                         job.getId(), job.getTitle(), job.getSlug(), job.getStatus()))
                 .candidate(new ApplicationResponse.CandidateSummary(
-                        candidate.getId(), candidate.getPhone(),
-                        candidate.getCurrentLocation(), candidate.getAvailabilityStatus()))
+                        candidate.getId(),
+                        candidate.getUser() != null ? candidate.getUser().getFullName() : null,
+                        candidate.getUser() != null ? candidate.getUser().getEmail() : null,
+                        candidate.getPhone(),
+                        candidate.getCurrentLocation(),
+                        candidate.getSummary(),
+                        candidate.getExpectedSalaryMin(),
+                        candidate.getExpectedSalaryMax(),
+                        candidate.getAvailabilityStatus()))
                 .employer(new ApplicationResponse.EmployerSummary(
                         employer.getId(), employer.getCompanyName()))
                 .resumeId(app.getResumeId())

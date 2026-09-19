@@ -215,6 +215,8 @@ class CandidateEducationExperienceSecurityTest {
                 .thenReturn(List.of(education(1L, 10L)));
         when(experienceRepository.findByCandidateIdOrderByCreatedAtDesc(10L))
                 .thenReturn(List.of(experience(2L, 10L)));
+        // A18: the shared list() path now guards unknown candidates explicitly.
+        when(candidateRepository.existsById(10L)).thenReturn(true);
 
         mockMvc.perform(get(ME_EDUCATIONS)
                         .header("Authorization", "Bearer " + tokenFor(2L, CANDIDATE_EMAIL)))

@@ -1064,6 +1064,48 @@ notification APIs — no backend change, no migration, no auth change.
   route. Clicking an unread notification marks it read first (existing
   mark-read behavior), keeping one request per action.
 
+### Admin Applications Review Console (A18)
+
+A18 Stage 1 turns the existing employment backend into a usable,
+authenticated admin frontend for application review. No new permission,
+no migration, no auth change; backend additions are minimal and additive.
+
+- **Admin console shell:** new `RequireAdmin` guard (checks the
+  `employment:manage` permission exposed by `/auth/me` - UX only, backend
+  `@PreAuthorize` remains the security boundary), a minimal `AdminLayout`
+  with an Applications nav item and staff sign-out, and protected routes
+  `/admin-panel/applications` + `/admin-panel/applications/:applicationId`.
+  The `/admin-panel` placeholder now links to the live console; the login
+  page routes staff honoring an `/admin-panel` returnTo straight there.
+- **Applications list:** paginated, backend-filtered (status + note
+  search) table with candidate name/email (new A18 identity enrichment),
+  job, employer, status chip, applied date and resume availability.
+- **Application detail/review:** single page assembling the existing
+  surfaces - application facts, candidate identity/profile panel, the
+  candidate's skills/education/experience (new read-only admin endpoints,
+  see below), resume metadata with secure download through the existing
+  authenticated endpoint, status-history timeline, interviews, and the
+  backend-authoritative status transitions (start review, shortlist,
+  decide HIRED/REJECTED, withdraw) with confirmation dialogs and explicit
+  401/403/404/409/400 error handling. Terminal states offer no actions.
+- **Candidate identity enrichment:** `ApplicationResponse.CandidateSummary`
+  now carries the linked user's full name + contact email (plus the
+  candidate's own summary/expected-salary columns) so a reviewer can reach
+  the applicant. No other user material is exposed - the DTO-leak test
+  matrix still asserts no password/lockout/token/role fields appear.
+- **Read-only candidate profile endpoints (admin):**
+  `GET /admin/candidates/{candidateId}/educations` and `/experiences`
+  (joining the existing skills endpoint), all `candidates:manage`-guarded,
+  reusing the A13 services/DTOs read-only; unknown candidate -> 404.
+  The self-service list() methods gained the same explicit unknown-
+  candidate guard (no behavior change for candidates).
+- **Tests:** `AdminCandidateProfileReadSecurityTest` (admin success,
+  anonymous 401, candidate 403, unknown candidate 404, enrichment leaks
+  no security internals); the A7.3 DTO-safety test now asserts the
+  intended review identity fields while still forbidding security
+  internals. Backend suite: 656 tests, 0 failures, 13 PostgreSQL-gated
+  skips; backend package and frontend production build both succeed.
+
 ## Frontend Setup & Run
 
 ```powershell

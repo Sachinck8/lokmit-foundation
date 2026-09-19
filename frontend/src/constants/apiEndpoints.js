@@ -21,4 +21,11 @@ export const API_ENDPOINTS = {
   // Candidate self-service notifications + interview visibility (A14).
   CANDIDATE_ME_NOTIFICATIONS: '/candidates/me/notifications',
   CANDIDATE_ME_INTERVIEWS: '/candidates/me/interviews',
+  // Admin employment console (A18) — applications review (Stage 1).
+  ADMIN_APPLICATIONS: '/admin/applications',
+  ADMIN_CANDIDATE_RESUMES: (candidateId) => `/admin/candidates/${candidateId}/resumes`,
+  ADMIN_CANDIDATE_SKILLS: (candidateId) => `/admin/candidates/${candidateId}/skills`,
+  ADMIN_CANDIDATE_EDUCATIONS: (candidateId) => `/admin/candidates/${candidateId}/educations`,
+  ADMIN_CANDIDATE_EXPERIENCES: (candidateId) => `/admin/candidates/${candidateId}/experiences`,
+  RESUME_DOWNLOAD: (resumeId) => `/resumes/${resumeId}/download`,
 }

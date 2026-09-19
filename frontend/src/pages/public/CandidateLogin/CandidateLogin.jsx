@@ -83,9 +83,19 @@ export default function CandidateLogin() {
       const candidateUser = signedIn
         && Array.isArray(signedIn.roles)
         && signedIn.roles.includes('ROLE_CANDIDATE')
-      const target = destination === '/candidate' && !candidateUser
-        ? '/jobs'
-        : (candidateUser ? destination : '/jobs')
+      // A18: staff accounts (employment:manage) honoring an /admin-panel
+      // returnTo land on the admin console; candidates go to their portal;
+      // everything else falls back to public jobs.
+      const staffPermissions = Array.isArray(signedIn.permissions)
+        ? signedIn.permissions
+        : []
+      const adminTarget = destination.startsWith('/admin-panel')
+        && staffPermissions.includes('employment:manage')
+      const target = adminTarget
+        ? destination
+        : (destination === '/candidate' && !candidateUser
+          ? '/jobs'
+          : (candidateUser ? destination : '/jobs'))
       navigate(target, { replace: true })
       if (!candidateUser && destination.startsWith('/candidate')) {
         // Non-candidates are routed to public jobs; the portal guard will

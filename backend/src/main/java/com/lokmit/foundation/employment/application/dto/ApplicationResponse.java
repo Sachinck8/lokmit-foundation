@@ -7,9 +7,11 @@ import java.time.OffsetDateTime;
 
 /**
  * Safe administrative application representation. Related data is embedded
- * as safe summaries only — the candidate exposes no user identity/security
- * material (no email, password hash, lockout, token fields), the employer
- * only company identity, the job only posting identity.
+ * as safe summaries only — the employer exposes only company identity, the
+ * job only posting identity. The candidate summary (A18) additionally
+ * carries the linked user's review-relevant identity (full name + contact
+ * email) so an administrator can actually reach the applicant; no other
+ * user material (password hash, lockout/token/audit internals) is exposed.
  */
 @Getter
 public class ApplicationResponse {
@@ -30,19 +32,39 @@ public class ApplicationResponse {
         }
     }
 
-    /** Safe candidate summary — no linked-user identity or security fields. */
+    /**
+     * Safe candidate summary. A18 review enrichment: candidateName and
+     * candidateEmail come from the candidate's linked user identity and are
+     * limited to exactly what an application reviewer needs; summary and
+     * expected-salary are plain candidate columns (same class as
+     * phone/location). No security material (password hash, lockout, token
+     * or audit fields) is exposed.
+     */
     @Getter
     public static class CandidateSummary {
         private final Long id;
+        private final String candidateName;
+        private final String candidateEmail;
         private final String phone;
         private final String currentLocation;
+        private final String summary;
+        private final java.math.BigDecimal expectedSalaryMin;
+        private final java.math.BigDecimal expectedSalaryMax;
         private final String availability;
 
-        public CandidateSummary(Long id, String phone, String currentLocation,
+        public CandidateSummary(Long id, String candidateName, String candidateEmail,
+                                String phone, String currentLocation, String summary,
+                                java.math.BigDecimal expectedSalaryMin,
+                                java.math.BigDecimal expectedSalaryMax,
                                 String availability) {
             this.id = id;
+            this.candidateName = candidateName;
+            this.candidateEmail = candidateEmail;
             this.phone = phone;
             this.currentLocation = currentLocation;
+            this.summary = summary;
+            this.expectedSalaryMin = expectedSalaryMin;
+            this.expectedSalaryMax = expectedSalaryMax;
             this.availability = availability;
         }
     }

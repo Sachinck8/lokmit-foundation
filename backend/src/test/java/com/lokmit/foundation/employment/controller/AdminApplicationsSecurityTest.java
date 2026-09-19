@@ -557,7 +557,7 @@ class AdminApplicationsSecurityTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("application responses never expose candidate/employer-user security fields")
+    @DisplayName("application responses expose only review identity — never security fields (A18 updated)")
     void dtoSafety() throws Exception {
         String auth = adminAuth();
 
@@ -575,6 +575,15 @@ class AdminApplicationsSecurityTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
+        // A18: the candidate summary now intentionally carries the linked
+        // user's review identity (full name + contact email) so an
+        // administrator can reach the applicant — assert it is present.
+        assertThat(body)
+                .contains("candidateName")
+                .contains("Linked User")
+                .contains("candidateEmail")
+                .contains("linked-" + (91L + 20L) + "@example.org");
+        // Security internals still never leak.
         assertThat(body)
                 .doesNotContain("password")
                 .doesNotContain("secret-hash")
@@ -582,7 +591,6 @@ class AdminApplicationsSecurityTest {
                 .doesNotContain("lockedUntil")
                 .doesNotContain("refreshToken")
                 .doesNotContain("userType")
-                .doesNotContain("@example.org")
                 .doesNotContain("\"roles\"");
     }
 }

@@ -24,8 +24,12 @@ export default function AdminPanel() {
           items={content.placeholderItems}
         />
         <div className="portal-login__actions">
+          {/* A18: the applications review console is live for staff. */}
+          <Link to="/admin-panel/applications">
+            <Button variant="primary" size="large">Open Applications Review</Button>
+          </Link>
           <Link to="/contact">
-            <Button variant="primary" size="large">Contact Us</Button>
+            <Button variant="ghost" size="large">Contact Us</Button>
           </Link>
         </div>
       </Container>

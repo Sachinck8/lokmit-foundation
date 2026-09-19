@@ -48,6 +48,11 @@ public final class ApiPaths {
     public static final String ADMIN_CANDIDATE_RESUMES = ADMIN_CANDIDATES + "/{candidateId}/resumes";
     public static final String ADMIN_CANDIDATE_SKILLS = ADMIN_CANDIDATES + "/{candidateId}/skills";
     public static final String ADMIN_CANDIDATE_SKILL = ADMIN_CANDIDATE_SKILLS + "/{skillId}";
+    // A18 read-only candidate-review surfaces (applications review console).
+    public static final String ADMIN_CANDIDATE_EDUCATIONS =
+            ADMIN_CANDIDATES + "/{candidateId}/educations";
+    public static final String ADMIN_CANDIDATE_EXPERIENCES =
+            ADMIN_CANDIDATES + "/{candidateId}/experiences";
     public static final String ADMIN_SKILLS = API_V1 + "/admin/skills";
     public static final String ADMIN_JOB_CATEGORIES = API_V1 + "/admin/job-categories";
 
