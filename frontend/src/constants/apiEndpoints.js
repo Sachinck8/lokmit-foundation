@@ -15,4 +15,7 @@ export const API_ENDPOINTS = {
   CANDIDATE_ME_APPLICATIONS: '/candidates/me/applications',
   // Candidate self-service skills (A11) — existing V8 candidate_skills join.
   CANDIDATE_ME_SKILLS: '/candidates/me/skills',
+  // Candidate self-service education + experience CRUD (A13) — V8 tables.
+  CANDIDATE_ME_EDUCATIONS: '/candidates/me/educations',
+  CANDIDATE_ME_EXPERIENCES: '/candidates/me/experiences',
 }

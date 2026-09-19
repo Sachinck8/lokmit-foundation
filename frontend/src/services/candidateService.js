@@ -224,3 +224,102 @@ export function listSkillCatalog() {
       return data
     })
 }
+
+// ---------------------------------------------------------------------
+// education + experience (A13)
+// ---------------------------------------------------------------------
+
+/**
+ * Lists the authenticated candidate's education records.
+ *
+ * @returns {Promise<Array<{ id, institution, degree, fieldOfStudy, startYear, endYear, grade, createdAt }>>}
+ */
+export function listMyEducations() {
+  return apiClient.get(API_ENDPOINTS.CANDIDATE_ME_EDUCATIONS)
+    .then(response => {
+      const data = response.data && response.data.data
+      if (!Array.isArray(data)) {
+        throw new Error('Unexpected response shape from the education API.')
+      }
+      return data
+    })
+}
+
+/**
+ * Adds an education record to the caller's own profile.
+ *
+ * @param {{ institution: string, degree: string, fieldOfStudy?: string|null,
+ *            startYear: number, endYear?: number|null, grade?: string|null }} payload
+ * @returns {Promise<Object>} the created education DTO
+ */
+export function addMyEducation(payload) {
+  const body = {
+    institution: payload.institution,
+    degree: payload.degree,
+    startYear: payload.startYear,
+  }
+  if (payload.fieldOfStudy) body.fieldOfStudy = payload.fieldOfStudy
+  if (payload.endYear) body.endYear = payload.endYear
+  if (payload.grade) body.grade = payload.grade
+  return apiClient.post(API_ENDPOINTS.CANDIDATE_ME_EDUCATIONS, body)
+    .then(response => response.data && response.data.data)
+}
+
+/**
+ * Partially updates one of the caller's education records.
+ *
+ * @param {{ institution?: string, degree?: string, fieldOfStudy?: string,
+ *            startYear?: number, endYear?: number, grade?: string }} patch
+ */
+export function updateMyEducation(recordId, patch) {
+  return apiClient.patch(`${API_ENDPOINTS.CANDIDATE_ME_EDUCATIONS}/${recordId}`, patch)
+    .then(response => response.data && response.data.data)
+}
+
+/** Deletes one of the caller's education records (204 on success). */
+export function deleteMyEducation(recordId) {
+  return apiClient.delete(`${API_ENDPOINTS.CANDIDATE_ME_EDUCATIONS}/${recordId}`)
+    .then(() => true)
+}
+
+/** Lists the authenticated candidate's experience records. */
+export function listMyExperiences() {
+  return apiClient.get(API_ENDPOINTS.CANDIDATE_ME_EXPERIENCES)
+    .then(response => {
+      const data = response.data && response.data.data
+      if (!Array.isArray(data)) {
+        throw new Error('Unexpected response shape from the experience API.')
+      }
+      return data
+    })
+}
+
+/**
+ * Adds an experience record to the caller's own profile.
+ *
+ * @param {{ companyName: string, jobTitle: string, description?: string|null,
+ *            startDate: string, endDate?: string|null }} payload (ISO dates)
+ */
+export function addMyExperience(payload) {
+  const body = {
+    companyName: payload.companyName,
+    jobTitle: payload.jobTitle,
+    startDate: payload.startDate,
+  }
+  if (payload.description) body.description = payload.description
+  if (payload.endDate) body.endDate = payload.endDate
+  return apiClient.post(API_ENDPOINTS.CANDIDATE_ME_EXPERIENCES, body)
+    .then(response => response.data && response.data.data)
+}
+
+/** Partially updates one of the caller's experience records. */
+export function updateMyExperience(recordId, patch) {
+  return apiClient.patch(`${API_ENDPOINTS.CANDIDATE_ME_EXPERIENCES}/${recordId}`, patch)
+    .then(response => response.data && response.data.data)
+}
+
+/** Deletes one of the caller's experience records (204 on success). */
+export function deleteMyExperience(recordId) {
+  return apiClient.delete(`${API_ENDPOINTS.CANDIDATE_ME_EXPERIENCES}/${recordId}`)
+    .then(() => true)
+}

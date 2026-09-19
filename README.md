@@ -981,6 +981,34 @@ no migration, no new statuses, no permission or SecurityConfig change.
   at any volume, and the panel notes when a tally covers only the most
   recent page. No statistics are fabricated.
 
+### Candidate Education + Experience Self-Service (A13)
+
+A13 activates the two schema-ready V8 tables that had no Java layer —
+`candidate_educations` and `candidate_experiences` — with full candidate
+self-service CRUD. No migration, no new permission, no SecurityConfig
+change.
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/candidates/me/educations` | GET/POST | authenticated candidate (ownership) | List / add own education records |
+| `/candidates/me/educations/{id}` | PATCH/DELETE | authenticated candidate (ownership) | Update / delete own record |
+| `/candidates/me/experiences` | GET/POST | authenticated candidate (ownership) | List / add own experience records |
+| `/candidates/me/experiences/{id}` | PATCH/DELETE | authenticated candidate (ownership) | Update / delete own record |
+
+- **Ownership:** the standard pattern — candidate resolved server-side
+  from the JWT user id (A7.6.3 ownership service); no candidateId field
+  exists on any request contract; foreign and unknown record ids return
+  the identical plain 404; a user without a candidate profile gets the
+  same 404 as the other self-service APIs.
+- **Validation:** per contract — education requires institution, degree,
+  startYear (year range 1950–2100; grade ≤100 chars); experience requires
+  companyName, jobTitle, startDate (ISO dates; description ≤20000 chars).
+  V8 columns are nullable, so requiredness lives purely in the validation
+  layer — no schema change.
+- **Frontend:** the candidate profile page gains Education and Experience
+  sections (list, add, edit, delete, loading/empty/error states) on the
+  existing portal design system via `candidateService`.
+
 ## Frontend Setup & Run
 
 ```powershell

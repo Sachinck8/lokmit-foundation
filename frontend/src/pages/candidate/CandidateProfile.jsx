@@ -9,6 +9,14 @@ import {
   addMySkill,
   removeMySkill,
   listSkillCatalog,
+  listMyEducations,
+  addMyEducation,
+  updateMyEducation,
+  deleteMyEducation,
+  listMyExperiences,
+  addMyExperience,
+  updateMyExperience,
+  deleteMyExperience,
 } from '../../services/candidateService.js'
 import { candidateContent } from '../../constants/candidateContent.js'
 
@@ -45,6 +53,39 @@ export default function CandidateProfile() {
   const [skillMessage, setSkillMessage] = useState(null)
   const [skillMessageError, setSkillMessageError] = useState(false)
   const [removingSkillId, setRemovingSkillId] = useState(null)
+
+  // --- A13 education state ---
+  const [educations, setEducations] = useState(null)
+  const [educationsError, setEducationsError] = useState(false)
+  const [eduForm, setEduForm] = useState({
+    institution: '',
+    degree: '',
+    fieldOfStudy: '',
+    startYear: '',
+    endYear: '',
+    grade: '',
+  })
+  const [editingEduId, setEditingEduId] = useState(null)
+  const [eduSaving, setEduSaving] = useState(false)
+  const [eduMessage, setEduMessage] = useState(null)
+  const [eduMessageError, setEduMessageError] = useState(false)
+  const [removingEduId, setRemovingEduId] = useState(null)
+
+  // --- A13 experience state ---
+  const [experiences, setExperiences] = useState(null)
+  const [experiencesError, setExperiencesError] = useState(false)
+  const [expForm, setExpForm] = useState({
+    companyName: '',
+    jobTitle: '',
+    description: '',
+    startDate: '',
+    endDate: '',
+  })
+  const [editingExpId, setEditingExpId] = useState(null)
+  const [expSaving, setExpSaving] = useState(false)
+  const [expMessage, setExpMessage] = useState(null)
+  const [expMessageError, setExpMessageError] = useState(false)
+  const [removingExpId, setRemovingExpId] = useState(null)
 
   useEffect(() => {
     let active = true
@@ -91,10 +132,236 @@ export default function CandidateProfile() {
       .catch(() => {
         // The picker simply stays empty; the skills list still renders.
       })
+    // A13: load education + experience records alongside the profile.
+    listMyEducations()
+      .then(data => {
+        if (active) setEducations(data)
+      })
+      .catch(() => {
+        if (active) setEducationsError(true)
+      })
+    listMyExperiences()
+      .then(data => {
+        if (active) setExperiences(data)
+      })
+      .catch(() => {
+        if (active) setExperiencesError(true)
+      })
     return () => {
       active = false
     }
   }, [])
+
+  function updateEduField(field, value) {
+    setEduForm(previous => ({ ...previous, [field]: value }))
+  }
+
+  function updateExpField(field, value) {
+    setExpForm(previous => ({ ...previous, [field]: value }))
+  }
+
+  function resetEduForm() {
+    setEduForm({
+      institution: '', degree: '', fieldOfStudy: '',
+      startYear: '', endYear: '', grade: '',
+    })
+    setEditingEduId(null)
+  }
+
+  function resetExpForm() {
+    setExpForm({
+      companyName: '', jobTitle: '', description: '',
+      startDate: '', endDate: '',
+    })
+    setEditingExpId(null)
+  }
+
+  function startEditEdu(record) {
+    setEditingEduId(record.id)
+    setEduForm({
+      institution: record.institution || '',
+      degree: record.degree || '',
+      fieldOfStudy: record.fieldOfStudy || '',
+      startYear: record.startYear != null ? String(record.startYear) : '',
+      endYear: record.endYear != null ? String(record.endYear) : '',
+      grade: record.grade || '',
+    })
+    setEduMessage(null)
+  }
+
+  function startEditExp(record) {
+    setEditingExpId(record.id)
+    setExpForm({
+      companyName: record.companyName || '',
+      jobTitle: record.jobTitle || '',
+      description: record.description || '',
+      startDate: record.startDate || '',
+      endDate: record.endDate || '',
+    })
+    setExpMessage(null)
+  }
+
+  function buildEduPatch() {
+    const patch = {}
+    if (eduForm.institution.trim() !== '') patch.institution = eduForm.institution.trim()
+    if (eduForm.degree.trim() !== '') patch.degree = eduForm.degree.trim()
+    if (eduForm.fieldOfStudy.trim() !== '') patch.fieldOfStudy = eduForm.fieldOfStudy.trim()
+    if (eduForm.startYear !== '') patch.startYear = Number(eduForm.startYear)
+    if (eduForm.endYear !== '') patch.endYear = Number(eduForm.endYear)
+    if (eduForm.grade.trim() !== '') patch.grade = eduForm.grade.trim()
+    return patch
+  }
+
+  function buildExpPatch() {
+    const patch = {}
+    if (expForm.companyName.trim() !== '') patch.companyName = expForm.companyName.trim()
+    if (expForm.jobTitle.trim() !== '') patch.jobTitle = expForm.jobTitle.trim()
+    if (expForm.description.trim() !== '') patch.description = expForm.description.trim()
+    if (expForm.startDate !== '') patch.startDate = expForm.startDate
+    if (expForm.endDate !== '') patch.endDate = expForm.endDate
+    return patch
+  }
+
+  async function handleEduSubmit(event) {
+    event.preventDefault()
+    if (eduSaving) return
+    setEduSaving(true)
+    setEduMessage(null)
+    setEduMessageError(false)
+    try {
+      if (editingEduId) {
+        const updated = await updateMyEducation(editingEduId, buildEduPatch())
+        setEducations(previous => (Array.isArray(previous)
+          ? previous.map(item => (item.id === updated.id ? updated : item)) : [updated]))
+        setEduMessage('Education record updated.')
+      } else {
+        if (!eduForm.institution.trim() || !eduForm.degree.trim() || !eduForm.startYear) {
+          setEduMessageError(true)
+          setEduMessage('Institution, degree and start year are required.')
+          setEduSaving(false)
+          return
+        }
+        const created = await addMyEducation({
+          institution: eduForm.institution,
+          degree: eduForm.degree,
+          fieldOfStudy: eduForm.fieldOfStudy,
+          startYear: Number(eduForm.startYear),
+          endYear: eduForm.endYear ? Number(eduForm.endYear) : null,
+          grade: eduForm.grade,
+        })
+        setEducations(previous => [created, ...(Array.isArray(previous) ? previous : [])])
+        setEduMessage('Education record added.')
+      }
+      setEduMessageError(false)
+      resetEduForm()
+    } catch (error) {
+      const status = error && error.response && error.response.status
+      const apiErrors = error && error.response && error.response.data
+        && error.response.data.errors
+      const firstMessage = Array.isArray(apiErrors) && apiErrors.length > 0
+        ? apiErrors[0].message
+        : null
+      setEduMessageError(true)
+      if (status === 401) {
+        setEduMessage('Your session has expired. Please log in again.')
+      } else {
+        setEduMessage(firstMessage || 'We could not save that record. Please try again.')
+      }
+    } finally {
+      setEduSaving(false)
+    }
+  }
+
+  async function handleExpSubmit(event) {
+    event.preventDefault()
+    if (expSaving) return
+    setExpSaving(true)
+    setExpMessage(null)
+    setExpMessageError(false)
+    try {
+      if (editingExpId) {
+        const updated = await updateMyExperience(editingExpId, buildExpPatch())
+        setExperiences(previous => (Array.isArray(previous)
+          ? previous.map(item => (item.id === updated.id ? updated : item)) : [updated]))
+        setExpMessage('Experience record updated.')
+      } else {
+        if (!expForm.companyName.trim() || !expForm.jobTitle.trim() || !expForm.startDate) {
+          setExpMessageError(true)
+          setExpMessage('Company, job title and start date are required.')
+          setExpSaving(false)
+          return
+        }
+        const created = await addMyExperience({
+          companyName: expForm.companyName,
+          jobTitle: expForm.jobTitle,
+          description: expForm.description,
+          startDate: expForm.startDate,
+          endDate: expForm.endDate || null,
+        })
+        setExperiences(previous => [created, ...(Array.isArray(previous) ? previous : [])])
+        setExpMessage('Experience record added.')
+      }
+      setExpMessageError(false)
+      resetExpForm()
+    } catch (error) {
+      const status = error && error.response && error.response.status
+      const apiErrors = error && error.response && error.response.data
+        && error.response.data.errors
+      const firstMessage = Array.isArray(apiErrors) && apiErrors.length > 0
+        ? apiErrors[0].message
+        : null
+      setExpMessageError(true)
+      if (status === 401) {
+        setExpMessage('Your session has expired. Please log in again.')
+      } else {
+        setExpMessage(firstMessage || 'We could not save that record. Please try again.')
+      }
+    } finally {
+      setExpSaving(false)
+    }
+  }
+
+  async function handleDeleteEdu(recordId) {
+    if (removingEduId) return
+    setRemovingEduId(recordId)
+    setEduMessage(null)
+    try {
+      await deleteMyEducation(recordId)
+      setEducations(previous => (Array.isArray(previous)
+        ? previous.filter(item => item.id !== recordId) : []))
+      setEduMessage('Education record removed.')
+      setEduMessageError(false)
+    } catch (error) {
+      const status = error && error.response && error.response.status
+      setEduMessageError(true)
+      setEduMessage(status === 401
+        ? 'Your session has expired. Please log in again.'
+        : 'We could not remove that record right now. Please try again.')
+    } finally {
+      setRemovingEduId(null)
+    }
+  }
+
+  async function handleDeleteExp(recordId) {
+    if (removingExpId) return
+    setRemovingExpId(recordId)
+    setExpMessage(null)
+    try {
+      await deleteMyExperience(recordId)
+      setExperiences(previous => (Array.isArray(previous)
+        ? previous.filter(item => item.id !== recordId) : []))
+      setExpMessage('Experience record removed.')
+      setExpMessageError(false)
+    } catch (error) {
+      const status = error && error.response && error.response.status
+      setExpMessageError(true)
+      setExpMessage(status === 401
+        ? 'Your session has expired. Please log in again.'
+        : 'We could not remove that record right now. Please try again.')
+    } finally {
+      setRemovingExpId(null)
+    }
+  }
 
   async function handleAddSkill(event) {
     event.preventDefault()
@@ -366,6 +633,318 @@ export default function CandidateProfile() {
             >
               {addingSkill ? 'Adding…' : 'Add skill'}
             </Button>
+          </div>
+        </form>
+      </div>
+
+      <div className="candidate-portal__panel">
+        <h2 className="candidate-portal__panel-title">Education</h2>
+
+        {educations === null && !educationsError && (
+          <div aria-hidden="true">
+            <div className="candidate-portal__skeleton candidate-portal__skeleton--line" />
+            <div className="candidate-portal__skeleton candidate-portal__skeleton--short" />
+          </div>
+        )}
+
+        {educationsError && (
+          <p className="candidate-portal__error" role="alert">
+            We could not load your education records right now. Please try again later.
+          </p>
+        )}
+
+        {Array.isArray(educations) && educations.length === 0 && (
+          <p className="candidate-portal__muted">
+            No education records added yet.
+          </p>
+        )}
+
+        {Array.isArray(educations) && educations.length > 0 && (
+          <ul className="candidate-portal__records">
+            {educations.map(record => (
+              <li key={record.id} className="candidate-portal__record">
+                <div>
+                  <strong>{record.institution}</strong>
+                  <div className="candidate-portal__muted">
+                    {[record.degree, record.fieldOfStudy].filter(Boolean).join(' · ')}
+                    {record.startYear ? ` · ${record.startYear}` : ''}
+                    {record.endYear ? `–${record.endYear}` : ''}
+                    {record.grade ? ` · ${record.grade}` : ''}
+                  </div>
+                </div>
+                <div className="candidate-portal__actions-row">
+                  <button
+                    type="button"
+                    className="candidate-portal__skill-remove"
+                    onClick={() => startEditEdu(record)}
+                    disabled={eduSaving || removingEduId !== null}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="candidate-portal__skill-remove"
+                    onClick={() => handleDeleteEdu(record.id)}
+                    disabled={eduSaving || removingEduId !== null}
+                    aria-label={`Delete education record at ${record.institution}`}
+                  >
+                    {removingEduId === record.id ? 'Deleting…' : 'Delete'}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <form className="candidate-portal__form" onSubmit={handleEduSubmit} noValidate>
+          <h3 className="candidate-portal__label" style={{ margin: 0 }}>
+            {editingEduId ? 'Edit education record' : 'Add education record'}
+          </h3>
+          <div className="candidate-portal__form-row">
+            <div>
+              <label className="candidate-portal__label" htmlFor="edu-institution">Institution *</label>
+              <input
+                id="edu-institution"
+                className="candidate-portal__input"
+                type="text"
+                value={eduForm.institution}
+                onChange={event => updateEduField('institution', event.target.value)}
+                disabled={eduSaving}
+                maxLength={255}
+              />
+            </div>
+            <div>
+              <label className="candidate-portal__label" htmlFor="edu-degree">Degree *</label>
+              <input
+                id="edu-degree"
+                className="candidate-portal__input"
+                type="text"
+                value={eduForm.degree}
+                onChange={event => updateEduField('degree', event.target.value)}
+                disabled={eduSaving}
+                maxLength={255}
+              />
+            </div>
+          </div>
+          <div className="candidate-portal__form-row">
+            <div>
+              <label className="candidate-portal__label" htmlFor="edu-field">Field of study</label>
+              <input
+                id="edu-field"
+                className="candidate-portal__input"
+                type="text"
+                value={eduForm.fieldOfStudy}
+                onChange={event => updateEduField('fieldOfStudy', event.target.value)}
+                disabled={eduSaving}
+                maxLength={255}
+              />
+            </div>
+            <div>
+              <label className="candidate-portal__label" htmlFor="edu-grade">Grade</label>
+              <input
+                id="edu-grade"
+                className="candidate-portal__input"
+                type="text"
+                value={eduForm.grade}
+                onChange={event => updateEduField('grade', event.target.value)}
+                disabled={eduSaving}
+                maxLength={100}
+              />
+            </div>
+          </div>
+          <div className="candidate-portal__form-row">
+            <div>
+              <label className="candidate-portal__label" htmlFor="edu-start-year">Start year *</label>
+              <input
+                id="edu-start-year"
+                className="candidate-portal__input"
+                type="number"
+                min="1950"
+                max="2100"
+                value={eduForm.startYear}
+                onChange={event => updateEduField('startYear', event.target.value)}
+                disabled={eduSaving}
+              />
+            </div>
+            <div>
+              <label className="candidate-portal__label" htmlFor="edu-end-year">End year</label>
+              <input
+                id="edu-end-year"
+                className="candidate-portal__input"
+                type="number"
+                min="1950"
+                max="2100"
+                value={eduForm.endYear}
+                onChange={event => updateEduField('endYear', event.target.value)}
+                disabled={eduSaving}
+              />
+            </div>
+          </div>
+
+          {eduMessage && (
+            <p
+              className={eduMessageError ? 'candidate-portal__error' : 'candidate-portal__success'}
+              role={eduMessageError ? 'alert' : 'status'}
+            >
+              {eduMessage}
+            </p>
+          )}
+
+          <div className="candidate-portal__actions-row">
+            <Button variant="primary" size="medium" type="submit" disabled={eduSaving}>
+              {eduSaving ? 'Saving…' : editingEduId ? 'Save changes' : 'Add education'}
+            </Button>
+            {editingEduId && (
+              <Button variant="ghost" size="medium" onClick={resetEduForm} disabled={eduSaving}>
+                Cancel edit
+              </Button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      <div className="candidate-portal__panel">
+        <h2 className="candidate-portal__panel-title">Experience</h2>
+
+        {experiences === null && !experiencesError && (
+          <div aria-hidden="true">
+            <div className="candidate-portal__skeleton candidate-portal__skeleton--line" />
+            <div className="candidate-portal__skeleton candidate-portal__skeleton--short" />
+          </div>
+        )}
+
+        {experiencesError && (
+          <p className="candidate-portal__error" role="alert">
+            We could not load your experience records right now. Please try again later.
+      </p>
+        )}
+
+        {Array.isArray(experiences) && experiences.length === 0 && (
+          <p className="candidate-portal__muted">
+            No experience records added yet.
+          </p>
+        )}
+
+        {Array.isArray(experiences) && experiences.length > 0 && (
+          <ul className="candidate-portal__records">
+            {experiences.map(record => (
+              <li key={record.id} className="candidate-portal__record">
+                <div>
+                  <strong>{record.jobTitle}</strong> — {record.companyName}
+                  <div className="candidate-portal__muted">
+                    {record.startDate ? String(record.startDate) : ''}
+                    {record.endDate ? ` – ${record.endDate}` : ' – present'}
+                    {record.description ? ` · ${record.description}` : ''}
+                  </div>
+                </div>
+                <div className="candidate-portal__actions-row">
+                  <button
+                    type="button"
+                    className="candidate-portal__skill-remove"
+                    onClick={() => startEditExp(record)}
+                    disabled={expSaving || removingExpId !== null}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="candidate-portal__skill-remove"
+                    onClick={() => handleDeleteExp(record.id)}
+                    disabled={expSaving || removingExpId !== null}
+                    aria-label={`Delete experience record at ${record.companyName}`}
+                  >
+                    {removingExpId === record.id ? 'Deleting…' : 'Delete'}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <form className="candidate-portal__form" onSubmit={handleExpSubmit} noValidate>
+          <h3 className="candidate-portal__label" style={{ margin: 0 }}>
+            {editingExpId ? 'Edit experience record' : 'Add experience record'}
+          </h3>
+          <div className="candidate-portal__form-row">
+            <div>
+              <label className="candidate-portal__label" htmlFor="exp-company">Company *</label>
+              <input
+                id="exp-company"
+                className="candidate-portal__input"
+                type="text"
+                value={expForm.companyName}
+                onChange={event => updateExpField('companyName', event.target.value)}
+                disabled={expSaving}
+                maxLength={255}
+              />
+            </div>
+            <div>
+              <label className="candidate-portal__label" htmlFor="exp-title">Job title *</label>
+              <input
+                id="exp-title"
+                className="candidate-portal__input"
+                type="text"
+                value={expForm.jobTitle}
+                onChange={event => updateExpField('jobTitle', event.target.value)}
+                disabled={expSaving}
+                maxLength={255}
+              />
+            </div>
+          </div>
+          <div className="candidate-portal__form-row">
+            <div>
+              <label className="candidate-portal__label" htmlFor="exp-start">Start date *</label>
+              <input
+                id="exp-start"
+                className="candidate-portal__input"
+                type="date"
+                value={expForm.startDate}
+                onChange={event => updateExpField('startDate', event.target.value)}
+                disabled={expSaving}
+              />
+            </div>
+            <div>
+              <label className="candidate-portal__label" htmlFor="exp-end">End date</label>
+              <input
+                id="exp-end"
+                className="candidate-portal__input"
+                type="date"
+                value={expForm.endDate}
+                onChange={event => updateExpField('endDate', event.target.value)}
+                disabled={expSaving}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="candidate-portal__label" htmlFor="exp-description">Description</label>
+            <textarea
+              id="exp-description"
+              className="candidate-portal__textarea"
+              value={expForm.description}
+              onChange={event => updateExpField('description', event.target.value)}
+              disabled={expSaving}
+              maxLength={20000}
+            />
+          </div>
+
+          {expMessage && (
+            <p
+              className={expMessageError ? 'candidate-portal__error' : 'candidate-portal__success'}
+              role={expMessageError ? 'alert' : 'status'}
+            >
+              {expMessage}
+            </p>
+          )}
+
+          <div className="candidate-portal__actions-row">
+            <Button variant="primary" size="medium" type="submit" disabled={expSaving}>
+              {expSaving ? 'Saving…' : editingExpId ? 'Save changes' : 'Add experience'}
+            </Button>
+            {editingExpId && (
+              <Button variant="ghost" size="medium" onClick={resetExpForm} disabled={expSaving}>
+                Cancel edit
+              </Button>
+            )}
           </div>
         </form>
       </div>

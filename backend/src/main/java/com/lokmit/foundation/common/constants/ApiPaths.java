@@ -95,6 +95,12 @@ public final class ApiPaths {
     public static final String CANDIDATE_ME_SKILLS = API_V1 + "/candidates/me/skills";
     public static final String CANDIDATE_ME_SKILL = CANDIDATE_ME_SKILLS + "/{skillId}";
 
+    /** Candidate self-service education CRUD (A13) — existing V8 candidate_educations. */
+    public static final String CANDIDATE_ME_EDUCATIONS = API_V1 + "/candidates/me/educations";
+
+    /** Candidate self-service experience CRUD (A13) — existing V8 candidate_experiences. */
+    public static final String CANDIDATE_ME_EXPERIENCES = API_V1 + "/candidates/me/experiences";
+
     /** Secure resume download API (A7.6.4) — candidate ownership or candidates:manage. */
     public static final String RESUMES = API_V1 + "/resumes";
     public static final String RESUME_DOWNLOAD = RESUMES + "/{resumeId}/download";
