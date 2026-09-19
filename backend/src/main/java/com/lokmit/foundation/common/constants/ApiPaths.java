@@ -74,6 +74,12 @@ public final class ApiPaths {
     /** Candidate self-service resume APIs (A7.6.3) — authenticated candidate ownership. */
     public static final String CANDIDATE_ME_RESUMES = API_V1 + "/candidates/me/resumes";
 
+    /** Candidate self-service application APIs (A9) — authenticated candidate ownership. */
+    public static final String CANDIDATE_ME_APPLICATIONS =
+            API_V1 + "/candidates/me/applications";
+    public static final String CANDIDATE_ME_APPLICATION =
+            CANDIDATE_ME_APPLICATIONS + "/{applicationId}";
+
     /** Secure resume download API (A7.6.4) — candidate ownership or candidates:manage. */
     public static final String RESUMES = API_V1 + "/resumes";
     public static final String RESUME_DOWNLOAD = RESUMES + "/{resumeId}/download";

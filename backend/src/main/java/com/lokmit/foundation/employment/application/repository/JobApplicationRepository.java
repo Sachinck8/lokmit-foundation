@@ -9,12 +9,26 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 /** Repository for the V8 'job_applications' table. */
 public interface JobApplicationRepository
         extends JpaRepository<JobApplication, Long>, JpaSpecificationExecutor<JobApplication> {
 
     boolean existsByJobIdAndCandidateId(Long jobId, Long candidateId);
+
+    /**
+     * The candidate's own applications, newest first (A9 candidate
+     * self-service listing).
+     */
+    Page<JobApplication> findByCandidateIdOrderByCreatedAtDesc(
+            Long candidateId, Pageable pageable);
+
+    /**
+     * Ownership-scoped single lookup (A9): a foreign (id, candidate) pair
+     * simply does not match — the established 404-masking convention.
+     */
+    Optional<JobApplication> findByIdAndCandidateId(Long id, Long candidateId);
 
     /**
      * Count of applications for jobs owned by one employer — used to resolve

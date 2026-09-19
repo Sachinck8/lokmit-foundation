@@ -809,6 +809,64 @@ family (A7.2) keeps working exactly as before.
   system. Job browsing requires no login. If the database has no
   published jobs, the page shows its empty state.
 
+### Candidate Application Submission API (A9)
+
+The first candidate self-service application endpoints, built entirely on
+the existing A7.3 application domain, A7.4 history, A7.5 audit/outbox and
+A7.6 resume ownership conventions. No schema change, no new permission, no
+security weakening — the candidate path is covered by the existing
+`anyRequest().authenticated()` rule, and all A7.3 admin application APIs
+keep working exactly as before.
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/candidates/me/applications` | POST | authenticated candidate (ownership) | Submit an application for a published job |
+| `/candidates/me/applications` | GET | authenticated candidate (ownership) | List own applications (paginated, newest first) |
+| `/candidates/me/applications/{applicationId}` | GET | authenticated candidate (ownership) | Get one own application |
+
+- **Authentication:** the standard stateless JWT bearer chain; anonymous
+  or invalid-token requests are rejected 401 by the security filter chain.
+- **Ownership (IDOR-safe):** the candidate profile is resolved server-side
+  from the authenticated user's database id via the same A7.6.3 ownership
+  service the resume API uses — the request contract has NO candidateId
+  field at all, so application ownership can never be spoofed from the
+  body, query, path or multipart data. A user without a candidate profile
+  (admins, employers, clients) receives a plain 404.
+- **Published-job rule:** applications may target only jobs in the
+  `PUBLISHED` state — exactly the A8 public-visibility rule. Unknown AND
+  non-published (DRAFT/CLOSED/ARCHIVED) jobs produce the identical 404, so
+  the endpoint never reveals whether a hidden job exists.
+- **Resume ownership:** the optional `resumeId` must reference one of the
+  caller's OWN currently ACTIVE resumes (ownership-scoped lookup with the
+  A7.6 404-masking convention); a foreign, inactive or nonexistent resume
+  is the same plain 404. Application submission never touches resume
+  storage or bytes.
+- **Duplicate rule:** the existing `uq_job_applications_job_candidate`
+  constraint is enforced at the application layer as a 409 `CONFLICT`
+  before any write.
+- **Status & workflow:** new applications use the existing initial
+  `SUBMITTED` status (no new status was invented). Submission writes — in
+  ONE transaction — the application row, an A7.4 initial history row
+  (`previous_status` NULL, its documented initial-observation case), an
+  A7.5 audit row and one outbox event using the existing
+  `APPLICATION_STATUS_CHANGED` vocabulary (null → SUBMITTED is a status
+  change); no new notification type was seeded. A failed side effect rolls
+  back the whole submission — no partial creation.
+- **Response:** `201 Created` with the standard envelope and a dedicated
+  candidate-facing DTO (application id, job summary by public identity,
+  resumeId, coverNote, status, applied/decided/created/updated timestamps).
+  Candidate, employer and admin-review fields (`employerNote`) are
+  deliberately absent — no other candidate's data, no employer internals,
+  no storage internals, no audit/outbox payloads.
+- **Read APIs:** the list is scoped server-side to the authenticated
+  candidate (a candidateId query parameter does not exist and cannot
+  override ownership); a foreign application id returns the same plain 404
+  as a nonexistent one — no existence leak.
+- **Errors:** 400 (missing/invalid fields, page cap), 404 (unknown or
+  non-published job — masked, foreign/unknown application, no candidate
+  profile), 409 (duplicate application), 401 (unauthenticated). All use
+  the standard error envelope with the existing `ErrorCodes`.
+
 ## Frontend Setup & Run
 
 ```powershell
