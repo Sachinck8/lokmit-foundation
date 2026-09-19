@@ -302,3 +302,34 @@
   .candidate-portal__header-inner { gap: var(--spacing-3, 1rem); }
   .candidate-portal__user { display: none; }
 }
+
+/* ===== A11: candidate skill chips (profile page) ===== */
+.candidate-portal__skill-remove {
+  margin-left: auto;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.candidate-portal__skill-remove:hover:not(:disabled),
+.candidate-portal__skill-remove:focus-visible {
+  color: var(--danger, #b3261e);
+  border-color: var(--danger, #b3261e);
+}
+
+.candidate-portal__skill-remove:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.candidate-portal__panel .jobs-detail__skill {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}

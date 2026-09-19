@@ -2,7 +2,14 @@ import { useEffect, useState } from 'react'
 import Container from '../../components/Container/Container.jsx'
 import Button from '../../components/Button/Button.jsx'
 import { useAuth } from '../../auth/AuthContext.jsx'
-import { getMyProfile, updateMyProfile } from '../../services/candidateService.js'
+import {
+  getMyProfile,
+  updateMyProfile,
+  listMySkills,
+  addMySkill,
+  removeMySkill,
+  listSkillCatalog,
+} from '../../services/candidateService.js'
 import { candidateContent } from '../../constants/candidateContent.js'
 
 /**
@@ -27,6 +34,17 @@ export default function CandidateProfile() {
     expectedSalaryMax: '',
     availability: '',
   })
+
+  // --- A11 skills state ---
+  const [skills, setSkills] = useState(null)
+  const [skillsError, setSkillsError] = useState(false)
+  const [catalog, setCatalog] = useState(null)
+  const [selectedSkillId, setSelectedSkillId] = useState('')
+  const [selectedProficiency, setSelectedProficiency] = useState('')
+  const [addingSkill, setAddingSkill] = useState(false)
+  const [skillMessage, setSkillMessage] = useState(null)
+  const [skillMessageError, setSkillMessageError] = useState(false)
+  const [removingSkillId, setRemovingSkillId] = useState(null)
 
   useEffect(() => {
     let active = true
@@ -55,6 +73,92 @@ export default function CandidateProfile() {
       active = false
     }
   }, [])
+
+  // A11: load the caller's own skills + the ACTIVE catalog alongside the profile.
+  useEffect(() => {
+    let active = true
+    listMySkills()
+      .then(data => {
+        if (active) setSkills(data)
+      })
+      .catch(() => {
+        if (active) setSkillsError(true)
+      })
+    listSkillCatalog()
+      .then(data => {
+        if (active) setCatalog(data)
+      })
+      .catch(() => {
+        // The picker simply stays empty; the skills list still renders.
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  async function handleAddSkill(event) {
+    event.preventDefault()
+    if (!selectedSkillId || addingSkill) return
+    setAddingSkill(true)
+    setSkillMessage(null)
+    setSkillMessageError(false)
+    try {
+      const created = await addMySkill({
+        skillId: Number(selectedSkillId),
+        proficiency: selectedProficiency || null,
+      })
+      setSkills(previous => {
+        const list = Array.isArray(previous) ? previous.filter(s => s.skillId !== created.skillId) : []
+        return [...list, created].sort((a, b) =>
+          String(a.skillName).localeCompare(String(b.skillName)))
+      })
+      setSelectedSkillId('')
+      setSelectedProficiency('')
+      setSkillMessage('Skill added to your profile.')
+      setSkillMessageError(false)
+    } catch (error) {
+      const status = error && error.response && error.response.status
+      const apiErrors = error && error.response && error.response.data
+        && error.response.data.errors
+      const firstMessage = Array.isArray(apiErrors) && apiErrors.length > 0
+        ? apiErrors[0].message
+        : null
+      setSkillMessageError(true)
+      if (status === 409) {
+        setSkillMessage('That skill is already on your profile.')
+      } else if (status === 401) {
+        setSkillMessage('Your session has expired. Please log in again.')
+      } else {
+        setSkillMessage(firstMessage || 'We could not add that skill right now. Please try again.')
+      }
+    } finally {
+      setAddingSkill(false)
+    }
+  }
+
+  async function handleRemoveSkill(skillId) {
+    if (removingSkillId) return
+    setRemovingSkillId(skillId)
+    setSkillMessage(null)
+    setSkillMessageError(false)
+    try {
+      await removeMySkill(skillId)
+      setSkills(previous => (Array.isArray(previous)
+        ? previous.filter(s => s.skillId !== skillId) : []))
+      setSkillMessage('Skill removed from your profile.')
+      setSkillMessageError(false)
+    } catch (error) {
+      const status = error && error.response && error.response.status
+      setSkillMessageError(true)
+      if (status === 401) {
+        setSkillMessage('Your session has expired. Please log in again.')
+      } else {
+        setSkillMessage('We could not remove that skill right now. Please try again.')
+      }
+    } finally {
+      setRemovingSkillId(null)
+    }
+  }
 
   function updateField(field, value) {
     setForm(previous => ({ ...previous, [field]: value }))
@@ -150,6 +254,120 @@ export default function CandidateProfile() {
         <p className="candidate-portal__hint">
           Your account email and name are managed by the foundation office.
         </p>
+      </div>
+
+      <div className="candidate-portal__panel">
+        <h2 className="candidate-portal__panel-title">Skills</h2>
+
+        {skills === null && !skillsError && (
+          <div aria-hidden="true">
+            <div className="candidate-portal__skeleton candidate-portal__skeleton--line" />
+            <div className="candidate-portal__skeleton candidate-portal__skeleton--short" />
+          </div>
+        )}
+
+        {skillsError && (
+          <p className="candidate-portal__error" role="alert">
+            We could not load your skills right now. Please try again later.
+          </p>
+        )}
+
+        {Array.isArray(skills) && skills.length === 0 && (
+          <p className="candidate-portal__muted">
+            {candidateContent.empty.skills.text}
+          </p>
+        )}
+
+        {Array.isArray(skills) && skills.length > 0 && (
+          <ul className="jobs-detail__skills" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {skills.map(skill => (
+              <li key={skill.skillId} className="jobs-detail__skill">
+                <span>{skill.skillName}</span>
+                {skill.proficiency && (
+                  <em>
+                    {candidateContent.proficiency[skill.proficiency] || skill.proficiency}
+                  </em>
+                )}
+                <button
+                  type="button"
+                  className="candidate-portal__skill-remove"
+                  onClick={() => handleRemoveSkill(skill.skillId)}
+                  disabled={removingSkillId !== null}
+                  aria-label={`Remove ${skill.skillName} from your profile`}
+                >
+                  {removingSkillId === skill.skillId ? 'Removing…' : 'Remove'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <form className="candidate-portal__form" onSubmit={handleAddSkill} noValidate>
+          <div className="candidate-portal__form-row">
+            <div>
+              <label className="candidate-portal__label" htmlFor="skill-select">Add a skill</label>
+              <select
+                id="skill-select"
+                className="candidate-portal__select"
+                value={selectedSkillId}
+                onChange={event => setSelectedSkillId(event.target.value)}
+                disabled={addingSkill || !Array.isArray(catalog) || catalog.length === 0}
+              >
+                <option value="">
+                  {catalog === null
+                    ? 'Loading catalogue…'
+                    : Array.isArray(catalog) && catalog.length === 0
+                      ? 'No skills available'
+                      : 'Select a skill…'}
+                </option>
+                {Array.isArray(catalog) && catalog
+                  .filter(option => !Array.isArray(skills)
+                    || !skills.some(owned => owned.skillId === option.id))
+                  .map(option => (
+                    <option key={option.id} value={option.id}>{option.name}</option>
+                  ))}
+              </select>
+            </div>
+            <div>
+              <label className="candidate-portal__label" htmlFor="skill-proficiency">
+                Proficiency (optional)
+              </label>
+              <select
+                id="skill-proficiency"
+                className="candidate-portal__select"
+                value={selectedProficiency}
+                onChange={event => setSelectedProficiency(event.target.value)}
+                disabled={addingSkill}
+              >
+                <option value="">Not specified</option>
+                <option value="BEGINNER">Beginner</option>
+                <option value="INTERMEDIATE">Intermediate</option>
+                <option value="ADVANCED">Advanced</option>
+                <option value="EXPERT">Expert</option>
+              </select>
+            </div>
+          </div>
+
+          {skillMessage && (
+            <p
+              className={skillMessageError ? 'candidate-portal__error' : 'candidate-portal__success'}
+              role={skillMessageError ? 'alert' : 'status'}
+            >
+              {skillMessage}
+            </p>
+          )}
+
+          <div className="candidate-portal__actions-row">
+            <Button
+              variant="primary"
+              size="medium"
+              type="submit"
+              disabled={addingSkill || !selectedSkillId}
+            >
+              {addingSkill ? 'Adding…' : 'Add skill'}
+            </Button>
+          </div>
+        </form>
       </div>
 
       <div className="candidate-portal__panel">

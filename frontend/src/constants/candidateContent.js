@@ -41,5 +41,16 @@ export const candidateContent = {
       text: 'Upload a PDF, DOC or DOCX resume (up to 5 MB) so your applications include your latest CV.',
       actionLabel: 'Upload your resume',
     },
+    skills: {
+      title: 'No skills added yet',
+      text: 'Add skills from the catalogue so the hiring team can match you to suitable openings.',
+    },
+  },
+
+  proficiency: {
+    BEGINNER: 'Beginner',
+    INTERMEDIATE: 'Intermediate',
+    ADVANCED: 'Advanced',
+    EXPERT: 'Expert',
   },
 }

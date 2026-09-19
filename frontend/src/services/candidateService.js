@@ -126,3 +126,72 @@ export function applyToJob({ jobId, resumeId = null, coverNote = '' }) {
   return apiClient.post(API_ENDPOINTS.CANDIDATE_ME_APPLICATIONS, body)
     .then(response => response.data && response.data.data)
 }
+
+/**
+ * Withdraws one of the caller's own applications (A11). Reuses the existing
+ * backend lifecycle — decided/already-withdrawn applications are rejected
+ * 409 by the existing rules.
+ *
+ * @returns {Promise<Object>} the updated application DTO (status WITHDRAWN)
+ */
+export function withdrawMyApplication(applicationId) {
+  return apiClient.post(
+    `${API_ENDPOINTS.CANDIDATE_ME_APPLICATIONS}/${applicationId}/withdraw`,
+  ).then(response => response.data && response.data.data)
+}
+
+// ---------------------------------------------------------------------
+// skills (A11)
+// ---------------------------------------------------------------------
+
+/**
+ * Lists the authenticated candidate's own skill assignments.
+ *
+ * @returns {Promise<Array<{ candidateId, skillId, skillName, proficiency }>>}
+ */
+export function listMySkills() {
+  return apiClient.get(API_ENDPOINTS.CANDIDATE_ME_SKILLS)
+    .then(response => {
+      const data = response.data && response.data.data
+      if (!Array.isArray(data)) {
+        throw new Error('Unexpected response shape from the skills API.')
+      }
+      return data
+    })
+}
+
+/**
+ * Assigns an ACTIVE catalog skill to the caller's own profile.
+ *
+ * @param {{ skillId: number, proficiency?: string|null }} payload
+ * @returns {Promise<Object>} the created candidate-skill DTO
+ */
+export function addMySkill({ skillId, proficiency = null }) {
+  const body = { skillId }
+  if (proficiency) body.proficiency = proficiency
+  return apiClient.post(API_ENDPOINTS.CANDIDATE_ME_SKILLS, body)
+    .then(response => response.data && response.data.data)
+}
+
+/** Removes one of the caller's own skill assignments (204 on success). */
+export function removeMySkill(skillId) {
+  return apiClient.delete(`${API_ENDPOINTS.CANDIDATE_ME_SKILLS}/${skillId}`)
+    .then(() => true)
+}
+
+/**
+ * Lists the ACTIVE skill catalog the candidate may attach to their own
+ * profile (read-only; candidates cannot create skills).
+ *
+ * @returns {Promise<Array<{ id, name, status }>>}
+ */
+export function listSkillCatalog() {
+  return apiClient.get(`${API_ENDPOINTS.CANDIDATE_ME_SKILLS}/catalog`)
+    .then(response => {
+      const data = response.data && response.data.data
+      if (!Array.isArray(data)) {
+        throw new Error('Unexpected response shape from the skill catalog API.')
+      }
+      return data
+    })
+}

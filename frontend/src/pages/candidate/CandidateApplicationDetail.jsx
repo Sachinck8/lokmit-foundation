@@ -2,11 +2,20 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import Container from '../../components/Container/Container.jsx'
 import Button from '../../components/Button/Button.jsx'
-import { getMyApplication } from '../../services/candidateService.js'
+import { getMyApplication, withdrawMyApplication } from '../../services/candidateService.js'
 import { candidateContent } from '../../constants/candidateContent.js'
 
 function friendlyStatus(code) {
   return candidateContent.applicationStatus[code] || code
+}
+
+/**
+ * Withdrawal availability mirrors the backend's existing rules exactly:
+ * decided (HIRED/REJECTED) and already-WITHDRAWN applications are immutable
+ * (409); every pre-decision state may be withdrawn.
+ */
+function canWithdraw(status) {
+  return status !== 'HIRED' && status !== 'REJECTED' && status !== 'WITHDRAWN'
 }
 
 function formatDateTime(value) {
@@ -31,6 +40,11 @@ export default function CandidateApplicationDetail() {
   const [error, setError] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
 
+  // A11 withdrawal state.
+  const [confirming, setConfirming] = useState(false)
+  const [withdrawing, setWithdrawing] = useState(false)
+  const [withdrawError, setWithdrawError] = useState(null)
+
   useEffect(() => {
     let active = true
     setLoading(true)
@@ -53,6 +67,33 @@ export default function CandidateApplicationDetail() {
       active = false
     }
   }, [applicationId, reloadKey])
+
+  async function handleWithdraw() {
+    if (withdrawing || !application) return
+    setWithdrawing(true)
+    setWithdrawError(null)
+    try {
+      const updated = await withdrawMyApplication(application.id)
+      setApplication(previous => ({ ...previous, ...updated }))
+      setConfirming(false)
+    } catch (err) {
+      const status = err && err.response && err.response.status
+      const apiErrors = err && err.response && err.response.data
+        && err.response.data.errors
+      const firstMessage = Array.isArray(apiErrors) && apiErrors.length > 0
+        ? apiErrors[0].message
+        : null
+      if (status === 401) {
+        setWithdrawError('Your session has expired. Please log in again.')
+      } else if (status === 404) {
+        setWithdrawError('This application is no longer available.')
+      } else {
+        setWithdrawError(firstMessage || 'We could not withdraw this application right now. Please try again.')
+      }
+    } finally {
+      setWithdrawing(false)
+    }
+  }
 
   return (
     <Container>
@@ -130,6 +171,55 @@ export default function CandidateApplicationDetail() {
                 View the public job posting
               </Link>
             </p>
+          )}
+
+          {canWithdraw(application.status) && (
+            <section className="candidate-portal__withdraw-section">
+              <h2 className="candidate-portal__panel-title">Withdraw application</h2>
+              <p className="candidate-portal__muted">
+                Withdrawing is permanent — the hiring team will see the application
+                as withdrawn and it cannot be submitted again for this posting.
+              </p>
+
+              {!confirming && (
+                <Button
+                  variant="ghost"
+                  size="medium"
+                  onClick={() => {
+                    setWithdrawError(null)
+                    setConfirming(true)
+                  }}
+                  disabled={withdrawing}
+                >
+                  Withdraw application
+                </Button>
+              )}
+
+              {confirming && (
+                <div className="candidate-portal__actions-row">
+                  <Button
+                    variant="primary"
+                    size="medium"
+                    onClick={handleWithdraw}
+                    disabled={withdrawing}
+                  >
+                    {withdrawing ? 'Withdrawing…' : 'Yes, withdraw it'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="medium"
+                    onClick={() => setConfirming(false)}
+                    disabled={withdrawing}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+
+              {withdrawError && (
+                <p className="candidate-portal__error" role="alert">{withdrawError}</p>
+              )}
+            </section>
           )}
 
           {application.coverNote && (

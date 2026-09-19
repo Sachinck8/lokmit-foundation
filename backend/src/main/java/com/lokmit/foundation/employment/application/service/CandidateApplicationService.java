@@ -64,6 +64,7 @@ public class CandidateApplicationService {
     private final ApplicationStatusHistoryService historyService;
     private final AuditLogService auditLogService;
     private final OutboxService outboxService;
+    private final ApplicationService applicationService;
 
     public CandidateApplicationService(
             JobApplicationRepository applicationRepository,
@@ -71,13 +72,15 @@ public class CandidateApplicationService {
             ResumeRepository resumeRepository,
             ApplicationStatusHistoryService historyService,
             AuditLogService auditLogService,
-            OutboxService outboxService) {
+            OutboxService outboxService,
+            ApplicationService applicationService) {
         this.applicationRepository = applicationRepository;
         this.jobRepository = jobRepository;
         this.resumeRepository = resumeRepository;
         this.historyService = historyService;
         this.auditLogService = auditLogService;
         this.outboxService = outboxService;
+        this.applicationService = applicationService;
     }
 
     // ------------------------------------------------------------------
@@ -176,6 +179,39 @@ public class CandidateApplicationService {
                 .orElseThrow(() -> new NotFoundException(
                         "Application not found: " + applicationId));
         return toResponse(app);
+    }
+
+    // ------------------------------------------------------------------
+    // Withdrawal (A11)
+    // ------------------------------------------------------------------
+
+    /**
+     * Withdraws one of the given candidate's OWN applications (A11).
+     *
+     * <p>Ownership is enforced FIRST via the ownership-scoped lookup — a
+     * foreign or unknown application id produces the identical plain 404,
+     * so the endpoint never reveals whether someone else's application
+     * exists. The transition itself is delegated to the existing A7.3
+     * {@link ApplicationService#withdraw}: the WITHDRAWN status, the
+     * decided/already-withdrawn 409 rules, the A7.4 history row, the audit
+     * record and the outbox event are that method's existing behavior —
+     * nothing here duplicates the workflow. The response is re-read through
+     * the candidate-safe DTO, so the admin-only fields of
+     * {@code ApplicationResponse} never cross this boundary.</p>
+     */
+    @Transactional
+    public CandidateApplicationResponse withdrawOwn(long candidateId, long applicationId) {
+        // 1. Ownership gate (masked 404 for foreign/unknown ids).
+        JobApplication own = applicationRepository
+                .findByIdAndCandidateId(applicationId, candidateId)
+                .orElseThrow(() -> new NotFoundException(
+                        "Application not found: " + applicationId));
+
+        // 2. Delegate to the existing workflow (same transaction).
+        applicationService.withdraw(own.getId());
+
+        // 3. Candidate-facing response via the safe DTO.
+        return getOwn(candidateId, applicationId);
     }
 
     // ------------------------------------------------------------------

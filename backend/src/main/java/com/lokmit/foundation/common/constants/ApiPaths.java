@@ -83,6 +83,14 @@ public final class ApiPaths {
     public static final String CANDIDATE_ME_APPLICATION =
             CANDIDATE_ME_APPLICATIONS + "/{applicationId}";
 
+    /** Candidate self-service withdrawal (A11) — delegates to ApplicationService.withdraw. */
+    public static final String CANDIDATE_ME_APPLICATION_WITHDRAWAL =
+            CANDIDATE_ME_APPLICATION + "/withdraw";
+
+    /** Candidate self-service skills APIs (A11) — existing V8 candidate_skills join. */
+    public static final String CANDIDATE_ME_SKILLS = API_V1 + "/candidates/me/skills";
+    public static final String CANDIDATE_ME_SKILL = CANDIDATE_ME_SKILLS + "/{skillId}";
+
     /** Secure resume download API (A7.6.4) — candidate ownership or candidates:manage. */
     public static final String RESUMES = API_V1 + "/resumes";
     public static final String RESUME_DOWNLOAD = RESUMES + "/{resumeId}/download";

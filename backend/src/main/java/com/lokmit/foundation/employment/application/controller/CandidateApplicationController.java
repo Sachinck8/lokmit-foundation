@@ -115,4 +115,26 @@ public class CandidateApplicationController {
         return ResponseEntity.ok(ApiResponse.success(
                 applicationService.getOwn(candidate.getId(), applicationId)));
     }
+
+    /**
+     * Withdraws one of the authenticated candidate's own applications
+     * (A11). Ownership is enforced first (masked 404 for foreign/unknown
+     * ids); the transition reuses the existing A7.3 workflow unchanged.
+     */
+    @PostMapping("/{applicationId}/withdraw")
+    @Operation(summary = "Withdraw one of the authenticated candidate's own applications",
+            description = "Ownership is enforced server-side; foreign/unknown ids "
+                    + "return the same plain 404 (no existence leak). Reuses the "
+                    + "existing lifecycle: WITHDRAWN status, A7.4 history row, audit "
+                    + "record and outbox event. Decided (HIRED/REJECTED) or already- "
+                    + "withdrawn applications are rejected 409 by the existing rules.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<ApiResponse<CandidateApplicationResponse>> withdrawOwn(
+            @PathVariable long applicationId) {
+        Candidate candidate = ownershipService
+                .resolveOwnCandidate(securityUtils.getCurrentUserId());
+        return ResponseEntity.ok(ApiResponse.success(
+                applicationService.withdrawOwn(candidate.getId(), applicationId),
+                "Application withdrawn"));
+    }
 }

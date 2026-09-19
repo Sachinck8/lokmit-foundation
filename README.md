@@ -918,6 +918,43 @@ Frontend integration:
   resume selection, clear 409 duplicate message, login signpost with
   `returnTo` for anonymous visitors). Public browsing is unchanged.
 
+### Candidate Self-Service Essentials (A11)
+
+A11 completes the candidate self-service surface using only existing
+domain structures — no migration, no new permission, no SecurityConfig
+change. The candidate is always resolved server-side from the JWT user id
+(A7.6.3 ownership service); no candidateId field exists on any candidate
+request contract.
+
+New endpoints:
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/candidates/me/skills` | GET | authenticated candidate (ownership) | Own skill assignments (reuses `CandidateSkillResponse`) |
+| `/candidates/me/skills` | POST | authenticated candidate (ownership) | Assign an ACTIVE catalog skill to self (`CandidateSkillRequest`) |
+| `/candidates/me/skills/{skillId}` | DELETE | authenticated candidate (ownership) | Remove own skill assignment (204) |
+| `/candidates/me/skills/catalog` | GET | authenticated candidate (ownership) | Read-only ACTIVE skill catalog (safe `SkillResponse`) |
+| `/candidates/me/applications/{id}/withdraw` | POST | authenticated candidate (ownership) | Withdraw own pre-decision application |
+
+- **Skills:** assignments reuse the existing V8 `candidate_skills` join
+  and the admin `CandidateSkillService` (duplicate → 409, unknown → 404,
+  proficiency CHECK vocabulary unchanged). Candidates can only select
+  from the backend's own ACTIVE catalog — they cannot create skills. The
+  admin `CandidateSkillController` (candidates:manage) is untouched.
+- **Withdrawal:** ownership is enforced first (foreign/unknown ids return
+  the identical masked 404), then the existing A7.3
+  `ApplicationService.withdraw` runs unchanged — WITHDRAWN status,
+  decided/already-withdrawn 409 rules, A7.4 history row, audit record and
+  outbox event are all the existing workflow's behavior in one
+  transaction. Nothing about the lifecycle was invented or duplicated.
+- **Applied-job indicator:** the public job detail page shows signed-in
+  candidates their existing application state (status chip + link to the
+  application) by reusing the candidate's own paginated applications API
+  — no new backend endpoint, no database flag, no visibility change to
+  the A8 public job APIs. After a successful submission the page updates
+  immediately. Anonymous visitors keep the login signpost; authenticated
+  non-candidates keep the neutral notice.
+
 ## Frontend Setup & Run
 
 ```powershell

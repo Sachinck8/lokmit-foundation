@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Button from '../Button/Button.jsx'
 import { useAuth } from '../../auth/AuthContext.jsx'
-import { applyToJob, listMyResumes } from '../../services/candidateService.js'
+import {
+  applyToJob,
+  listMyResumes,
+  listMyApplications,
+} from '../../services/candidateService.js'
+import { candidateContent } from '../../constants/candidateContent.js'
 
 /**
  * A10 apply-to-job panel for the public job detail page.
@@ -25,6 +30,12 @@ export default function ApplyToJob({ job }) {
   const [message, setMessage] = useState(null)
   const [isError, setIsError] = useState(false)
 
+  // A11 applied-indicator state: null = checking, true/false = resolved.
+  const [alreadyApplied, setAlreadyApplied] = useState(
+    isCandidate ? null : false)
+  const [appliedAppId, setAppliedAppId] = useState(null)
+  const [appliedStatus, setAppliedStatus] = useState(null)
+
   const isClosedJob = job && (job.applicationDeadline)
     ? new Date(job.applicationDeadline) < new Date(new Date().toDateString())
     : false
@@ -46,6 +57,38 @@ export default function ApplyToJob({ job }) {
       active = false
     }
   }, [isCandidate, expanded, resumes])
+
+  // A11 applied indicator: reuse the candidate's OWN paginated applications
+  // (no new backend endpoint, no database flag). One bounded request scans
+  // the newest 100 applications for this job; the backend's 409 duplicate
+  // rule remains the authoritative guard for the rare >100 case.
+  useEffect(() => {
+    if (!isCandidate || !job || job.id == null) return
+    let active = true
+    listMyApplications({ page: 0, size: 100 })
+      .then(data => {
+        if (!active) return
+        const match = Array.isArray(data && data.items)
+          ? data.items.find(
+            item => item && item.job && Number(item.job.id) === Number(job.id))
+          : null
+        if (match) {
+          setAppliedAppId(match.id)
+          setAppliedStatus(match.status)
+          setAlreadyApplied(true)
+        } else {
+          setAlreadyApplied(false)
+        }
+      })
+      .catch(() => {
+        // The indicator is best-effort UX; the backend duplicate rule
+        // (409) still protects the workflow if this request fails.
+        if (active) setAlreadyApplied(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [isCandidate, job])
 
   if (!user) {
     return (
@@ -79,17 +122,68 @@ export default function ApplyToJob({ job }) {
     )
   }
 
+  // A11: while the applied check is in flight, don't flash the Apply button.
+  if (alreadyApplied === null) {
+    return (
+      <section className="jobs-detail__block">
+        <h3 className="jobs-detail__block-title">How to apply</h3>
+        <p className="jobs-detail__text" role="status">
+          Checking your application status…
+        </p>
+      </section>
+    )
+  }
+
+  // A11: candidate has already applied (or just applied successfully) —
+  // show the applied state instead of the Apply form.
+  if (alreadyApplied) {
+    return (
+      <section className="jobs-detail__block">
+        <h3 className="jobs-detail__block-title">Your application</h3>
+        <p className="jobs-detail__text">
+          You have already applied for this role.
+        </p>
+        {appliedStatus && (
+          <p>
+            <span
+              className={`candidate-portal__status candidate-portal__status--${appliedStatus}`}
+            >
+              {candidateContent.applicationStatus[appliedStatus] || appliedStatus}
+            </span>
+          </p>
+        )}
+        {message && (
+          <p className="candidate-portal__success" role="status">{message}</p>
+        )}
+        <p>
+          <Link to={
+            appliedAppId
+              ? `/candidate/applications/${appliedAppId}`
+              : '/candidate/applications'}>
+            View it under My Applications
+          </Link>
+        </p>
+      </section>
+    )
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
     setSubmitting(true)
     setMessage(null)
     setIsError(false)
     try {
-      await applyToJob({
+      const created = await applyToJob({
         jobId: job.id,
         resumeId: resumeId ? Number(resumeId) : null,
         coverNote,
       })
+      // A11: reflect the new state immediately — no page reload needed.
+      if (created) {
+        setAppliedAppId(created.id || null)
+        setAppliedStatus(created.status || 'SUBMITTED')
+        setAlreadyApplied(true)
+      }
       setMessage('Application submitted. Track it under My Applications.')
       setIsError(false)
       setExpanded(false)
