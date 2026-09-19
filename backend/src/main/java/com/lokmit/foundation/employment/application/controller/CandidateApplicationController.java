@@ -6,6 +6,7 @@ import com.lokmit.foundation.common.constants.ApiPaths;
 import com.lokmit.foundation.common.pagination.PageParams;
 import com.lokmit.foundation.employment.application.dto.CandidateApplicationCreateRequest;
 import com.lokmit.foundation.employment.application.dto.CandidateApplicationResponse;
+import com.lokmit.foundation.employment.application.dto.CandidateStatusHistoryResponse;
 import com.lokmit.foundation.employment.application.service.CandidateApplicationService;
 import com.lokmit.foundation.employment.candidate.entity.Candidate;
 import com.lokmit.foundation.employment.resume.service.ResumeOwnershipService;
@@ -136,5 +137,29 @@ public class CandidateApplicationController {
         return ResponseEntity.ok(ApiResponse.success(
                 applicationService.withdrawOwn(candidate.getId(), applicationId),
                 "Application withdrawn"));
+    }
+
+    /**
+     * Status-history timeline of one of the authenticated candidate's own
+     * applications (A12). Ownership is enforced first (masked 404 for
+     * foreign/unknown ids); rows reuse the existing A7.4 repository read
+     * and are projected through the candidate-safe DTO — the actor user id
+     * ({@code changedBy}) and admin notes are never exposed.
+     */
+    @GetMapping("/{applicationId}/history")
+    @Operation(summary = "Get the status-history timeline of one of the candidate's own applications",
+            description = "Ownership is enforced server-side; foreign/unknown ids "
+                    + "return the same plain 404 (no existence leak). Newest "
+                    + "transition first, DB-side pagination. Candidate-safe DTO: no "
+                    + "actor user id, no row id, no admin notes.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<ApiResponse<PageResponse<CandidateStatusHistoryResponse>>> getOwnHistory(
+            @PathVariable long applicationId,
+            @Valid PageParams pageParams) {
+        Candidate candidate = ownershipService
+                .resolveOwnCandidate(securityUtils.getCurrentUserId());
+        return ResponseEntity.ok(ApiResponse.success(
+                applicationService.getOwnHistory(
+                        candidate.getId(), applicationId, pageParams)));
     }
 }

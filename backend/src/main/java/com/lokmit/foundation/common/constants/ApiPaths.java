@@ -87,6 +87,10 @@ public final class ApiPaths {
     public static final String CANDIDATE_ME_APPLICATION_WITHDRAWAL =
             CANDIDATE_ME_APPLICATION + "/withdraw";
 
+    /** Candidate self-service status history (A12) — read-only own timeline. */
+    public static final String CANDIDATE_ME_APPLICATION_HISTORY =
+            CANDIDATE_ME_APPLICATION + "/history";
+
     /** Candidate self-service skills APIs (A11) — existing V8 candidate_skills join. */
     public static final String CANDIDATE_ME_SKILLS = API_V1 + "/candidates/me/skills";
     public static final String CANDIDATE_ME_SKILL = CANDIDATE_ME_SKILLS + "/{skillId}";

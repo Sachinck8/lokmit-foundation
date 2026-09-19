@@ -12,10 +12,29 @@ function friendlyApplicationStatus(code) {
 }
 
 /**
+ * Real application status vocabulary (mirrors JobApplication entity
+ * constants). No statuses are invented; each count comes from the
+ * candidate's own live application data.
+ */
+const APPLICATION_STATUSES = [
+  'SUBMITTED',
+  'UNDER_REVIEW',
+  'SHORTLISTED',
+  'HIRED',
+  'REJECTED',
+  'WITHDRAWN',
+]
+
+/**
  * A10 candidate dashboard — everything shown comes from the real backend
  * (profile identity, application count, two most recent applications,
  * active resume status). No invented statistics; missing data shows its
  * empty state instead of placeholder numbers.
+ *
+ * A12: the applications request also powers the status breakdown — the
+ * same paginated GET /candidates/me/applications response provides the
+ * exact totalItems, the recent items, and (within one page of 100) the
+ * per-status tally. No new backend endpoint was needed.
  */
 export default function CandidateDashboard() {
   const { user } = useAuth()
@@ -30,7 +49,9 @@ export default function CandidateDashboard() {
     setError(false)
     Promise.all([
       getMyProfile().catch(err => ({ __error: err })),
-      listMyApplications({ page: 0, size: 5 }).catch(err => ({ __error: err })),
+      // A12: size 100 so the status breakdown is exact for realistic
+      // candidate volumes; totalItems stays exact at any volume.
+      listMyApplications({ page: 0, size: 100 }).catch(err => ({ __error: err })),
       listMyResumes().catch(err => ({ __error: err })),
     ]).then(([profileResult, applicationsResult, resumesResult]) => {
       if (!active) return
@@ -52,6 +73,15 @@ export default function CandidateDashboard() {
     : null
   const totalApplications = applications ? applications.totalItems : null
   const recentApplications = applications ? applications.items.slice(0, 2) : []
+
+  // A12: real per-status tally from the candidate's own applications.
+  // Unknown/legacy status values are ignored rather than fabricated.
+  const statusBreakdown = applications
+    ? APPLICATION_STATUSES.map(status => ({
+      status,
+      count: applications.items.filter(app => app.status === status).length,
+    }))
+    : null
 
   return (
     <Container>
@@ -77,6 +107,30 @@ export default function CandidateDashboard() {
           <Button variant="primary" size="medium" onClick={() => setReloadKey(key => key + 1)}>
             Try again
           </Button>
+        </div>
+      )}
+
+      {statusBreakdown && (
+        <div className="candidate-portal__panel">
+          <h2 className="candidate-portal__panel-title">Application status</h2>
+          <div className="candidate-portal__breakdown">
+            {statusBreakdown.map(({ status, count }) => (
+              <div key={status} className="candidate-portal__breakdown-item">
+                <span
+                  className={`candidate-portal__status candidate-portal__status--${status}`}
+                >
+                  {friendlyApplicationStatus(status)}
+                </span>
+                <span className="candidate-portal__breakdown-count">{count}</span>
+              </div>
+            ))}
+          </div>
+          {totalApplications > (applications ? applications.items.length : 0) && (
+            <p className="candidate-portal__muted">
+              Breakdown covers your {applications.items.length} most recent of{' '}
+              {totalApplications} applications.
+            </p>
+          )}
         </div>
       )}
 

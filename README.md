@@ -955,6 +955,32 @@ New endpoints:
   immediately. Anonymous visitors keep the login signpost; authenticated
   non-candidates keep the neutral notice.
 
+### Candidate Application History + Status Breakdown (A12)
+
+A12 adds two focused candidate-facing reads on existing structures —
+no migration, no new statuses, no permission or SecurityConfig change.
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/candidates/me/applications/{id}/history` | GET | authenticated candidate (ownership) | Own application's status timeline (paginated, newest first) |
+
+- **History:** the ownership gate runs BEFORE any history query — a
+  foreign or unknown application id returns the same plain 404 as the
+  other candidate endpoints (no existence leak). Rows come from the
+  existing A7.4 repository read (`findByApplicationIdOrderByChangedAtDesc`,
+  `PageParams`/`PageResponse`). A dedicated candidate-safe DTO exposes
+  ONLY `previousStatus`, `newStatus` and `changedAt` — the actor user id
+  (`changedBy`), the database row id and the admin free-text note are
+  never serialized to the candidate. The admin `ApplicationHistoryController`
+  (employment:manage) is untouched.
+- **Status breakdown:** the candidate dashboard tallies the candidate's
+  own live applications from the EXISTING paginated
+  `GET /candidates/me/applications` response (real SUBMITTED / UNDER_REVIEW /
+  SHORTLISTED / HIRED / REJECTED / WITHDRAWN counts, zeros included).
+  No new aggregate endpoint was needed; `totalItems` keeps the total exact
+  at any volume, and the panel notes when a tally covers only the most
+  recent page. No statistics are fabricated.
+
 ## Frontend Setup & Run
 
 ```powershell

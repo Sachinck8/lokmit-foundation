@@ -114,6 +114,35 @@ export function getMyApplication(applicationId) {
 }
 
 /**
+ * Fetches the status-history timeline of one of the caller's own
+ * applications (A12). Candidate-safe DTO: transition vocabulary + timestamp
+ * only — no actor user id, no row id, no admin notes.
+ *
+ * @returns {Promise<{ items: Array, page: number, size: number, totalItems: number, totalPages: number }>}
+ */
+export function getMyApplicationHistory(applicationId, params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  return apiClient.get(
+    `${API_ENDPOINTS.CANDIDATE_ME_APPLICATIONS}/${applicationId}/history`,
+    { params: query },
+  ).then(response => {
+    const data = response.data && response.data.data
+    if (!data || !Array.isArray(data.items)) {
+      throw new Error('Unexpected response shape from the application history API.')
+    }
+    return {
+      items: data.items,
+      page: typeof data.page === 'number' ? data.page : 0,
+      size: typeof data.size === 'number' ? data.size : 20,
+      totalItems: typeof data.totalItems === 'number' ? data.totalItems : data.items.length,
+      totalPages: typeof data.totalPages === 'number' ? data.totalPages : 1,
+    }
+  })
+}
+
+/**
  * Submits an application for a published job.
  *
  * @param {{ jobId: number, resumeId?: number|null, coverNote?: string }} payload

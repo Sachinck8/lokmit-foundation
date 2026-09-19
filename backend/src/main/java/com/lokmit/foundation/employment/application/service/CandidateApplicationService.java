@@ -6,7 +6,9 @@ import com.lokmit.foundation.common.exception.ConflictException;
 import com.lokmit.foundation.common.exception.NotFoundException;
 import com.lokmit.foundation.common.pagination.PageParams;
 import com.lokmit.foundation.employment.application.dto.CandidateApplicationResponse;
+import com.lokmit.foundation.employment.application.dto.CandidateStatusHistoryResponse;
 import com.lokmit.foundation.employment.application.entity.JobApplication;
+import com.lokmit.foundation.employment.application.history.repository.ApplicationStatusHistoryRepository;
 import com.lokmit.foundation.employment.application.history.service.ApplicationStatusHistoryService;
 import com.lokmit.foundation.employment.application.repository.JobApplicationRepository;
 import com.lokmit.foundation.employment.application.service.support.OutboxPayloads;
@@ -65,6 +67,7 @@ public class CandidateApplicationService {
     private final AuditLogService auditLogService;
     private final OutboxService outboxService;
     private final ApplicationService applicationService;
+    private final ApplicationStatusHistoryRepository statusHistoryRepository;
 
     public CandidateApplicationService(
             JobApplicationRepository applicationRepository,
@@ -73,7 +76,8 @@ public class CandidateApplicationService {
             ApplicationStatusHistoryService historyService,
             AuditLogService auditLogService,
             OutboxService outboxService,
-            ApplicationService applicationService) {
+            ApplicationService applicationService,
+            ApplicationStatusHistoryRepository statusHistoryRepository) {
         this.applicationRepository = applicationRepository;
         this.jobRepository = jobRepository;
         this.resumeRepository = resumeRepository;
@@ -81,6 +85,7 @@ public class CandidateApplicationService {
         this.auditLogService = auditLogService;
         this.outboxService = outboxService;
         this.applicationService = applicationService;
+        this.statusHistoryRepository = statusHistoryRepository;
     }
 
     // ------------------------------------------------------------------
@@ -212,6 +217,49 @@ public class CandidateApplicationService {
 
         // 3. Candidate-facing response via the safe DTO.
         return getOwn(candidateId, applicationId);
+    }
+
+    // ------------------------------------------------------------------
+    // Status history (A12) — candidate-safe read of the own timeline
+    // ------------------------------------------------------------------
+
+    /**
+     * Returns the status-history timeline of one of the given candidate's
+     * OWN applications (A12).
+     *
+     * <p>Ownership is enforced FIRST via the ownership-scoped lookup — a
+     * foreign or unknown application id produces the identical plain 404
+     * as the other candidate application endpoints (no existence leak).
+     * The rows then come from the existing A7.4 repository read
+     * ({@code findByApplicationIdOrderByChangedAtDesc}, DB-side pagination)
+     * — no new query, no table change. Rows are mapped through the
+     * candidate-safe DTO: the actor identity ({@code changedBy}), the row
+     * id and the admin free-text note are never exposed to the candidate.</p>
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<CandidateStatusHistoryResponse> getOwnHistory(
+            long candidateId, long applicationId, PageParams pageParams) {
+        // 1. Ownership gate (masked 404 for foreign/unknown ids).
+        applicationRepository.findByIdAndCandidateId(applicationId, candidateId)
+                .orElseThrow(() -> new NotFoundException(
+                        "Application not found: " + applicationId));
+
+        // 2. Existing A7.4 repository read, existing ordering (changedAt DESC).
+        Page<CandidateStatusHistoryResponse> page = statusHistoryRepository
+                .findByApplicationIdOrderByChangedAtDesc(applicationId,
+                        PageRequest.of(pageParams.getPage(), pageParams.getSize()))
+                .map(this::toCandidateHistoryResponse);
+        return PageResponse.of(page);
+    }
+
+    /** Candidate-safe projection: transition vocabulary + timestamp only. */
+    private CandidateStatusHistoryResponse toCandidateHistoryResponse(
+            com.lokmit.foundation.employment.application.history.entity.ApplicationStatusHistory h) {
+        return CandidateStatusHistoryResponse.builder()
+                .previousStatus(h.getPreviousStatus())
+                .newStatus(h.getNewStatus())
+                .changedAt(h.getChangedAt())
+                .build();
     }
 
     // ------------------------------------------------------------------

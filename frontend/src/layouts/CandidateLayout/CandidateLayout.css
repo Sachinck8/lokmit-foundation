@@ -333,3 +333,74 @@
   align-items: center;
   gap: 0.6rem;
 }
+
+/* ===== A12: application status timeline ===== */
+.candidate-portal__timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.candidate-portal__timeline-item {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
+  padding: 0 0 1.1rem 0.9rem;
+  border-left: 2px solid var(--border);
+}
+
+.candidate-portal__timeline-item:last-child {
+  padding-bottom: 0;
+  border-left-color: transparent;
+}
+
+.candidate-portal__timeline-marker {
+  position: absolute;
+  left: -0.45rem;
+  top: 0.2rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--primary, currentColor);
+}
+
+.candidate-portal__timeline-transition {
+  margin: 0 0 0.15rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.candidate-portal__timeline-from {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.candidate-portal__timeline-date {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+/* ===== A12: dashboard status breakdown ===== */
+.candidate-portal__breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.candidate-portal__breakdown-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.candidate-portal__breakdown-count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

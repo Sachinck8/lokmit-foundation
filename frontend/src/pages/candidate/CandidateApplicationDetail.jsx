@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import Container from '../../components/Container/Container.jsx'
 import Button from '../../components/Button/Button.jsx'
-import { getMyApplication, withdrawMyApplication } from '../../services/candidateService.js'
+import {
+  getMyApplication,
+  withdrawMyApplication,
+  getMyApplicationHistory,
+} from '../../services/candidateService.js'
 import { candidateContent } from '../../constants/candidateContent.js'
 
 function friendlyStatus(code) {
@@ -45,6 +49,11 @@ export default function CandidateApplicationDetail() {
   const [withdrawing, setWithdrawing] = useState(false)
   const [withdrawError, setWithdrawError] = useState(null)
 
+  // A12 status-history state.
+  const [history, setHistory] = useState(null)
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyError, setHistoryError] = useState(false)
+
   useEffect(() => {
     let active = true
     setLoading(true)
@@ -67,6 +76,29 @@ export default function CandidateApplicationDetail() {
       active = false
     }
   }, [applicationId, reloadKey])
+
+  // A12: load the status-history timeline once the application itself is
+  // available; refetch together with the application (e.g. after withdrawal
+  // the new transition appears without a page reload).
+  useEffect(() => {
+    if (!application || !applicationId) return
+    let active = true
+    setHistoryLoading(true)
+    setHistoryError(false)
+    getMyApplicationHistory(applicationId, { page: 0, size: 50 })
+      .then(data => {
+        if (active) setHistory(data)
+      })
+      .catch(() => {
+        if (active) setHistoryError(true)
+      })
+      .finally(() => {
+        if (active) setHistoryLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [application, applicationId, reloadKey])
 
   async function handleWithdraw() {
     if (withdrawing || !application) return
@@ -230,6 +262,58 @@ export default function CandidateApplicationDetail() {
               </p>
             </section>
           )}
+
+          <section>
+            <h2 className="candidate-portal__panel-title">Status history</h2>
+
+            {historyLoading && (
+              <div aria-hidden="true">
+                <div className="candidate-portal__skeleton candidate-portal__skeleton--line" />
+                <div className="candidate-portal__skeleton candidate-portal__skeleton--short" />
+              </div>
+            )}
+
+            {historyError && (
+              <p className="candidate-portal__muted">
+                The status timeline could not be loaded right now.
+              </p>
+            )}
+
+            {!historyLoading && !historyError && Array.isArray(history && history.items)
+              && history.items.length === 0 && (
+              <p className="candidate-portal__muted">
+                No status changes have been recorded yet.
+              </p>
+            )}
+
+            {!historyLoading && !historyError
+              && Array.isArray(history && history.items) && history.items.length > 0 && (
+              <ol className="candidate-portal__timeline">
+                {history.items.map((entry, index) => (
+                  <li key={index} className="candidate-portal__timeline-item">
+                    <div className="candidate-portal__timeline-marker" aria-hidden="true" />
+                    <div>
+                      <p className="candidate-portal__timeline-transition">
+                        <span
+                          className={`candidate-portal__status candidate-portal__status--${entry.newStatus}`}
+                        >
+                          {friendlyStatus(entry.newStatus)}
+                        </span>
+                        {entry.previousStatus && (
+                          <span className="candidate-portal__timeline-from">
+                            {' '}from {friendlyStatus(entry.previousStatus)}
+                          </span>
+                        )}
+                      </p>
+                      <p className="candidate-portal__timeline-date">
+                        {formatDateTime(entry.changedAt)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
         </div>
       )}
     </Container>
