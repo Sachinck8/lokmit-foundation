@@ -40,6 +40,8 @@ import CandidateProfile from '../pages/candidate/CandidateProfile.jsx'
 import CandidateResumes from '../pages/candidate/CandidateResumes.jsx'
 import CandidateApplications from '../pages/candidate/CandidateApplications.jsx'
 import CandidateApplicationDetail from '../pages/candidate/CandidateApplicationDetail.jsx'
+import CandidateNotifications from '../pages/candidate/CandidateNotifications.jsx'
+import CandidateInterviews from '../pages/candidate/CandidateInterviews.jsx'
 import RequireCandidate from '../auth/RequireCandidate.jsx'
 
 const candidateRoutes = [
@@ -48,6 +50,8 @@ const candidateRoutes = [
   { path: '/candidate/resumes', element: <CandidateResumes /> },
   { path: '/candidate/applications', element: <CandidateApplications /> },
   { path: '/candidate/applications/:applicationId', element: <CandidateApplicationDetail /> },
+  { path: '/candidate/interviews', element: <CandidateInterviews /> },
+  { path: '/candidate/notifications', element: <CandidateNotifications /> },
 ]
 
 const router = createBrowserRouter([

@@ -9,6 +9,8 @@ const NAV_ITEMS = [
   { to: '/candidate/profile', label: 'Profile' },
   { to: '/candidate/resumes', label: 'My Resume' },
   { to: '/candidate/applications', label: 'My Applications' },
+  { to: '/candidate/interviews', label: 'My Interviews' },
+  { to: '/candidate/notifications', label: 'Notifications' },
 ]
 
 /**

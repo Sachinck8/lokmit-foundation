@@ -18,4 +18,7 @@ export const API_ENDPOINTS = {
   // Candidate self-service education + experience CRUD (A13) — V8 tables.
   CANDIDATE_ME_EDUCATIONS: '/candidates/me/educations',
   CANDIDATE_ME_EXPERIENCES: '/candidates/me/experiences',
+  // Candidate self-service notifications + interview visibility (A14).
+  CANDIDATE_ME_NOTIFICATIONS: '/candidates/me/notifications',
+  CANDIDATE_ME_INTERVIEWS: '/candidates/me/interviews',
 }

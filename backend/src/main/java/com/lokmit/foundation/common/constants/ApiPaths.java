@@ -101,6 +101,15 @@ public final class ApiPaths {
     /** Candidate self-service experience CRUD (A13) — existing V8 candidate_experiences. */
     public static final String CANDIDATE_ME_EXPERIENCES = API_V1 + "/candidates/me/experiences";
 
+    /** Candidate self-service notifications (A14) — existing A7.5 user-scoped service. */
+    public static final String CANDIDATE_ME_NOTIFICATIONS =
+            API_V1 + "/candidates/me/notifications";
+
+    /** Candidate self-service interview visibility (A14) — read-only own interviews. */
+    public static final String CANDIDATE_ME_INTERVIEWS = API_V1 + "/candidates/me/interviews";
+    public static final String CANDIDATE_ME_INTERVIEW =
+            CANDIDATE_ME_INTERVIEWS + "/{interviewId}";
+
     /** Secure resume download API (A7.6.4) — candidate ownership or candidates:manage. */
     public static final String RESUMES = API_V1 + "/resumes";
     public static final String RESUME_DOWNLOAD = RESUMES + "/{resumeId}/download";

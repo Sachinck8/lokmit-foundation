@@ -1009,6 +1009,41 @@ change.
   sections (list, add, edit, delete, loading/empty/error states) on the
   existing portal design system via `candidateService`.
 
+### Candidate Notifications + Interview Visibility (A14)
+
+A14 completes the candidate-facing read surface over the existing A7.5
+notification and A7.4 interview infrastructure. No migration, no new
+notification type, no interview-status change, no SecurityConfig change,
+and no change to outbox event generation or the admin controllers.
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/candidates/me/notifications` | GET | authenticated user | Own notifications, newest first, optional `type` / `unreadOnly` filters, paginated |
+| `/candidates/me/notifications/unread-count` | GET | authenticated user | Own unread count |
+| `/candidates/me/notifications/{id}` | GET | authenticated user (ownership) | One own notification; foreign/unknown = same 404 |
+| `/candidates/me/notifications/{id}/read` | PATCH | authenticated user (ownership) | Mark own notification read (idempotent) |
+| `/candidates/me/interviews?applicationId=` | GET | authenticated candidate (ownership) | Interviews for one own application, scheduledAt desc |
+| `/candidates/me/interviews/{interviewId}` | GET | authenticated candidate (ownership) | One own interview; foreign/unknown = same 404 |
+
+- **Notifications:** a thin candidate route over the existing
+  `NotificationService`, which already scopes every method to the
+  authenticated user's database id via `SecurityUtils` — no recipientId or
+  candidateId request field exists anywhere. Mark-unread is intentionally
+  not exposed to candidates. Outbox-generated
+  `APPLICATION_STATUS_CHANGED` and interview notifications continue to
+  flow unchanged.
+- **Interviews:** read-only. Ownership flows interview → application →
+  candidate, enforced at query level (V15 has no direct candidateId on
+  interviews). The candidate-safe DTO omits the admin `updatedAt`
+  bookkeeping field; scheduled time uses the existing `OffsetDateTime`
+  ISO-8601 serialization with no timezone semantics change. No candidate
+  creation, editing, cancellation or rescheduling exists.
+- **Frontend:** two new portal pages — `My Interviews` (per-application
+  interview list for the candidate's own applications) and
+  `Notifications` (paginated list with unread emphasis and mark-read) —
+  plus nav entries, following the existing design system via
+  `candidateService`.
+
 ## Frontend Setup & Run
 
 ```powershell

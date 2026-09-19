@@ -323,3 +323,86 @@ export function deleteMyExperience(recordId) {
   return apiClient.delete(`${API_ENDPOINTS.CANDIDATE_ME_EXPERIENCES}/${recordId}`)
     .then(() => true)
 }
+
+// ---------------------------------------------------------------------
+// notifications (A14)
+// ---------------------------------------------------------------------
+
+/**
+ * Lists the authenticated user's own in-app notifications (paginated,
+ * newest first) over GET /candidates/me/notifications (A14). Ownership is
+ * server-resolved from the JWT; no recipient id is sent or trusted.
+ *
+ * @param {{ page?: number, size?: number, unreadOnly?: boolean }} params
+ */
+export function listMyNotifications(params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  if (params.unreadOnly) query.unreadOnly = true
+  return apiClient.get(API_ENDPOINTS.CANDIDATE_ME_NOTIFICATIONS, { params: query })
+    .then(response => {
+      const data = response.data && response.data.data
+      if (!data || !Array.isArray(data.items)) {
+        throw new Error('Unexpected response shape from the notifications API.')
+      }
+      return {
+        items: data.items,
+        page: typeof data.page === 'number' ? data.page : 0,
+        size: typeof data.size === 'number' ? data.size : 20,
+        totalItems: typeof data.totalItems === 'number' ? data.totalItems : data.items.length,
+        totalPages: typeof data.totalPages === 'number' ? data.totalPages : 1,
+      }
+    })
+}
+
+/** Counts the caller's own unread notifications (A14). */
+export function countMyUnreadNotifications() {
+  return apiClient.get(`${API_ENDPOINTS.CANDIDATE_ME_NOTIFICATIONS}/unread-count`)
+    .then(response => {
+      const data = response.data && response.data.data
+      return data && typeof data.unreadCount === 'number' ? data.unreadCount : 0
+    })
+}
+
+/** Marks one of the caller's own notifications as read (A14, idempotent). */
+export function markMyNotificationRead(notificationId) {
+  return apiClient.patch(
+    `${API_ENDPOINTS.CANDIDATE_ME_NOTIFICATIONS}/${notificationId}/read`,
+  ).then(response => response.data && response.data.data)
+}
+
+// ---------------------------------------------------------------------
+// interviews (A14)
+// ---------------------------------------------------------------------
+
+/**
+ * Lists the interviews for one of the caller's own applications (A14).
+ * Ownership flows interview → application → candidate, resolved entirely
+ * server-side; a foreign application id yields the same masked 404 as an
+ * unknown one.
+ */
+export function listMyInterviews(applicationId, params = {}) {
+  const query = { applicationId }
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  return apiClient.get(API_ENDPOINTS.CANDIDATE_ME_INTERVIEWS, { params: query }).then(response => {
+    const data = response.data && response.data.data
+    if (!data || !Array.isArray(data.items)) {
+      throw new Error('Unexpected response shape from the interviews API.')
+    }
+    return {
+      items: data.items,
+      page: typeof data.page === 'number' ? data.page : 0,
+      size: typeof data.size === 'number' ? data.size : 20,
+      totalItems: typeof data.totalItems === 'number' ? data.totalItems : data.items.length,
+      totalPages: typeof data.totalPages === 'number' ? data.totalPages : 1,
+    }
+  })
+}
+
+/** Fetches one of the caller's own interviews by id (A14). */
+export function getMyInterview(interviewId) {
+  return apiClient.get(`${API_ENDPOINTS.CANDIDATE_ME_INTERVIEWS}/${interviewId}`)
+    .then(response => response.data && response.data.data)
+}

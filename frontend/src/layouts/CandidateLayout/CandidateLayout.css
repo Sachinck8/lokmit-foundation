@@ -192,6 +192,14 @@
 .candidate-portal__status--HIRED { background: #e6f4ea; border-color: #b6e0c2; color: #14532d; font-weight: 700; }
 .candidate-portal__status--REJECTED { background: #fdeeee; border-color: #f2c6c6; color: #8f1f1f; }
 .candidate-portal__status--WITHDRAWN { background: #f1f1f1; border-color: #dddddd; color: #555555; }
+/* A14 interview statuses — same chip system, distinct hues. */
+.candidate-portal__status--SCHEDULED { background: #eef2fb; border-color: #ccd8f2; color: #26418f; }
+.candidate-portal__status--COMPLETED { background: #e9f7ee; border-color: #bfe4cb; color: #1e6b3a; }
+.candidate-portal__status--CANCELLED { background: #f1f1f1; border-color: #dddddd; color: #555555; }
+.candidate-portal__status--NO_SHOW { background: #fdf6e7; border-color: #f0dfae; color: #8a6116; }
+/* A14 unread notification emphasis + small muted line. */
+.candidate-portal__list-item--unread { border-left: 3px solid var(--color-primary, #1d4ed8); }
+.candidate-portal__muted--small { font-size: 0.85rem; }
 
 .candidate-portal__facts {
   display: grid;
