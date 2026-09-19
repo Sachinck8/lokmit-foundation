@@ -71,8 +71,11 @@ public final class ApiPaths {
     public static final String ADMIN_NOTIFICATIONS = API_V1 + "/admin/notifications";
     public static final String ADMIN_AUDIT_LOGS = API_V1 + "/admin/audit-logs";
 
-    /** Candidate self-service resume APIs (A7.6.3) — authenticated candidate ownership. */
+    /** Candidate self-service resume APIs (A7.6.3/A10) — authenticated candidate ownership. */
     public static final String CANDIDATE_ME_RESUMES = API_V1 + "/candidates/me/resumes";
+
+    /** Candidate self-service profile API (A10) — authenticated candidate ownership. */
+    public static final String CANDIDATE_ME_PROFILE = API_V1 + "/candidates/me/profile";
 
     /** Candidate self-service application APIs (A9) — authenticated candidate ownership. */
     public static final String CANDIDATE_ME_APPLICATIONS =

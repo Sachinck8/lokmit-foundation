@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom'
 import PublicLayout from '../layouts/PublicLayout/PublicLayout.jsx'
+import CandidateLayout from '../layouts/CandidateLayout/CandidateLayout.jsx'
 import Home from '../pages/public/Home/Home.jsx'
 import About from '../pages/public/About/About.jsx'
 import CompanyProfile from '../pages/public/CompanyProfile/CompanyProfile.jsx'
@@ -34,6 +35,20 @@ import Objectives from '../pages/public/About/Objectives/Objectives.jsx'
 import Values from '../pages/public/About/Values/Values.jsx'
 import DirectorsMessage from '../pages/public/About/DirectorsMessage/DirectorsMessage.jsx'
 import Team from '../pages/public/About/Team/Team.jsx'
+import CandidateDashboard from '../pages/candidate/CandidateDashboard.jsx'
+import CandidateProfile from '../pages/candidate/CandidateProfile.jsx'
+import CandidateResumes from '../pages/candidate/CandidateResumes.jsx'
+import CandidateApplications from '../pages/candidate/CandidateApplications.jsx'
+import CandidateApplicationDetail from '../pages/candidate/CandidateApplicationDetail.jsx'
+import RequireCandidate from '../auth/RequireCandidate.jsx'
+
+const candidateRoutes = [
+  { path: '/candidate', element: <CandidateDashboard /> },
+  { path: '/candidate/profile', element: <CandidateProfile /> },
+  { path: '/candidate/resumes', element: <CandidateResumes /> },
+  { path: '/candidate/applications', element: <CandidateApplications /> },
+  { path: '/candidate/applications/:applicationId', element: <CandidateApplicationDetail /> },
+]
 
 const router = createBrowserRouter([
   {
@@ -75,6 +90,15 @@ const router = createBrowserRouter([
       { path: '/admin-panel', element: <AdminPanel /> },
       { path: '*', element: <NotFound /> },
     ],
+  },
+  {
+    path: '/',
+    element: (
+      <RequireCandidate>
+        <CandidateLayout />
+      </RequireCandidate>
+    ),
+    children: candidateRoutes,
   },
 ])
 

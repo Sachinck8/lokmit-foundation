@@ -7,6 +7,7 @@ import Badge from '../../../components/Badge/Badge.jsx'
 import Button from '../../../components/Button/Button.jsx'
 import { jobsContent } from '../../../constants/careersContent.js'
 import { getJob as getJobFromApi } from '../../../services/jobService.js'
+import ApplyToJob from '../../../components/ApplyToJob/ApplyToJob.jsx'
 import './Jobs.css'
 
 /** Formats one job's salary range from fields the backend actually models. */
@@ -210,10 +211,8 @@ export default function JobDetail() {
                 </section>
               )}
 
-              <p className="jobs-detail__apply-note">
-                Interested in this role? Send your application enquiry through our{' '}
-                <Link to="/contact" className="jobs-detail__back-link">contact page</Link>.
-              </p>
+              <p className="jobs-detail__apply-note" style={{ display: 'none' }} />
+              {job && <ApplyToJob job={job} />}
             </article>
           )}
         </Container>

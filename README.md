@@ -867,6 +867,57 @@ keep working exactly as before.
   profile), 409 (duplicate application), 401 (unauthenticated). All use
   the standard error envelope with the existing `ErrorCodes`.
 
+### Candidate Portal + Authentication Integration (A10)
+
+A10 connects the frontend to the real authentication API and delivers the
+first authenticated candidate experience. No new permission, no migration,
+no security weakening: the entire candidate surface keeps running on the
+established JWT bearer chain and server-side ownership resolution.
+
+Backend additions (smallest possible self-service gaps):
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/candidates/me/profile` | GET | authenticated candidate (ownership) | Own profile (reuses `CandidateResponse`) |
+| `/candidates/me/profile` | PATCH | authenticated candidate (ownership) | Partial update of own profile fields |
+| `/candidates/me/resumes` | GET | authenticated candidate (ownership) | Own resume metadata list (reuses `ResumeResponse`) |
+
+- **Ownership:** all three resolve the candidate server-side from the
+  authenticated user's database id via the existing A7.6.3 ownership
+  service — no candidateId request field exists anywhere on the candidate
+  surface, so nothing can be redirected at another candidate. A user
+  without a candidate profile receives the plain masked 404.
+- **No duplication:** the profile PATCH reuses the admin API's
+  `CandidateService.updateCandidate` (same DTO, same validation, same
+  salary-range rule); the resume list reuses the safe `ResumeResponse` —
+  no storage keys, file URLs or blob internals.
+
+Frontend integration:
+
+- **Authentication flow:** the existing `POST /api/v1/auth/login` (JWT),
+  `POST /auth/refresh` (rotation + reuse detection preserved) and
+  `POST /auth/logout` (server-side revocation). Access tokens are kept in
+  `sessionStorage`, refresh tokens in `localStorage`; no password is ever
+  persisted, and tokens travel only to the same-origin `/api` backend.
+  A single-flight axios interceptor refreshes once on 401 and replays the
+  request; failed refreshes clear the session.
+- **Protected routes:** `/candidate`, `/candidate/profile`,
+  `/candidate/resumes`, `/candidate/applications`,
+  `/candidate/applications/:applicationId` — guarded by a
+  `RequireCandidate` wrapper that preserves the intended path in
+  `?returnTo=` when redirecting anonymous visitors to `/candidate-login`
+  and explains the restriction to authenticated non-candidate roles.
+- **Candidate portal:** a dashboard (live profile identity, total
+  application count, two most recent applications, active-resume status,
+  quick actions — no fabricated statistics), profile view/edit, resume
+  management (upload with client+server validation errors, download of the
+  active resume, delete with confirmation), paginated application list and
+  application detail (masked 404 for foreign ids).
+- **Apply-to-job flow:** the public `/jobs/:jobId` page now offers real
+  application submission for signed-in candidates (A9 contract, own ACTIVE
+  resume selection, clear 409 duplicate message, login signpost with
+  `returnTo` for anonymous visitors). Public browsing is unchanged.
+
 ## Frontend Setup & Run
 
 ```powershell

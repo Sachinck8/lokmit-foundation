@@ -1,0 +1,304 @@
+/* A10 candidate portal shell — reuses existing design tokens/variables. */
+.candidate-portal {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface, #f6f8f4);
+}
+
+.candidate-portal__header {
+  background: #ffffff;
+  border-bottom: 1px solid var(--color-border-light, #e4e9df);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.candidate-portal__header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-3, 1rem) var(--spacing-5, 1.5rem);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-5, 1.5rem);
+  flex-wrap: wrap;
+}
+
+.candidate-portal__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-3, 1rem);
+  text-decoration: none;
+}
+
+.candidate-portal__brand-logo {
+  height: 40px;
+  width: auto;
+}
+
+.candidate-portal__brand-text {
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--blue-800, #0d3d21);
+}
+
+.candidate-portal__nav {
+  flex: 1;
+}
+
+.candidate-portal__nav-list {
+  display: flex;
+  gap: var(--spacing-2, 0.5rem);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+.candidate-portal__nav-link {
+  display: inline-block;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-md, 0.5rem);
+  color: var(--color-text, #233);
+  text-decoration: none;
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.candidate-portal__nav-link:hover {
+  background: var(--color-surface, #f0f4ea);
+}
+
+.candidate-portal__nav-link--active {
+  background: var(--blue-800, #0d3d21);
+  color: #ffffff;
+}
+
+.candidate-portal__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3, 1rem);
+}
+
+.candidate-portal__user {
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text, #22301f);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.candidate-portal__main {
+  flex: 1;
+  padding: var(--spacing-6, 2rem) var(--spacing-5, 1.5rem);
+}
+
+/* Shared page scaffolding for portal pages */
+.candidate-portal__panel {
+  background: #ffffff;
+  border: 1px solid var(--color-border-light, #e4e9df);
+  border-radius: var(--radius-xl, 0.9rem);
+  padding: var(--spacing-6, 2rem);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+  margin-bottom: var(--spacing-5, 1.5rem);
+}
+
+.candidate-portal__panel-title {
+  margin: 0 0 var(--spacing-4, 1rem);
+  color: var(--blue-800, #0d3d21);
+}
+
+.candidate-portal__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-5, 1.5rem);
+}
+
+@media (min-width: 900px) {
+  .candidate-portal__grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.candidate-portal__muted {
+  color: var(--color-muted, #5a6b55);
+  line-height: var(--line-height-relaxed, 1.6);
+}
+
+.candidate-portal__title {
+  margin: 0 0 var(--spacing-2, 0.5rem);
+  color: var(--blue-800, #0d3d21);
+}
+
+.candidate-portal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--spacing-3, 1rem);
+}
+
+.candidate-portal__list-item {
+  border: 1px solid var(--color-border-light, #e4e9df);
+  border-radius: var(--radius-lg, 0.75rem);
+  padding: var(--spacing-4, 1rem);
+  background: #fff;
+}
+
+.candidate-portal__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3, 1rem);
+  flex-wrap: wrap;
+}
+
+.candidate-portal__actions-row {
+  display: flex;
+  gap: var(--spacing-3, 1rem);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.candidate-portal__error {
+  color: #a02020;
+  background: #fdf1f1;
+  border: 1px solid #efc9c9;
+  border-radius: var(--radius-md, 0.5rem);
+  padding: 0.75rem 1rem;
+}
+
+.candidate-portal__success {
+  color: #1e5c2f;
+  background: #eef7f0;
+  border: 1px solid #c9e4d0;
+  border-radius: var(--radius-md, 0.5rem);
+  padding: 0.75rem 1rem;
+}
+
+.candidate-portal__status {
+  display: inline-block;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-full, 999px);
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-semibold, 600);
+  background: var(--color-surface, #f0f4ea);
+  color: var(--color-text, #233);
+  border: 1px solid var(--color-border-light, #e4e9df);
+}
+
+.candidate-portal__status--SUBMITTED { background: #eef2fb; border-color: #ccd8f2; color: #26418f; }
+.candidate-portal__status--UNDER_REVIEW { background: #fdf6e7; border-color: #f0dfae; color: #8a6116; }
+.candidate-portal__status--SHORTLISTED { background: #e9f7ee; border-color: #bfe4cb; color: #1e6b3a; }
+.candidate-portal__status--HIRED { background: #e6f4ea; border-color: #b6e0c2; color: #14532d; font-weight: 700; }
+.candidate-portal__status--REJECTED { background: #fdeeee; border-color: #f2c6c6; color: #8f1f1f; }
+.candidate-portal__status--WITHDRAWN { background: #f1f1f1; border-color: #dddddd; color: #555555; }
+
+.candidate-portal__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--spacing-3, 1rem);
+  margin: 0 0 var(--spacing-4, 1rem);
+  padding: 0;
+}
+
+.candidate-portal__fact {
+  background: var(--color-surface, #f6f8f4);
+  border: 1px solid var(--color-border-light, #e4e9df);
+  border-radius: var(--radius-md, 0.5rem);
+  padding: var(--spacing-3, 1rem);
+}
+
+.candidate-portal__fact dt {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted, #5a6b55);
+  margin: 0 0 0.25rem;
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.candidate-portal__fact dd {
+  margin: 0;
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text, #22301f);
+  overflow-wrap: anywhere;
+}
+
+.candidate-portal__form {
+  display: grid;
+  gap: var(--spacing-4, 1rem);
+  max-width: 640px;
+}
+
+.candidate-portal__form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-4, 1rem);
+}
+
+@media (min-width: 700px) {
+  .candidate-portal__form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.candidate-portal__label {
+  display: block;
+  font-weight: var(--font-weight-semibold, 600);
+  margin-bottom: 0.4rem;
+  color: var(--color-text, #22301f);
+}
+
+.candidate-portal__input,
+.candidate-portal__textarea,
+.candidate-portal__select {
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--color-border, #cfd8c8);
+  border-radius: var(--radius-md, 0.5rem);
+  font: inherit;
+  color: var(--color-text, #22301f);
+  background: #fff;
+}
+
+.candidate-portal__input:focus-visible,
+.candidate-portal__textarea:focus-visible,
+.candidate-portal__select:focus-visible,
+.candidate-portal__nav-link:focus-visible {
+  outline: 2px solid var(--blue-700, #14532d);
+  outline-offset: 2px;
+}
+
+.candidate-portal__textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.candidate-portal__hint {
+  color: var(--color-muted, #5a6b55);
+  font-size: 0.88rem;
+  margin: 0.3rem 0 0;
+}
+
+.candidate-portal__skeleton {
+  border-radius: var(--radius-md, 0.5rem);
+  background: linear-gradient(90deg, #eef1ea 25%, #f7f9f5 50%, #eef1ea 75%);
+  background-size: 200% 100%;
+  animation: candidate-skeleton 1.2s ease-in-out infinite;
+  height: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.candidate-portal__skeleton--title { height: 1.5rem; width: 40%; }
+.candidate-portal__skeleton--line { width: 90%; }
+.candidate-portal__skeleton--short { width: 55%; }
+
+@keyframes candidate-skeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (max-width: 760px) {
+  .candidate-portal__header-inner { gap: var(--spacing-3, 1rem); }
+  .candidate-portal__user { display: none; }
+}
