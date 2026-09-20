@@ -147,3 +147,101 @@ export function downloadResume(resumeId) {
     responseType: 'blob',
   })
 }
+
+/**
+ * A19 — Admin jobs management over the EXISTING admin job lifecycle APIs
+ * (all employment:manage server-side; no new backend surface).
+ */
+
+/**
+ * Lists jobs with the existing backend filters.
+ * @param {{ page?: number, size?: number, status?: string, employmentType?: string,
+ *            workMode?: string, search?: string }} params
+ */
+export function listJobs(params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  if (params.status) query.status = params.status
+  if (params.employmentType) query.employmentType = params.employmentType
+  if (params.workMode) query.workMode = params.workMode
+  if (params.search && String(params.search).trim() !== '') query.search = params.search.trim()
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_JOBS, { params: query })
+    .then(response => unwrapPage(response.data && response.data.data))
+}
+
+/** Fetches one job (employer/category safe summaries included). Unknown ids → backend 404. */
+export function getJob(jobId) {
+  return apiClient.get(`${API_ENDPOINTS.ADMIN_JOBS}/${jobId}`).then(unwrapOne)
+}
+
+/** Creates a job. Backend always starts it DRAFT; slug/employer/category validated server-side. */
+export function createJob(payload) {
+  return apiClient.post(API_ENDPOINTS.ADMIN_JOBS, payload).then(unwrapOne)
+}
+
+/**
+ * Partially updates a job. Only changed fields are sent so explicit-null
+ * clears (requirements/location/salary/deadline/category) stay intentional.
+ * Slug and employer are immutable server-side; status is lifecycle-only.
+ */
+export function updateJob(jobId, payload) {
+  return apiClient.patch(`${API_ENDPOINTS.ADMIN_JOBS}/${jobId}`, payload).then(unwrapOne)
+}
+
+/** Lifecycle transitions — backend rules are authoritative (DRAFT→PUBLISHED→CLOSED→ARCHIVED). */
+export function publishJob(jobId) {
+  return apiClient.post(`${API_ENDPOINTS.ADMIN_JOBS}/${jobId}/publish`).then(unwrapOne)
+}
+
+export function closeJob(jobId) {
+  return apiClient.post(`${API_ENDPOINTS.ADMIN_JOBS}/${jobId}/close`).then(unwrapOne)
+}
+
+export function archiveJob(jobId) {
+  return apiClient.post(`${API_ENDPOINTS.ADMIN_JOBS}/${jobId}/archive`).then(unwrapOne)
+}
+
+/** Permanent delete (DRAFT only server-side). Confirmation is the caller's responsibility. */
+export function deleteJob(jobId) {
+  return apiClient.delete(`${API_ENDPOINTS.ADMIN_JOBS}/${jobId}`)
+}
+
+/** Lists a job's skill requirements. Unknown job → backend 404. */
+export function getJobSkills(jobId) {
+  return apiClient
+    .get(`${API_ENDPOINTS.ADMIN_JOBS}/${jobId}/skills`)
+    .then(response => (response.data && response.data.data) || [])
+}
+
+/** Assigns a skill requirement (duplicate → backend 409). */
+export function assignJobSkill(jobId, skillId) {
+  return apiClient
+    .post(`${API_ENDPOINTS.ADMIN_JOBS}/${jobId}/skills`, { skillId })
+    .then(unwrapOne)
+}
+
+/** Removes a skill requirement. Unknown pair → backend 404. */
+export function removeJobSkill(jobId, skillId) {
+  return apiClient.delete(`${API_ENDPOINTS.ADMIN_JOBS}/${jobId}/skills/${skillId}`)
+}
+
+/** Reference lists for the job form (size 100 = backend PageParams.MAX_SIZE, one request). */
+export function listJobCategories() {
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_JOB_CATEGORIES, { params: { size: 100 } })
+    .then(response => unwrapPage(response.data && response.data.data).items)
+}
+
+export function listEmployers() {
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_EMPLOYERS, { params: { size: 100 } })
+    .then(response => unwrapPage(response.data && response.data.data).items)
+}
+
+export function listSkillsCatalog() {
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_SKILLS, { params: { size: 100 } })
+    .then(response => unwrapPage(response.data && response.data.data).items)
+}

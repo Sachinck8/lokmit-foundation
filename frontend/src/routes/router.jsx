@@ -47,6 +47,8 @@ import RequireAdmin from '../auth/RequireAdmin.jsx'
 import AdminLayout from '../layouts/AdminLayout/AdminLayout.jsx'
 import AdminApplications from '../pages/admin/AdminApplications.jsx'
 import AdminApplicationDetail from '../pages/admin/AdminApplicationDetail.jsx'
+import AdminJobs from '../pages/admin/AdminJobs.jsx'
+import AdminJobDetail from '../pages/admin/AdminJobDetail.jsx'
 
 const candidateRoutes = [
   { path: '/candidate', element: <CandidateDashboard /> },
@@ -61,6 +63,8 @@ const candidateRoutes = [
 const adminRoutes = [
   { path: '/admin-panel/applications', element: <AdminApplications /> },
   { path: '/admin-panel/applications/:applicationId', element: <AdminApplicationDetail /> },
+  { path: '/admin-panel/jobs', element: <AdminJobs /> },
+  { path: '/admin-panel/jobs/:jobId', element: <AdminJobDetail /> },
 ]
 
 const router = createBrowserRouter([

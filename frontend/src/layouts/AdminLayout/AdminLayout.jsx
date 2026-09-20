@@ -6,6 +6,7 @@ import './AdminLayout.css'
 
 const NAV_ITEMS = [
   { to: '/admin-panel/applications', label: 'Applications' },
+  { to: '/admin-panel/jobs', label: 'Jobs' },
 ]
 
 /**

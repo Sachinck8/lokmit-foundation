@@ -1106,6 +1106,44 @@ no migration, no auth change; backend additions are minimal and additive.
   internals. Backend suite: 656 tests, 0 failures, 13 PostgreSQL-gated
   skips; backend package and frontend production build both succeed.
 
+### Admin Jobs Management (A19)
+
+A19 completes the employment console's second core surface: staff-side
+job lifecycle management. Backend-only work becomes usable - **zero
+backend changes**: every endpoint consumed already existed since A7/A8
+and remains `employment:manage`-protected (`@PreAuthorize` is still the
+security boundary). No migration, no new permission, no auth change.
+
+- **Jobs list:** protected route `/admin-panel/jobs` over the existing
+  `GET /admin/jobs` - paginated, backend-filtered (status, employment
+  type, work mode, title/slug/location search) table showing job,
+  employer, category, type, mode, status chip, openings and deadline.
+  "New job" opens the create form (`/admin-panel/jobs/new`).
+- **Job detail / create / edit:** `/admin-panel/jobs/:jobId` - full
+  facts view, description/requirements, lifecycle actions,
+  skill-requirement management and a change-tracked edit form. New jobs
+  are created as DRAFT (backend rule); slug and owning employer are
+  immutable (backend rule); the PATCH payload contains only changed
+  fields so the backend's explicit-null clears (requirements, location,
+  salary pair, deadline, category detach) stay intentional.
+- **Lifecycle actions mirror the backend exactly:** publish (DRAFT ->
+  PUBLISHED, stamps published_at), close (PUBLISHED -> CLOSED), archive
+  (DRAFT/PUBLISHED/CLOSED -> ARCHIVED, terminal), delete (DRAFT only,
+  permanent). Destructive actions are confirmation-gated; invalid
+  transitions never render as buttons; backend 400/404/409 responses
+  are surfaced with clear messages and the state is re-read from the
+  server after every action.
+- **Skill requirements:** assign/remove through the existing
+  `/admin/jobs/{jobId}/skills` endpoints (duplicate -> 409 surfaced),
+  choosing from the existing `/admin/skills` catalog.
+- **States:** loading skeletons, retryable error panels, empty states
+  (with-filters and no-jobs variants), job-not-found, and explicit form
+  error messages - no silent failures, no fabricated data. Published
+  jobs are labeled as publicly visible on /jobs.
+- **Verification:** backend suite unchanged and green (656 tests, 0
+  failures, 0 errors, 13 PostgreSQL-gated skips - no backend surface
+  changed); frontend production build succeeds.
+
 ## Frontend Setup & Run
 
 ```powershell

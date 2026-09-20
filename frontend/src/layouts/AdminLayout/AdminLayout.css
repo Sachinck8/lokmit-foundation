@@ -194,6 +194,13 @@
 .admin-portal__status--CANCELLED { background: #f1f1f1; border-color: #dddddd; color: #555555; }
 .admin-portal__status--NO_SHOW { background: #fdf6e7; border-color: #f0dfae; color: #8a6116; }
 
+/* Job lifecycle chips (A19) — same treatment, distinct hues ---------- */
+
+.admin-portal__status--DRAFT { background: #f1f1f1; border-color: #dddddd; color: #555555; }
+.admin-portal__status--PUBLISHED { background: #e9f7ee; border-color: #bfe4cb; color: #1e6b3a; }
+.admin-portal__status--CLOSED { background: #fdf6e7; border-color: #f0dfae; color: #8a6116; }
+.admin-portal__status--ARCHIVED { background: #f4eef8; border-color: #dcc8ea; color: #5d3a78; }
+
 /* Applications table -------------------------------------------------- */
 
 .admin-portal__table-wrap {
