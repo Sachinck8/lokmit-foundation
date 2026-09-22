@@ -23,6 +23,10 @@ export const API_ENDPOINTS = {
   CANDIDATE_ME_INTERVIEWS: '/candidates/me/interviews',
   // Admin employment console (A18) — applications review (Stage 1).
   ADMIN_APPLICATIONS: '/admin/applications',
+  // Admin interview management (A20) — existing interview APIs under the
+  // application resource (list/create/get/patch/delete; A7.4 backend).
+  ADMIN_APPLICATION_INTERVIEWS: (applicationId) =>
+    `/admin/applications/${applicationId}/interviews`,
   // Admin employment console (A19) — jobs management over the existing
   // admin job lifecycle APIs (no new backend surface).
   ADMIN_JOBS: '/admin/jobs',

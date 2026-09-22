@@ -1144,6 +1144,42 @@ security boundary). No migration, no new permission, no auth change.
   failures, 0 errors, 13 PostgreSQL-gated skips - no backend surface
   changed); frontend production build succeeds.
 
+### Admin Interview Management UI (A20)
+
+A20 completes the employment review loop: staff-side interview
+management inside the A18 application detail page. **Frontend-only -
+zero backend changes**: the interview APIs, notification/outbox chain,
+statuses and permissions are unchanged from A7.4.
+
+- **Where:** `/admin-panel/applications/:applicationId` -> Interviews
+  section. Schedule form (date/time, ONSITE/REMOTE/PHONE mode, optional
+  location/meeting link and notes), per-interview Edit/reschedule form,
+  status actions and delete for cancelled records.
+- **Backend rules mirrored exactly:** new interviews always start
+  SCHEDULED and require a non-terminal application (the schedule form is
+  hidden for HIRED/REJECTED/WITHDRAWN and existing interviews become
+  read-only); only a SCHEDULED interview can be marked COMPLETED,
+  NO_SHOW or CANCELLED (closed states are final, 409); only CANCELLED
+  interviews can be deleted (confirm-gated, 409 otherwise). The UI never
+  invents transitions - the backend remains authoritative.
+- **APIs reused (no new endpoints/permissions):**
+  `GET/POST /admin/applications/{id}/interviews` and
+  `GET/PATCH/DELETE /admin/applications/{id}/interviews/{interviewId}`
+  (`employment:manage`). `adminService.js` gained thin wrappers only
+  (`scheduleInterview`, `updateInterview`, `setInterviewStatus`,
+  `deleteInterview`) over the shared axios client.
+- **Notifications:** unchanged - the backend already enqueues
+  INTERVIEW_SCHEDULED / INTERVIEW_UPDATED / INTERVIEW_CANCELLED outbox
+  events; the UI shows only resulting state and never fabricates
+  notification info.
+- **States:** pending-disabled mutation buttons (no duplicate
+  submissions), server-side reload after every mutation, 400/401/403/
+  404/409 handling with clear messages, retryable section errors, empty
+  state, and the existing interview status chips (no CSS redesign).
+- **Verification:** backend suite unchanged and green (656 tests, 0
+  failures, 0 errors, 13 PostgreSQL-gated skips); frontend production
+  build succeeds.
+
 ## Frontend Setup & Run
 
 ```powershell

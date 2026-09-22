@@ -103,10 +103,69 @@ export function getApplicationHistory(applicationId, { page = 0, size = 50 } = {
 /** Paginated interview list for one application. */
 export function getApplicationInterviews(applicationId, { page = 0, size = 50 } = {}) {
   return apiClient
-    .get(`${API_ENDPOINTS.ADMIN_APPLICATIONS}/${applicationId}/interviews`, {
+    .get(API_ENDPOINTS.ADMIN_APPLICATION_INTERVIEWS(applicationId), {
       params: { page, size },
     })
     .then(response => unwrapPage(response.data && response.data.data))
+}
+
+/**
+ * Schedules a new interview for an application (A20 — reuses the existing
+ * A7.4 interview API; no new backend surface). The backend requires a
+ * non-terminal application (400 otherwise) and always starts the interview
+ * as SCHEDULED — status is never client-writable. The candidate is
+ * notified by the existing outbox chain; the UI only shows the resulting
+ * state.
+ * @param {number|string} applicationId
+ * @param {{ scheduledAt: string, mode: 'ONSITE'|'REMOTE'|'PHONE',
+ *           location?: string, notes?: string }} payload
+ */
+export function scheduleInterview(applicationId, payload) {
+  return apiClient
+    .post(API_ENDPOINTS.ADMIN_APPLICATION_INTERVIEWS(applicationId), payload)
+    .then(unwrapOne)
+}
+
+/**
+ * Partially updates an interview (reschedule, mode/location/notes changes,
+ * or a conservative status transition — backend allows SCHEDULED →
+ * COMPLETED | NO_SHOW | CANCELLED only; 409 otherwise). Omitted fields
+ * stay unchanged. `undefined`/omitted optional fields are dropped so the
+ * backend's explicit-null clears are always deliberate.
+ */
+export function updateInterview(applicationId, interviewId, payload) {
+  const body = {}
+  if (payload.scheduledAt !== undefined) body.scheduledAt = payload.scheduledAt
+  if (payload.mode !== undefined) body.mode = payload.mode
+  if (payload.location !== undefined) body.location = payload.location
+  if (payload.notes !== undefined) body.notes = payload.notes
+  if (payload.status !== undefined) body.status = payload.status
+  return apiClient
+    .patch(
+      `${API_ENDPOINTS.ADMIN_APPLICATION_INTERVIEWS(applicationId)}/${interviewId}`,
+      body,
+    )
+    .then(unwrapOne)
+}
+
+/**
+ * Changes only an interview's status (same conservative backend matrix as
+ * updateInterview — a convenience wrapper that sends just the status).
+ */
+export function setInterviewStatus(applicationId, interviewId, status) {
+  return updateInterview(applicationId, interviewId, { status })
+}
+
+/**
+ * Deletes an interview. The backend allows deleting CANCELLED interviews
+ * only (409 otherwise) and never touches the owning application.
+ */
+export function deleteInterview(applicationId, interviewId) {
+  return apiClient
+    .delete(
+      `${API_ENDPOINTS.ADMIN_APPLICATION_INTERVIEWS(applicationId)}/${interviewId}`,
+    )
+    .then(response => undefined)
 }
 
 /**

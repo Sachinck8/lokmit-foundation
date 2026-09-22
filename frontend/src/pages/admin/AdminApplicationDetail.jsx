@@ -15,6 +15,10 @@ import {
   decide,
   withdraw,
   downloadResume,
+  scheduleInterview,
+  updateInterview,
+  setInterviewStatus,
+  deleteInterview,
 } from '../../services/adminService.js'
 
 const STATUS_LABELS = {
@@ -30,6 +34,40 @@ const INTERVIEW_MODE_LABELS = {
   ONSITE: 'Onsite',
   REMOTE: 'Remote',
   PHONE: 'Phone',
+}
+
+const INTERVIEW_MODE_OPTIONS = [
+  { value: 'ONSITE', label: 'Onsite' },
+  { value: 'REMOTE', label: 'Remote' },
+  { value: 'PHONE', label: 'Phone' },
+]
+
+const INTERVIEW_STATUS_LABELS = {
+  SCHEDULED: 'Scheduled',
+  COMPLETED: 'Completed',
+  NO_SHOW: 'No-show',
+  CANCELLED: 'Cancelled',
+}
+
+/**
+ * Backend-authoritative terminal application states for interview purposes
+ * (mirrors InterviewService.requireNonTerminalApplication — the backend
+ * rejects interview creation on these with 400, and remains authoritative).
+ */
+const TERMINAL_APPLICATION_STATUSES = ['HIRED', 'REJECTED', 'WITHDRAWN']
+
+/**
+ * Backend-authoritative interview status transitions (mirrors
+ * InterviewService.validateTransition): only a SCHEDULED interview can
+ * move, to any of the three closed states; those are final (409 otherwise).
+ */
+function interviewStatusActions(status) {
+  if (status !== 'SCHEDULED') return []
+  return [
+    { key: 'COMPLETED', label: 'Complete', kind: 'primary' },
+    { key: 'NO_SHOW', label: 'No-show', kind: 'outline' },
+    { key: 'CANCELLED', label: 'Cancel', kind: 'ghost' },
+  ]
 }
 
 /**
@@ -92,6 +130,20 @@ function formatSalary(min, max) {
   return String(min != null ? min : max)
 }
 
+/**
+ * Converts an ISO-8601 timestamp to the value shape the
+ * `<input type="datetime-local">` element expects (local time,
+ * no offset). Returns '' for missing/invalid input.
+ */
+function toDatetimeLocal(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const pad = number => String(number).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 function triggerBlobDownload(response, fallbackName) {
   const disposition = response.headers && response.headers['content-disposition']
   let filename = fallbackName
@@ -150,6 +202,24 @@ export default function AdminApplicationDetail() {
   // Resume download state (per resume id).
   const [downloadingId, setDownloadingId] = useState(null)
   const [downloadError, setDownloadError] = useState(null)
+
+  // A20 interview management state.
+  const [showScheduleForm, setShowScheduleForm] = useState(false)
+  const [scheduleForm, setScheduleForm] = useState({
+    scheduledAt: '',
+    mode: '',
+    location: '',
+    notes: '',
+  })
+  const [scheduling, setScheduling] = useState(false)
+  const [scheduleError, setScheduleError] = useState(null)
+  const [editingInterviewId, setEditingInterviewId] = useState(null)
+  const [editForm, setEditForm] = useState({ scheduledAt: '', mode: '', location: '', notes: '' })
+  const [savingInterviewId, setSavingInterviewId] = useState(null)
+  const [statusPendingId, setStatusPendingId] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
+  const [interviewActionError, setInterviewActionError] = useState(null)
+  const [interviewActionSuccess, setInterviewActionSuccess] = useState(null)
 
   const loadSections = useCallback(() => {
     if (!application || !applicationId) return
@@ -264,11 +334,158 @@ export default function AdminApplicationDetail() {
     }
   }
 
+  // --------------------------------------------------------------- A20
+  // Interview management handlers. Each mutation reloads the interviews
+  // section from the server afterwards so the UI only ever shows real
+  // API state. Errors use the page's existing conventions; no raw
+  // backend messages or stack traces are shown.
+
+  function resetInterviewFeedback() {
+    setInterviewActionError(null)
+    setInterviewActionSuccess(null)
+  }
+
+  function describeInterviewError(err, fallback) {
+    const status = err && err.response && err.response.status
+    const apiErrors = err && err.response && err.response.data && err.response.data.errors
+    const firstMessage = Array.isArray(apiErrors) && apiErrors.length > 0
+      ? apiErrors[0].message
+      : null
+    if (status === 400) return firstMessage || 'Invalid interview operation.'
+    if (status === 409) {
+      return firstMessage || 'The interview cannot be changed in its current state.'
+    }
+    if (status === 404) return 'Interview or application not found.'
+    if (status === 403) return 'You do not have permission to manage interviews.'
+    if (status === 401) return 'Your session has expired. Please sign in again.'
+    return firstMessage || fallback
+  }
+
+  function reloadInterviews() {
+    return getApplicationInterviews(applicationId, { page: 0, size: 50 })
+      .then(data => setInterviews(data))
+      .catch(() => {
+        // Keep the last known list on screen; the action error already
+        // tells the reviewer the latest state could not be confirmed.
+      })
+  }
+
+  async function handleSchedule(event) {
+    event.preventDefault()
+    if (scheduling || !canMutateInterviews) return
+    setScheduling(true)
+    setScheduleError(null)
+    resetInterviewFeedback()
+    try {
+      await scheduleInterview(applicationId, {
+        // datetime-local gives an offset-less local string; convert it to a
+        // real ISO-8601 instant so the backend OffsetDateTime parses it.
+        scheduledAt: new Date(scheduleForm.scheduledAt).toISOString(),
+        mode: scheduleForm.mode,
+        location: scheduleForm.location.trim() === '' ? undefined : scheduleForm.location.trim(),
+        notes: scheduleForm.notes.trim() === '' ? undefined : scheduleForm.notes.trim(),
+      })
+      await reloadInterviews()
+      setScheduleForm({ scheduledAt: '', mode: '', location: '', notes: '' })
+      setShowScheduleForm(false)
+      setInterviewActionSuccess('Interview scheduled.')
+    } catch (err) {
+      setScheduleError(describeInterviewError(err, 'The interview could not be scheduled. Please try again.'))
+    } finally {
+      setScheduling(false)
+    }
+  }
+
+  function startEditing(interview) {
+    resetInterviewFeedback()
+    setScheduleError(null)
+    setShowScheduleForm(false)
+    setEditingInterviewId(interview.id)
+    setEditForm({
+      scheduledAt: toDatetimeLocal(interview.scheduledAt),
+      mode: interview.mode || '',
+      location: interview.location || '',
+      notes: interview.notes || '',
+    })
+  }
+
+  function cancelEditing() {
+    setEditingInterviewId(null)
+    setEditForm({ scheduledAt: '', mode: '', location: '', notes: '' })
+  }
+
+  async function handleUpdate(event) {
+    event.preventDefault()
+    if (savingInterviewId != null || editingInterviewId == null) return
+    setSavingInterviewId(editingInterviewId)
+    setInterviewActionError(null)
+    setInterviewActionSuccess(null)
+    try {
+      await updateInterview(applicationId, editingInterviewId, {
+        scheduledAt: editForm.scheduledAt ? new Date(editForm.scheduledAt).toISOString() : undefined,
+        mode: editForm.mode || undefined,
+        location: editForm.location.trim() === '' ? null : editForm.location.trim(),
+        notes: editForm.notes.trim() === '' ? null : editForm.notes.trim(),
+      })
+      await reloadInterviews()
+      cancelEditing()
+      setInterviewActionSuccess('Interview updated.')
+    } catch (err) {
+      setInterviewActionError(describeInterviewError(err, 'The interview could not be updated. Please try again.'))
+    } finally {
+      setSavingInterviewId(null)
+    }
+  }
+
+  async function handleInterviewStatus(interview, nextStatus) {
+    if (statusPendingId != null) return
+    setStatusPendingId(interview.id)
+    resetInterviewFeedback()
+    try {
+      await setInterviewStatus(applicationId, interview.id, nextStatus)
+      await reloadInterviews()
+      setInterviewActionSuccess(`Interview marked ${INTERVIEW_STATUS_LABELS[nextStatus] || nextStatus}.`)
+    } catch (err) {
+      setInterviewActionError(describeInterviewError(err, 'The interview status could not be changed. Please try again.'))
+    } finally {
+      setStatusPendingId(null)
+    }
+  }
+
+  async function handleDeleteInterview(interview) {
+    if (deletingId != null) return
+    const confirmed = window.confirm(
+      'Delete this cancelled interview permanently? This cannot be undone.'
+    )
+    if (!confirmed) return
+    setDeletingId(interview.id)
+    resetInterviewFeedback()
+    try {
+      await deleteInterview(applicationId, interview.id)
+      await reloadInterviews()
+      setInterviewActionSuccess('Cancelled interview deleted.')
+    } catch (err) {
+      setInterviewActionError(describeInterviewError(err, 'The interview could not be deleted. Please try again.'))
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   const actions = application ? availableActions(application.status) : []
   const activeResume = resumes && Array.isArray(resumes.items)
     ? resumes.items.find(item => item.active)
     : null
   const resumeCount = resumes && Array.isArray(resumes.items) ? resumes.items.length : 0
+
+  /**
+   * Interview mutations are offered only while the application is
+   * non-terminal (the backend rejects interview creation on HIRED/REJECTED/
+   * WITHDRAWN with 400 and remains authoritative — this is UX mirroring,
+   * not a security control).
+   */
+  const canMutateInterviews = Boolean(
+    application && !TERMINAL_APPLICATION_STATUSES.includes(application.status)
+  )
 
   return (
     <Container>
@@ -569,6 +786,101 @@ export default function AdminApplicationDetail() {
           {/* Interviews --------------------------------------------------- */}
           <section className="admin-portal__section">
             <h2 className="admin-portal__panel-title">Interviews</h2>
+
+            {canMutateInterviews ? (
+              <div className="admin-portal__actions-row">
+                <Button
+                  variant="primary"
+                  size="medium"
+                  disabled={scheduling}
+                  onClick={() => {
+                    resetInterviewFeedback()
+                    setScheduleError(null)
+                    cancelEditing()
+                    setShowScheduleForm(value => !value)
+                  }}
+                >
+                  {showScheduleForm ? 'Close form' : 'Schedule interview'}
+                </Button>
+              </div>
+            ) : (
+              <p className="admin-portal__muted">
+                This application is {STATUS_LABELS[application.status] || application.status},
+                so no further interviews can be scheduled. Existing interviews
+                remain for reference.
+              </p>
+            )}
+
+            {showScheduleForm && canMutateInterviews && (
+              <form onSubmit={handleSchedule} style={{ marginTop: 'var(--spacing-3, 0.75rem)' }}>
+                <div className="admin-portal__facts">
+                  <label className="admin-portal__filter-field">
+                    <span>Date &amp; time *</span>
+                    <input
+                      className="admin-portal__filter-input"
+                      type="datetime-local"
+                      value={scheduleForm.scheduledAt}
+                      onChange={event => setScheduleForm(previous => ({
+                        ...previous,
+                        scheduledAt: event.target.value,
+                      }))}
+                      required
+                    />
+                  </label>
+                  <label className="admin-portal__filter-field">
+                    <span>Mode *</span>
+                    <select
+                      className="admin-portal__filter-select"
+                      value={scheduleForm.mode}
+                      onChange={event => setScheduleForm(previous => ({
+                        ...previous,
+                        mode: event.target.value,
+                      }))}
+                      required
+                    >
+                      <option value="">Select a mode…</option>
+                      {INTERVIEW_MODE_OPTIONS.map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="admin-portal__filter-field">
+                    <span>Location / meeting link</span>
+                    <input
+                      className="admin-portal__filter-input"
+                      type="text"
+                      maxLength={255}
+                      value={scheduleForm.location}
+                      onChange={event => setScheduleForm(previous => ({
+                        ...previous,
+                        location: event.target.value,
+                      }))}
+                    />
+                  </label>
+                  <label className="admin-portal__filter-field">
+                    <span>Notes</span>
+                    <textarea
+                      className="admin-portal__filter-input"
+                      rows={3}
+                      value={scheduleForm.notes}
+                      onChange={event => setScheduleForm(previous => ({
+                        ...previous,
+                        notes: event.target.value,
+                      }))}
+                    />
+                  </label>
+                </div>
+                {scheduleError && (
+                  <p className="admin-portal__error" role="alert">{scheduleError}</p>
+                )}
+                <div className="admin-portal__actions-row">
+                  <Button type="submit" variant="primary" size="medium" disabled={scheduling}>
+                    {scheduling ? 'Scheduling…' : 'Schedule interview'}
+                  </Button>
+                </div>
+              </form>
+            )}
+
             {interviews && Array.isArray(interviews.items) && interviews.items.length === 0 && (
               <p className="admin-portal__muted">No interviews scheduled for this application.</p>
             )}
@@ -576,25 +888,148 @@ export default function AdminApplicationDetail() {
               <ul className="admin-portal__sublist">
                 {interviews.items.map(item => (
                   <li key={item.id}>
-                    <span className="admin-portal__subitem-title">
-                      {formatDateTime(item.scheduledAt)}
-                    </span>{' '}
-                    <span className={`admin-portal__status admin-portal__status--${item.status}`}>
-                      {item.status}
-                    </span>
-                    <span className="admin-portal__subitem-meta">
-                      {' '}· {INTERVIEW_MODE_LABELS[item.mode] || item.mode}
-                      {item.location ? ` · ${item.location}` : ''}
-                      {item.notes ? ` · ${item.notes}` : ''}
-                    </span>
+                    {editingInterviewId === item.id ? (
+                      <form onSubmit={handleUpdate}>
+                        <div className="admin-portal__facts">
+                          <label className="admin-portal__filter-field">
+                            <span>Date &amp; time</span>
+                            <input
+                              className="admin-portal__filter-input"
+                              type="datetime-local"
+                              value={editForm.scheduledAt}
+                              onChange={event => setEditForm(previous => ({
+                                ...previous,
+                                scheduledAt: event.target.value,
+                              }))}
+                            />
+                          </label>
+                          <label className="admin-portal__filter-field">
+                            <span>Mode</span>
+                            <select
+                              className="admin-portal__filter-select"
+                              value={editForm.mode}
+                              onChange={event => setEditForm(previous => ({
+                                ...previous,
+                                mode: event.target.value,
+                              }))}
+                            >
+                              <option value="">Keep current</option>
+                              {INTERVIEW_MODE_OPTIONS.map(option => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="admin-portal__filter-field">
+                            <span>Location / meeting link</span>
+                            <input
+                              className="admin-portal__filter-input"
+                              type="text"
+                              maxLength={255}
+                              value={editForm.location}
+                              onChange={event => setEditForm(previous => ({
+                                ...previous,
+                                location: event.target.value,
+                              }))}
+                            />
+                          </label>
+                          <label className="admin-portal__filter-field">
+                            <span>Notes</span>
+                            <textarea
+                              className="admin-portal__filter-input"
+                              rows={3}
+                              value={editForm.notes}
+                              onChange={event => setEditForm(previous => ({
+                                ...previous,
+                                notes: event.target.value,
+                              }))}
+                            />
+                          </label>
+                        </div>
+                        {interviewActionError && (
+                          <p className="admin-portal__error" role="alert">{interviewActionError}</p>
+                        )}
+                        <div className="admin-portal__actions-row">
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            size="medium"
+                            disabled={savingInterviewId != null}
+                          >
+                            {savingInterviewId === item.id ? 'Saving…' : 'Save changes'}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="medium"
+                            disabled={savingInterviewId != null}
+                            onClick={cancelEditing}
+                          >
+                            Cancel editing
+                          </Button>
+                        </div>
+                      </form>
+                    ) : (
+                      <>
+                        <span className="admin-portal__subitem-title">
+                          {formatDateTime(item.scheduledAt)}
+                        </span>{' '}
+                        <span className={`admin-portal__status admin-portal__status--${item.status}`}>
+                          {INTERVIEW_STATUS_LABELS[item.status] || item.status}
+                        </span>
+                        <span className="admin-portal__subitem-meta">
+                          {' '}· {INTERVIEW_MODE_LABELS[item.mode] || item.mode}
+                          {item.location ? ` · ${item.location}` : ''}
+                          {item.notes ? ` · ${item.notes}` : ''}
+                        </span>
+                        {canMutateInterviews && (
+                          <div className="admin-portal__actions-row" style={{ marginTop: 'var(--spacing-2, 0.5rem)' }}>
+                            <Button
+                              variant="outline"
+                              size="small"
+                              disabled={
+                                statusPendingId != null
+                                || deletingId != null
+                                || savingInterviewId != null
+                              }
+                              onClick={() => startEditing(item)}
+                            >
+                              Edit
+                            </Button>
+                            {interviewStatusActions(item.status).map(action => (
+                              <Button
+                                key={action.key}
+                                variant={action.kind}
+                                size="small"
+                                disabled={statusPendingId != null || deletingId != null}
+                                onClick={() => handleInterviewStatus(item, action.key)}
+                              >
+                                {statusPendingId === item.id ? 'Working…' : action.label}
+                              </Button>
+                            ))}
+                            {item.status === 'CANCELLED' && (
+                              <Button
+                                variant="ghost"
+                                size="small"
+                                disabled={statusPendingId != null || deletingId != null}
+                                onClick={() => handleDeleteInterview(item)}
+                              >
+                                {deletingId === item.id ? 'Deleting…' : 'Delete'}
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>
             )}
-            <p className="admin-portal__muted" style={{ marginTop: 'var(--spacing-2, 0.5rem)' }}>
-              Interview scheduling and management are performed through the
-              existing interview APIs.
-            </p>
+
+            {interviewActionError && editingInterviewId == null && (
+              <p className="admin-portal__error" role="alert">{interviewActionError}</p>
+            )}
+            {interviewActionSuccess && (
+              <p className="admin-portal__muted" role="status">{interviewActionSuccess}</p>
+            )}
           </section>
         </div>
       )}
