@@ -201,6 +201,70 @@
 .admin-portal__status--CLOSED { background: #fdf6e7; border-color: #f0dfae; color: #8a6116; }
 .admin-portal__status--ARCHIVED { background: #f4eef8; border-color: #dcc8ea; color: #5d3a78; }
 
+/* A21 — user account status chips (chk_users_status domain). */
+.admin-portal__status--ACTIVE { background: #e9f7ee; border-color: #bfe4cb; color: #1e6b3a; }
+.admin-portal__status--LOCKED { background: #fdeeee; border-color: #f2c6c6; color: #8f1f1f; }
+.admin-portal__status--SUSPENDED { background: #fdf6e7; border-color: #f0dfae; color: #8a6116; }
+.admin-portal__status--DELETED { background: #f1f1f1; border-color: #dddddd; color: #555555; }
+
+/* A21 — dashboard stat cards reuse the facts grid; enquiry/user/job chip
+   variants above already cover every status the dashboard renders. */
+.admin-dashboard__stat {
+  display: block;
+  font-size: 1.75rem;
+  line-height: 1.2;
+  color: #1c2a4a;
+}
+
+.admin-dashboard__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--spacing-4, 1.5rem);
+  margin-bottom: var(--spacing-4, 1.5rem);
+}
+
+.admin-dashboard__inline-link {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.admin-dashboard__link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* A21 — inline roles editor inside the users table. */
+.admin-users__roles-editor {
+  min-width: 220px;
+}
+
+.admin-users__roles-fieldset {
+  border: 1px solid #e3e6ee;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  margin: 0 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-users__roles-fieldset legend {
+  font-size: 0.8rem;
+  color: #6b7280;
+  padding: 0 0.35rem;
+}
+
+.admin-users__role-option {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
 /* Applications table -------------------------------------------------- */
 
 .admin-portal__table-wrap {

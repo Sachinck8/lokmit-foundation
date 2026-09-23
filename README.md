@@ -1180,6 +1180,46 @@ statuses and permissions are unchanged from A7.4.
   failures, 0 errors, 13 PostgreSQL-gated skips); frontend production
   build succeeds.
 
+### Admin Dashboard & Users UI (A21)
+
+A21 extends the admin console with its natural landing page and the
+user-management surface. **Frontend-only — zero backend changes**: the A2
+dashboard APIs, the A3 user APIs, the permission model and the database
+schema are all unchanged.
+
+- **Dashboard (`/admin-panel`):** now a real operational overview built on
+  the existing read-only A2 APIs (`dashboard:view`): platform totals
+  (users, candidates, employers, applications, jobs, new enquiries), jobs
+  by lifecycle status, enquiries by status, and recent
+  applications/enquiries/accounts (default 5 rows, backend-capped at 10).
+  Every figure and row comes from the API; recent-activity lists load
+  independently so one failing list degrades gracefully with per-section
+  retry instead of blanking the page. Deep links into the applications and
+  users consoles.
+- **Users (`/admin-panel/users`):** management UI over the existing A3
+  APIs (`users:manage`): paginated list with backend-side search (email or
+  full name), status and role filters; account status changes
+  (ACTIVE/SUSPENDED/LOCKED, confirm-gated) via
+  `PATCH /admin/users/{id}/status`; full role replacement (including
+  removing all roles) via `PUT /admin/users/{id}/roles`. Only the safe
+  `AdminUserResponse` fields are ever displayed — no password hashes,
+  tokens or lockout bookkeeping. There is deliberately **no create-user
+  flow** (the backend exposes none) and no DELETED quick-action (a
+  lifecycle decision, not a routine toggle). Backend protections
+  (self-demotion, last-SUPER_ADMIN) remain authoritative and their
+  messages are surfaced.
+- **Routing/guard:** `/admin-panel` moved from the public placeholder page
+  into the protected console as the dashboard; `RequireAdmin` is now
+  permission-aware (employment:manage for applications/jobs, users:manage
+  for users, dashboard:view for the dashboard) while every admin API stays
+  secured server-side by `@PreAuthorize` — the frontend guard remains UX
+  only. Navigation gained Dashboard (exact-match) and Users; Applications
+  and Jobs are untouched. No new routes were added to the public tree and
+  no public pages changed.
+- **Verification:** backend suite unchanged and green (656 tests, 0
+  failures, 0 errors, 13 PostgreSQL-gated skips — no backend surface
+  changed); frontend production build succeeds.
+
 ## Frontend Setup & Run
 
 ```powershell

@@ -23,6 +23,13 @@ export const API_ENDPOINTS = {
   CANDIDATE_ME_INTERVIEWS: '/candidates/me/interviews',
   // Admin employment console (A18) — applications review (Stage 1).
   ADMIN_APPLICATIONS: '/admin/applications',
+  // Admin dashboard (A21) — existing A2 read-only endpoints (dashboard:view).
+  ADMIN_DASHBOARD_SUMMARY: '/admin/dashboard/summary',
+  ADMIN_DASHBOARD_RECENT_ENQUIRIES: '/admin/dashboard/recent-enquiries',
+  ADMIN_DASHBOARD_RECENT_USERS: '/admin/dashboard/recent-users',
+  ADMIN_DASHBOARD_RECENT_APPLICATIONS: '/admin/dashboard/recent-applications',
+  // Admin user management (A21) — existing A3 APIs (users:manage).
+  ADMIN_USERS: '/admin/users',
   // Admin interview management (A20) — existing interview APIs under the
   // application resource (list/create/get/patch/delete; A7.4 backend).
   ADMIN_APPLICATION_INTERVIEWS: (applicationId) =>

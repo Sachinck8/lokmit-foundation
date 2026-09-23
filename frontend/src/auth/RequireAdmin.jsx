@@ -3,20 +3,38 @@ import { useAuth } from './AuthContext.jsx'
 import Container from '../components/Container/Container.jsx'
 
 /**
- * A18 Stage 1 route guard for the admin employment console.
+ * A18 route guard for the admin console, extended in A21 to be
+ * permission-aware for the new console surfaces.
  *
  * - While the session is bootstrapping, shows a neutral loading panel.
  * - Unauthenticated visitors are redirected to /candidate-login with the
  *   intended path preserved (?returnTo=...) — the login page routes
  *   non-candidates straight back to the requested admin path.
- * - Signed-in users WITHOUT the employment:manage permission (e.g.
- *   candidates) get an explicit permission notice — they are NOT silently
- *   dumped anywhere.
+ * - Employment routes keep requiring employment:manage; the A21 dashboard
+ *   requires dashboard:view and the users page requires users:manage.
+ * - Signed-in users without the required permission get an explicit
+ *   permission notice — they are NOT silently dumped anywhere.
  *
  * This is UX protection only; every admin API remains secured server-side
  * by its @PreAuthorize permission check.
  */
-const REQUIRED_PERMISSION = 'employment:manage'
+const PERMISSION_BY_PATH = [
+  { prefix: '/admin-panel/applications', permission: 'employment:manage' },
+  { prefix: '/admin-panel/jobs', permission: 'employment:manage' },
+  { prefix: '/admin-panel/users', permission: 'users:manage' },
+  { prefix: '/admin-panel', permission: 'dashboard:view' },
+]
+
+function requiredPermission(pathname) {
+  const match = PERMISSION_BY_PATH.find(entry => pathname.startsWith(entry.prefix))
+  return match ? match.permission : 'employment:manage'
+}
+
+const PERMISSION_DESCRIPTIONS = {
+  'employment:manage': 'applications review and jobs management',
+  'users:manage': 'user management (SUPER_ADMIN)',
+  'dashboard:view': 'the admin dashboard',
+}
 
 export default function RequireAdmin({ children }) {
   const { user, initializing, isCandidate } = useAuth()
@@ -40,16 +58,18 @@ export default function RequireAdmin({ children }) {
   }
 
   const permissions = Array.isArray(user.permissions) ? user.permissions : []
-  if (!permissions.includes(REQUIRED_PERMISSION)) {
+  const permission = requiredPermission(location.pathname)
+  if (!permissions.includes(permission)) {
     return (
       <div className="admin-portal">
         <Container>
           <div className="admin-portal__panel">
             <h1 className="admin-portal__title">Admin area</h1>
             <p className="admin-portal__muted">
-              You don't have permission to access this area. The applications
-              review console requires the <strong>employment:manage</strong>{' '}
-              permission — you are signed in as{' '}
+              You don't have permission to access this area. This page requires
+              the <strong>{permission}</strong> permission
+              ({PERMISSION_DESCRIPTIONS[permission] || 'the matching admin capability'})
+              — you are signed in as{' '}
               <strong>{user.email || 'an account without staff access'}</strong>
               {isCandidate ? ' (candidate account)' : ''}.
             </p>

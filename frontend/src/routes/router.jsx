@@ -28,7 +28,6 @@ import CookiePolicy from '../pages/public/CookiePolicy/CookiePolicy.jsx'
 import ClientLogin from '../pages/public/ClientLogin/ClientLogin.jsx'
 import EmployerLogin from '../pages/public/EmployerLogin/EmployerLogin.jsx'
 import CandidateLogin from '../pages/public/CandidateLogin/CandidateLogin.jsx'
-import AdminPanel from '../pages/public/AdminPanel/AdminPanel.jsx'
 import NotFound from '../pages/public/NotFound/NotFound.jsx'
 import VisionMission from '../pages/public/About/VisionMission/VisionMission.jsx'
 import Objectives from '../pages/public/About/Objectives/Objectives.jsx'
@@ -49,6 +48,8 @@ import AdminApplications from '../pages/admin/AdminApplications.jsx'
 import AdminApplicationDetail from '../pages/admin/AdminApplicationDetail.jsx'
 import AdminJobs from '../pages/admin/AdminJobs.jsx'
 import AdminJobDetail from '../pages/admin/AdminJobDetail.jsx'
+import AdminDashboard from '../pages/admin/AdminDashboard.jsx'
+import AdminUsers from '../pages/admin/AdminUsers.jsx'
 
 const candidateRoutes = [
   { path: '/candidate', element: <CandidateDashboard /> },
@@ -61,10 +62,12 @@ const candidateRoutes = [
 ]
 
 const adminRoutes = [
+  { path: '/admin-panel', element: <AdminDashboard /> },
   { path: '/admin-panel/applications', element: <AdminApplications /> },
   { path: '/admin-panel/applications/:applicationId', element: <AdminApplicationDetail /> },
   { path: '/admin-panel/jobs', element: <AdminJobs /> },
   { path: '/admin-panel/jobs/:jobId', element: <AdminJobDetail /> },
+  { path: '/admin-panel/users', element: <AdminUsers /> },
 ]
 
 const router = createBrowserRouter([
@@ -104,7 +107,6 @@ const router = createBrowserRouter([
       { path: '/client-login', element: <ClientLogin /> },
       { path: '/employer-login', element: <EmployerLogin /> },
       { path: '/candidate-login', element: <CandidateLogin /> },
-      { path: '/admin-panel', element: <AdminPanel /> },
       { path: '*', element: <NotFound /> },
     ],
   },

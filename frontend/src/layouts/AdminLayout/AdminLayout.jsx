@@ -5,8 +5,10 @@ import { useAuth } from '../../auth/AuthContext.jsx'
 import './AdminLayout.css'
 
 const NAV_ITEMS = [
+  { to: '/admin-panel', label: 'Dashboard', end: true },
   { to: '/admin-panel/applications', label: 'Applications' },
   { to: '/admin-panel/jobs', label: 'Jobs' },
+  { to: '/admin-panel/users', label: 'Users' },
 ]
 
 /**
@@ -38,6 +40,7 @@ export default function AdminLayout() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.end}
                 className={({ isActive }) =>
                   `admin-portal__nav-link${isActive ? ' admin-portal__nav-link--active' : ''}`
                 }

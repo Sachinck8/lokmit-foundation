@@ -286,6 +286,88 @@ export function removeJobSkill(jobId, skillId) {
   return apiClient.delete(`${API_ENDPOINTS.ADMIN_JOBS}/${jobId}/skills/${skillId}`)
 }
 
+// ------------------------------------------------------------------ A21
+// Admin dashboard (A2 backend) — read-only aggregates and recent activity.
+// Every value comes from the API; the UI never fabricates statistics.
+
+/** High-level platform counts (users/jobs/applications/enquiries). */
+export function getDashboardSummary() {
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_DASHBOARD_SUMMARY)
+    .then(unwrapOne)
+}
+
+/** Newest contact enquiries (default 5, backend-capped at 10). */
+export function getRecentEnquiries(limit = 5) {
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_DASHBOARD_RECENT_ENQUIRIES, { params: { limit } })
+    .then(response => response.data && response.data.data)
+}
+
+/** Newest user accounts (safe fields only; default 5, backend-capped at 10). */
+export function getRecentUsers(limit = 5) {
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_DASHBOARD_RECENT_USERS, { params: { limit } })
+    .then(response => response.data && response.data.data)
+}
+
+/** Newest job applications with candidate/job references (default 5, backend-capped at 10). */
+export function getRecentApplications(limit = 5) {
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_DASHBOARD_RECENT_APPLICATIONS, { params: { limit } })
+    .then(response => response.data && response.data.data)
+}
+
+// ------------------------------------------------------------------ A21
+// Admin users (A3 backend) — safe administrative views only. The DTO
+// deliberately excludes password hashes, refresh tokens and I-2
+// brute-force bookkeeping; those never reach this layer.
+
+/**
+ * Lists user accounts with the existing backend filters.
+ * @param {{ page?: number, size?: number, search?: string, status?: string, role?: string }} params
+ */
+export function listUsers(params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  if (params.search && String(params.search).trim() !== '') query.search = params.search.trim()
+  if (params.status) query.status = params.status
+  if (params.role) query.role = params.role
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_USERS, { params: query })
+    .then(response => unwrapPage(response.data && response.data.data))
+}
+
+/** Safe detail view of one user. Unknown ids return the backend's 404. */
+export function getUser(userId) {
+  return apiClient
+    .get(`${API_ENDPOINTS.ADMIN_USERS}/${userId}`)
+    .then(unwrapOne)
+}
+
+/**
+ * Changes a user's account status (PATCH /admin/users/{id}/status).
+ * Values: ACTIVE | LOCKED | SUSPENDED | DELETED. The backend rejects
+ * self-deactivation and disabling the last active SUPER_ADMIN (400).
+ */
+export function updateUserStatus(userId, status) {
+  return apiClient
+    .patch(`${API_ENDPOINTS.ADMIN_USERS}/${userId}/status`, { status })
+    .then(unwrapOne)
+}
+
+/**
+ * Replaces a user's role assignments (PUT /admin/users/{id}/roles).
+ * Full replacement — the resulting roles are exactly the supplied set
+ * (an empty set removes all roles, subject to backend protections).
+ */
+export function updateUserRoles(userId, roles) {
+  return apiClient
+    .put(`${API_ENDPOINTS.ADMIN_USERS}/${userId}/roles`, { roles })
+    .then(unwrapOne)
+}
+
 /** Reference lists for the job form (size 100 = backend PageParams.MAX_SIZE, one request). */
 export function listJobCategories() {
   return apiClient
