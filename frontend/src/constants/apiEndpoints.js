@@ -30,6 +30,14 @@ export const API_ENDPOINTS = {
   ADMIN_DASHBOARD_RECENT_APPLICATIONS: '/admin/dashboard/recent-applications',
   // Admin user management (A21) — existing A3 APIs (users:manage).
   ADMIN_USERS: '/admin/users',
+  // Admin content platform (A22) — existing A4/A5/A6 APIs over the
+  // content:manage, services:manage and projects:manage permissions.
+  ADMIN_CMS_WEBSITE_CONTENT: '/admin/cms/website-content',
+  ADMIN_SERVICE_CATEGORIES: '/admin/service-categories',
+  ADMIN_SERVICES: '/admin/services',
+  ADMIN_EXPERTISE_AREAS: '/admin/expertise-areas',
+  ADMIN_PROJECT_CATEGORIES: '/admin/project-categories',
+  ADMIN_PROJECTS: '/admin/projects',
   // Admin interview management (A20) — existing interview APIs under the
   // application resource (list/create/get/patch/delete; A7.4 backend).
   ADMIN_APPLICATION_INTERVIEWS: (applicationId) =>

@@ -368,6 +368,388 @@ export function updateUserRoles(userId, roles) {
     .then(unwrapOne)
 }
 
+// ------------------------------------------------------------------ A22
+// Admin content platform (A4/A5/A6 backends) — website content, services,
+// expertise areas and projects. Thin wrappers over the existing endpoints
+// only; field names mirror the backend DTOs exactly.
+
+const optional = value => {
+  const trimmed = typeof value === 'string' ? value.trim() : value
+  return trimmed === '' || trimmed == null ? undefined : trimmed
+}
+
+const toIdOrNull = value => {
+  const trimmed = typeof value === 'string' ? value.trim() : value
+  return trimmed === '' || trimmed == null ? null : Number(trimmed)
+}
+
+/**
+ * Lists website content sections (content:manage).
+ * @param {{ page?: number, size?: number, pageKey?: string, sectionKey?: string, status?: string }} params
+ */
+export function listWebsiteContent(params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  const pageKey = optional(params.pageKey)
+  if (pageKey) query.pageKey = pageKey
+  const sectionKey = optional(params.sectionKey)
+  if (sectionKey) query.sectionKey = sectionKey
+  if (params.status) query.status = params.status
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_CMS_WEBSITE_CONTENT, { params: query })
+    .then(response => unwrapPage(response.data && response.data.data))
+}
+
+/** Creates a content section (always starts DRAFT; duplicate pair → 409). */
+export function createWebsiteContent(payload) {
+  return apiClient
+    .post(API_ENDPOINTS.ADMIN_CMS_WEBSITE_CONTENT, {
+      pageKey: payload.pageKey,
+      sectionKey: payload.sectionKey,
+      title: optional(payload.title),
+      contentJson: optional(payload.contentJson),
+    })
+    .then(unwrapOne)
+}
+
+/**
+ * Partially updates a content section. Empty strings are sent as explicit
+ * null (the backend clears the field); the identity keys are immutable.
+ */
+export function updateWebsiteContent(id, payload) {
+  return apiClient
+    .patch(`${API_ENDPOINTS.ADMIN_CMS_WEBSITE_CONTENT}/${id}`, {
+      title: optional(payload.title) ?? null,
+      contentJson: optional(payload.contentJson) ?? null,
+    })
+    .then(unwrapOne)
+}
+
+export function publishWebsiteContent(id) {
+  return apiClient
+    .post(`${API_ENDPOINTS.ADMIN_CMS_WEBSITE_CONTENT}/${id}/publish`)
+    .then(unwrapOne)
+}
+
+export function archiveWebsiteContent(id) {
+  return apiClient
+    .post(`${API_ENDPOINTS.ADMIN_CMS_WEBSITE_CONTENT}/${id}/archive`)
+    .then(unwrapOne)
+}
+
+/** Deletes a content section (content:publish; permanent). */
+export function deleteWebsiteContent(id) {
+  return apiClient
+    .delete(`${API_ENDPOINTS.ADMIN_CMS_WEBSITE_CONTENT}/${id}`)
+    .then(response => undefined)
+}
+
+/** Lists service categories (services:manage). */
+export function listServiceCategories() {
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_SERVICE_CATEGORIES, { params: { size: 100 } })
+    .then(response => unwrapPage(response.data && response.data.data).items)
+}
+
+export function createServiceCategory(payload) {
+  return apiClient
+    .post(API_ENDPOINTS.ADMIN_SERVICE_CATEGORIES, {
+      name: optional(payload.name),
+      slug: optional(payload.slug),
+      description: optional(payload.description),
+      displayOrder: toIdOrNull(payload.displayOrder) ?? undefined,
+    })
+    .then(unwrapOne)
+}
+
+export function updateServiceCategory(id, payload) {
+  return apiClient
+    .patch(`${API_ENDPOINTS.ADMIN_SERVICE_CATEGORIES}/${id}`, {
+      name: optional(payload.name) ?? null,
+      description: optional(payload.description) ?? null,
+      displayOrder: toIdOrNull(payload.displayOrder) ?? null,
+    })
+    .then(unwrapOne)
+}
+
+/** Deletes a category; referencing services are detached, never deleted. */
+export function deleteServiceCategory(id) {
+  return apiClient
+    .delete(`${API_ENDPOINTS.ADMIN_SERVICE_CATEGORIES}/${id}`)
+    .then(response => undefined)
+}
+
+/**
+ * Lists services (services:manage).
+ * @param {{ page?: number, size?: number, categoryId?: number|string, status?: string, search?: string }} params
+ */
+export function listServices(params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  const categoryId = toIdOrNull(params.categoryId)
+  if (categoryId) query.categoryId = categoryId
+  if (params.status) query.status = params.status
+  const search = optional(params.search)
+  if (search) query.search = search
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_SERVICES, { params: query })
+    .then(response => unwrapPage(response.data && response.data.data))
+}
+
+/** Creates a service (always starts DRAFT; duplicate slug → 409, unknown category → 404). */
+export function createService(payload) {
+  return apiClient
+    .post(API_ENDPOINTS.ADMIN_SERVICES, {
+      slug: optional(payload.slug),
+      title: optional(payload.title),
+      summary: optional(payload.summary),
+      description: optional(payload.description),
+      categoryId: toIdOrNull(payload.categoryId) ?? undefined,
+      displayOrder: toIdOrNull(payload.displayOrder) ?? undefined,
+    })
+    .then(unwrapOne)
+}
+
+/**
+ * Partially updates a service. Slug is immutable; an explicitly empty
+ * category detaches the service (backend null); status uses lifecycle
+ * endpoints.
+ */
+export function updateService(id, payload) {
+  return apiClient
+    .patch(`${API_ENDPOINTS.ADMIN_SERVICES}/${id}`, {
+      title: optional(payload.title) ?? null,
+      summary: optional(payload.summary) ?? null,
+      description: optional(payload.description) ?? null,
+      categoryId: toIdOrNull(payload.categoryId) ?? null,
+      displayOrder: toIdOrNull(payload.displayOrder) ?? null,
+    })
+    .then(unwrapOne)
+}
+
+export function publishService(id) {
+  return apiClient
+    .post(`${API_ENDPOINTS.ADMIN_SERVICES}/${id}/publish`)
+    .then(unwrapOne)
+}
+
+export function archiveService(id) {
+  return apiClient
+    .post(`${API_ENDPOINTS.ADMIN_SERVICES}/${id}/archive`)
+    .then(unwrapOne)
+}
+
+export function deleteService(id) {
+  return apiClient
+    .delete(`${API_ENDPOINTS.ADMIN_SERVICES}/${id}`)
+    .then(response => undefined)
+}
+
+/**
+ * Lists expertise areas (services:manage).
+ * @param {{ page?: number, size?: number, status?: string, search?: string }} params
+ */
+export function listExpertiseAreas(params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  if (params.status) query.status = params.status
+  const search = optional(params.search)
+  if (search) query.search = search
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_EXPERTISE_AREAS, { params: query })
+    .then(response => unwrapPage(response.data && response.data.data))
+}
+
+/** Creates an expertise area (always starts DRAFT; duplicate slug → 409). */
+export function createExpertiseArea(payload) {
+  return apiClient
+    .post(API_ENDPOINTS.ADMIN_EXPERTISE_AREAS, {
+      slug: optional(payload.slug),
+      name: optional(payload.name),
+      description: optional(payload.description),
+      displayOrder: toIdOrNull(payload.displayOrder) ?? undefined,
+    })
+    .then(unwrapOne)
+}
+
+/** Partially updates an expertise area; slug is immutable. */
+export function updateExpertiseArea(id, payload) {
+  return apiClient
+    .patch(`${API_ENDPOINTS.ADMIN_EXPERTISE_AREAS}/${id}`, {
+      name: optional(payload.name) ?? null,
+      description: optional(payload.description) ?? null,
+      displayOrder: toIdOrNull(payload.displayOrder) ?? null,
+    })
+    .then(unwrapOne)
+}
+
+export function publishExpertiseArea(id) {
+  return apiClient
+    .post(`${API_ENDPOINTS.ADMIN_EXPERTISE_AREAS}/${id}/publish`)
+    .then(unwrapOne)
+}
+
+export function archiveExpertiseArea(id) {
+  return apiClient
+    .post(`${API_ENDPOINTS.ADMIN_EXPERTISE_AREAS}/${id}/archive`)
+    .then(unwrapOne)
+}
+
+export function deleteExpertiseArea(id) {
+  return apiClient
+    .delete(`${API_ENDPOINTS.ADMIN_EXPERTISE_AREAS}/${id}`)
+    .then(response => undefined)
+}
+
+/** Lists project categories (projects:manage). */
+export function listProjectCategories() {
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_PROJECT_CATEGORIES, { params: { size: 100 } })
+    .then(response => unwrapPage(response.data && response.data.data).items)
+}
+
+export function createProjectCategory(payload) {
+  return apiClient
+    .post(API_ENDPOINTS.ADMIN_PROJECT_CATEGORIES, {
+      name: optional(payload.name),
+      slug: optional(payload.slug),
+      description: optional(payload.description),
+      displayOrder: toIdOrNull(payload.displayOrder) ?? undefined,
+    })
+    .then(unwrapOne)
+}
+
+export function updateProjectCategory(id, payload) {
+  return apiClient
+    .patch(`${API_ENDPOINTS.ADMIN_PROJECT_CATEGORIES}/${id}`, {
+      name: optional(payload.name) ?? null,
+      description: optional(payload.description) ?? null,
+      displayOrder: toIdOrNull(payload.displayOrder) ?? null,
+    })
+    .then(unwrapOne)
+}
+
+/** Deletes a category; referencing projects are detached, never deleted. */
+export function deleteProjectCategory(id) {
+  return apiClient
+    .delete(`${API_ENDPOINTS.ADMIN_PROJECT_CATEGORIES}/${id}`)
+    .then(response => undefined)
+}
+
+/**
+ * Lists projects (projects:manage).
+ * @param {{ page?: number, size?: number, categoryId?: number|string, status?: string,
+ *           projectStatus?: string, search?: string }} params
+ */
+export function listProjects(params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  const categoryId = toIdOrNull(params.categoryId)
+  if (categoryId) query.categoryId = categoryId
+  if (params.status) query.status = params.status
+  if (params.projectStatus) query.projectStatus = params.projectStatus
+  const search = optional(params.search)
+  if (search) query.search = search
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_PROJECTS, { params: query })
+    .then(response => unwrapPage(response.data && response.data.data))
+}
+
+/** Creates a project (always starts DRAFT; duplicate slug → 409, bad date pair → 400). */
+export function createProject(payload) {
+  return apiClient
+    .post(API_ENDPOINTS.ADMIN_PROJECTS, {
+      slug: optional(payload.slug),
+      title: optional(payload.title),
+      summary: optional(payload.summary),
+      description: optional(payload.description),
+      categoryId: toIdOrNull(payload.categoryId) ?? undefined,
+      projectStatus: optional(payload.projectStatus),
+      location: optional(payload.location),
+      startDate: optional(payload.startDate),
+      endDate: optional(payload.endDate),
+      objectives: optional(payload.objectives),
+      impactSummary: optional(payload.impactSummary),
+    })
+    .then(unwrapOne)
+}
+
+/**
+ * Partially updates a project. Slug is immutable; lifecycle status uses
+ * the dedicated endpoints; empty optionals are sent as explicit null.
+ */
+export function updateProject(id, payload) {
+  return apiClient
+    .patch(`${API_ENDPOINTS.ADMIN_PROJECTS}/${id}`, {
+      title: optional(payload.title) ?? null,
+      summary: optional(payload.summary) ?? null,
+      description: optional(payload.description) ?? null,
+      categoryId: toIdOrNull(payload.categoryId) ?? null,
+      projectStatus: optional(payload.projectStatus) ?? null,
+      location: optional(payload.location) ?? null,
+      startDate: optional(payload.startDate) ?? null,
+      endDate: optional(payload.endDate) ?? null,
+      objectives: optional(payload.objectives) ?? null,
+      impactSummary: optional(payload.impactSummary) ?? null,
+    })
+    .then(unwrapOne)
+}
+
+export function publishProject(id) {
+  return apiClient
+    .post(`${API_ENDPOINTS.ADMIN_PROJECTS}/${id}/publish`)
+    .then(unwrapOne)
+}
+
+export function archiveProject(id) {
+  return apiClient
+    .post(`${API_ENDPOINTS.ADMIN_PROJECTS}/${id}/archive`)
+    .then(unwrapOne)
+}
+
+export function deleteProject(id) {
+  return apiClient
+    .delete(`${API_ENDPOINTS.ADMIN_PROJECTS}/${id}`)
+    .then(response => undefined)
+}
+
+/** Lists a project's image metadata (projects:manage). */
+export function listProjectImages(projectId) {
+  return apiClient
+    .get(`${API_ENDPOINTS.ADMIN_PROJECTS}/${projectId}/images`)
+    .then(response => unwrapPage(response.data && response.data.data).items)
+}
+
+export function createProjectImage(projectId, payload) {
+  return apiClient
+    .post(`${API_ENDPOINTS.ADMIN_PROJECTS}/${projectId}/images`, {
+      imageUrl: optional(payload.imageUrl),
+      altText: optional(payload.altText),
+      displayOrder: toIdOrNull(payload.displayOrder) ?? undefined,
+    })
+    .then(unwrapOne)
+}
+
+export function updateProjectImage(projectId, imageId, payload) {
+  return apiClient
+    .patch(`${API_ENDPOINTS.ADMIN_PROJECTS}/${projectId}/images/${imageId}`, {
+      imageUrl: optional(payload.imageUrl) ?? null,
+      altText: optional(payload.altText) ?? null,
+      displayOrder: toIdOrNull(payload.displayOrder) ?? null,
+    })
+    .then(unwrapOne)
+}
+
+export function deleteProjectImage(projectId, imageId) {
+  return apiClient
+    .delete(`${API_ENDPOINTS.ADMIN_PROJECTS}/${projectId}/images/${imageId}`)
+    .then(response => undefined)
+}
+
 /** Reference lists for the job form (size 100 = backend PageParams.MAX_SIZE, one request). */
 export function listJobCategories() {
   return apiClient

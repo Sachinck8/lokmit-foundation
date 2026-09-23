@@ -9,6 +9,11 @@ const NAV_ITEMS = [
   { to: '/admin-panel/applications', label: 'Applications' },
   { to: '/admin-panel/jobs', label: 'Jobs' },
   { to: '/admin-panel/users', label: 'Users' },
+  { to: '/admin-panel/content', label: 'Content' },
+  { to: '/admin-panel/services', label: 'Services' },
+  { to: '/admin-panel/expertise', label: 'Expertise' },
+  { to: '/admin-panel/projects', label: 'Projects' },
+  { to: '/admin-panel/categories', label: 'Categories' },
 ]
 
 /**

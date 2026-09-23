@@ -50,6 +50,11 @@ import AdminJobs from '../pages/admin/AdminJobs.jsx'
 import AdminJobDetail from '../pages/admin/AdminJobDetail.jsx'
 import AdminDashboard from '../pages/admin/AdminDashboard.jsx'
 import AdminUsers from '../pages/admin/AdminUsers.jsx'
+import AdminContent from '../pages/admin/AdminContent.jsx'
+import AdminServices from '../pages/admin/AdminServices.jsx'
+import AdminExpertise from '../pages/admin/AdminExpertise.jsx'
+import AdminProjects from '../pages/admin/AdminProjects.jsx'
+import AdminCategories from '../pages/admin/AdminCategories.jsx'
 
 const candidateRoutes = [
   { path: '/candidate', element: <CandidateDashboard /> },
@@ -68,6 +73,11 @@ const adminRoutes = [
   { path: '/admin-panel/jobs', element: <AdminJobs /> },
   { path: '/admin-panel/jobs/:jobId', element: <AdminJobDetail /> },
   { path: '/admin-panel/users', element: <AdminUsers /> },
+  { path: '/admin-panel/content', element: <AdminContent /> },
+  { path: '/admin-panel/services', element: <AdminServices /> },
+  { path: '/admin-panel/expertise', element: <AdminExpertise /> },
+  { path: '/admin-panel/projects', element: <AdminProjects /> },
+  { path: '/admin-panel/categories', element: <AdminCategories /> },
 ]
 
 const router = createBrowserRouter([

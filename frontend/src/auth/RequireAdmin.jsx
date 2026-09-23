@@ -22,6 +22,10 @@ const PERMISSION_BY_PATH = [
   { prefix: '/admin-panel/applications', permission: 'employment:manage' },
   { prefix: '/admin-panel/jobs', permission: 'employment:manage' },
   { prefix: '/admin-panel/users', permission: 'users:manage' },
+  { prefix: '/admin-panel/content', permission: 'content:manage' },
+  { prefix: '/admin-panel/services', permission: 'services:manage' },
+  { prefix: '/admin-panel/expertise', permission: 'services:manage' },
+  { prefix: '/admin-panel/projects', permission: 'projects:manage' },
   { prefix: '/admin-panel', permission: 'dashboard:view' },
 ]
 
@@ -34,6 +38,9 @@ const PERMISSION_DESCRIPTIONS = {
   'employment:manage': 'applications review and jobs management',
   'users:manage': 'user management (SUPER_ADMIN)',
   'dashboard:view': 'the admin dashboard',
+  'content:manage': 'website content management',
+  'services:manage': 'services and expertise management',
+  'projects:manage': 'projects management',
 }
 
 export default function RequireAdmin({ children }) {
