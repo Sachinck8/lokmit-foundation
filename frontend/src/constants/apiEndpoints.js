@@ -53,4 +53,12 @@ export const API_ENDPOINTS = {
   ADMIN_CANDIDATE_EDUCATIONS: (candidateId) => `/admin/candidates/${candidateId}/educations`,
   ADMIN_CANDIDATE_EXPERIENCES: (candidateId) => `/admin/candidates/${candidateId}/experiences`,
   RESUME_DOWNLOAD: (resumeId) => `/resumes/${resumeId}/download`,
+
+  // Admin directory & operations console (A23) — existing A7.1/A7.5 APIs over
+  // the candidates:manage, employment:manage, users:manage (audit),
+  // messages:manage and notifications:manage permissions.
+  ADMIN_CANDIDATES: '/admin/candidates',
+  ADMIN_AUDIT_LOGS: '/admin/audit-logs',
+  ADMIN_NOTIFICATIONS: '/admin/notifications',
+  ADMIN_NOTIFICATION_UNREAD_COUNT: '/admin/notifications/unread-count',
 }

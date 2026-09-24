@@ -768,3 +768,320 @@ export function listSkillsCatalog() {
     .get(API_ENDPOINTS.ADMIN_SKILLS, { params: { size: 100 } })
     .then(response => unwrapPage(response.data && response.data.data).items)
 }
+
+// ------------------------------------------------------------------ A23
+// Admin directory & operations console over the existing A7.1 (candidates,
+// employers, skills, job categories), A7.3 (contact messages), A7.5 (audit
+// logs, notifications) APIs. Thin wrappers only; field names mirror the
+// backend DTOs exactly.
+
+const toNumberOrUndefined = value => {
+  const trimmed = typeof value === 'string' ? value.trim() : value
+  if (trimmed === '' || trimmed == null) return undefined
+  const parsed = Number(trimmed)
+  return Number.isNaN(parsed) ? undefined : parsed
+}
+
+// Candidates (candidates:manage) — list/search/filter plus profile PATCH.
+// There is NO candidate create (profiles come from candidate signup) and NO
+// delete (fk_candidates_user ON DELETE CASCADE would remove the user) —
+// exactly the lifecycle the backend exposes.
+
+/**
+ * Lists candidate profiles.
+ * @param {{ page?: number, size?: number, search?: string, availability?: string, gender?: string }} params
+ */
+export function listAdminCandidates(params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  if (params.search && String(params.search).trim() !== '') query.search = params.search.trim()
+  if (params.availability) query.availability = params.availability
+  if (params.gender) query.gender = params.gender
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_CANDIDATES, { params: query })
+    .then(response => unwrapPage(response.data && response.data.data))
+}
+
+/** Safe detail view of one candidate profile. Unknown ids return the backend 404. */
+export function getAdminCandidate(id) {
+  return apiClient
+    .get(`${API_ENDPOINTS.ADMIN_CANDIDATES}/${id}`)
+    .then(unwrapOne)
+}
+
+/**
+ * Partially updates a candidate profile. The linked user is immutable
+ * server-side; the resulting salary pair is validated (min ≤ max → 400).
+ */
+export function updateAdminCandidate(id, payload) {
+  return apiClient
+    .patch(`${API_ENDPOINTS.ADMIN_CANDIDATES}/${id}`, {
+      dateOfBirth: optional(payload.dateOfBirth) || null,
+      gender: optional(payload.gender) || null,
+      phone: optional(payload.phone) || null,
+      currentLocation: optional(payload.currentLocation) || null,
+      summary: optional(payload.summary) || null,
+      expectedSalaryMin: toNumberOrUndefined(payload.expectedSalaryMin) ?? null,
+      expectedSalaryMax: toNumberOrUndefined(payload.expectedSalaryMax) ?? null,
+      availability: optional(payload.availability) || null,
+    })
+    .then(unwrapOne)
+}
+
+// Employers (employment:manage) — same shape as candidates; no create/delete
+// (fk_employers_user ON DELETE CASCADE), lifecycle via status changes.
+
+/**
+ * Lists employer profiles.
+ * @param {{ page?: number, size?: number, search?: string, verificationStatus?: string, status?: string }} params
+ */
+export function listAdminEmployers(params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  if (params.search && String(params.search).trim() !== '') query.search = params.search.trim()
+  if (params.verificationStatus) query.verificationStatus = params.verificationStatus
+  if (params.status) query.status = params.status
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_EMPLOYERS, { params: query })
+    .then(response => unwrapPage(response.data && response.data.data))
+}
+
+/** Safe detail view of one employer profile. Unknown ids return the backend 404. */
+export function getAdminEmployer(id) {
+  return apiClient
+    .get(`${API_ENDPOINTS.ADMIN_EMPLOYERS}/${id}`)
+    .then(unwrapOne)
+}
+
+/** Partially updates an employer profile; the linked user is immutable server-side. */
+export function updateAdminEmployer(id, payload) {
+  return apiClient
+    .patch(`${API_ENDPOINTS.ADMIN_EMPLOYERS}/${id}`, {
+      companyName: optional(payload.companyName) || null,
+      about: optional(payload.about) || null,
+      websiteUrl: optional(payload.websiteUrl) || null,
+      logoUrl: optional(payload.logoUrl) || null,
+      contactPersonName: optional(payload.contactPersonName) || null,
+      contactPhone: optional(payload.contactPhone) || null,
+      address: optional(payload.address) || null,
+      verificationStatus: optional(payload.verificationStatus) || null,
+      status: optional(payload.status) || null,
+    })
+    .then(unwrapOne)
+}
+
+// Skills (employment:manage) — full CRUD. DELETE cascades into
+// candidate_skills and job_skills per the V8 schema (documented, intentional).
+
+/**
+ * Lists skills (name-ordered).
+ * @param {{ page?: number, size?: number, search?: string, status?: string }} params
+ */
+export function listAdminSkills(params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  if (params.search && String(params.search).trim() !== '') query.search = params.search.trim()
+  if (params.status) query.status = params.status
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_SKILLS, { params: query })
+    .then(response => unwrapPage(response.data && response.data.data))
+}
+
+/** Creates a skill (duplicate names → backend 409). */
+export function createAdminSkill(payload) {
+  return apiClient
+    .post(API_ENDPOINTS.ADMIN_SKILLS, {
+      name: optional(payload.name),
+      status: optional(payload.status) || undefined,
+    })
+    .then(unwrapOne)
+}
+
+/** Partially updates a skill (duplicate names → backend 409). */
+export function updateAdminSkill(id, payload) {
+  return apiClient
+    .patch(`${API_ENDPOINTS.ADMIN_SKILLS}/${id}`, {
+      name: optional(payload.name) || null,
+      status: optional(payload.status) || null,
+    })
+    .then(unwrapOne)
+}
+
+/** Deletes a skill; its candidate/job skill rows cascade away server-side. */
+export function deleteAdminSkill(id) {
+  return apiClient
+    .delete(`${API_ENDPOINTS.ADMIN_SKILLS}/${id}`)
+    .then(response => undefined)
+}
+
+// Job categories (employment:manage) — full CRUD; the slug is immutable and
+// delete detaches jobs (ON DELETE SET NULL), never deletes them.
+
+/**
+ * Lists job categories (displayOrder then name).
+ * @param {{ page?: number, size?: number, search?: string, status?: string }} params
+ */
+export function listAdminJobCategories(params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  if (params.search && String(params.search).trim() !== '') query.search = params.search.trim()
+  if (params.status) query.status = params.status
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_JOB_CATEGORIES, { params: query })
+    .then(response => unwrapPage(response.data && response.data.data))
+}
+
+/** Creates a job category (duplicate name or slug → backend 409). */
+export function createAdminJobCategory(payload) {
+  return apiClient
+    .post(API_ENDPOINTS.ADMIN_JOB_CATEGORIES, {
+      name: optional(payload.name),
+      slug: optional(payload.slug),
+      description: optional(payload.description) || undefined,
+      displayOrder: toNumberOrUndefined(payload.displayOrder),
+      status: optional(payload.status) || undefined,
+    })
+    .then(unwrapOne)
+}
+
+/** Partially updates a job category (name/description/displayOrder/status; slug immutable). */
+export function updateAdminJobCategory(id, payload) {
+  return apiClient
+    .patch(`${API_ENDPOINTS.ADMIN_JOB_CATEGORIES}/${id}`, {
+      name: optional(payload.name) || null,
+      description: optional(payload.description) || null,
+      displayOrder: toNumberOrUndefined(payload.displayOrder) ?? null,
+      status: optional(payload.status) || null,
+    })
+    .then(unwrapOne)
+}
+
+/** Deletes a job category; referencing jobs are detached, never deleted. */
+export function deleteAdminJobCategory(id) {
+  return apiClient
+    .delete(`${API_ENDPOINTS.ADMIN_JOB_CATEGORIES}/${id}`)
+    .then(response => undefined)
+}
+
+// Contact messages (messages:manage) — read + staff update (status, note).
+// Sender identity and message content are structurally non-editable.
+
+/**
+ * Lists contact enquiries (newest first).
+ * @param {{ page?: number, size?: number, status?: string, search?: string }} params
+ */
+export function listContactMessages(params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  if (params.status) query.status = params.status
+  if (params.search && String(params.search).trim() !== '') query.search = params.search.trim()
+  return apiClient
+    .get(API_ENDPOINTS.CONTACT_MESSAGES, { params: query })
+    .then(response => unwrapPage(response.data && response.data.data))
+}
+
+/** Full staff view of one enquiry. Unknown ids return the backend 404. */
+export function getContactMessage(id) {
+  return apiClient
+    .get(`${API_ENDPOINTS.CONTACT_MESSAGES}/${id}`)
+    .then(unwrapOne)
+}
+
+/**
+ * Staff update of an enquiry: status and/or internal note. Pass
+ * { internalNote: null } to clear the note; omitting the key leaves it
+ * unchanged, mirroring the backend's provided-flag semantics.
+ */
+export function updateContactMessage(id, payload = {}) {
+  const body = {}
+  if (payload.status) body.status = payload.status
+  if ('internalNote' in payload) {
+    body.internalNote = payload.internalNote == null ? null : String(payload.internalNote)
+  }
+  return apiClient
+    .patch(`${API_ENDPOINTS.CONTACT_MESSAGES}/${id}`, body)
+    .then(unwrapOne)
+}
+
+// Audit logs (users:manage, SUPER_ADMIN only) — strictly read-only.
+
+/**
+ * Lists audit records (newest first; all filters DB-side).
+ * @param {{ page?: number, size?: number, actorUserId?: number|string, entityType?: string,
+ *            entityId?: number|string, action?: string, from?: string, to?: string }} params
+ */
+export function listAuditLogs(params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  const actorUserId = toNumberOrUndefined(params.actorUserId)
+  if (actorUserId != null) query.actorUserId = actorUserId
+  const entityId = toNumberOrUndefined(params.entityId)
+  if (entityId != null) query.entityId = entityId
+  if (params.entityType && String(params.entityType).trim() !== '') {
+    query.entityType = String(params.entityType).trim()
+  }
+  if (params.action && String(params.action).trim() !== '') {
+    query.action = String(params.action).trim()
+  }
+  if (params.from && String(params.from).trim() !== '') query.from = params.from
+  if (params.to && String(params.to).trim() !== '') query.to = params.to
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_AUDIT_LOGS, { params: query })
+    .then(response => unwrapPage(response.data && response.data.data))
+}
+
+/** One immutable audit record. Unknown ids return the backend 404. */
+export function getAuditLog(id) {
+  return apiClient
+    .get(`${API_ENDPOINTS.ADMIN_AUDIT_LOGS}/${id}`)
+    .then(unwrapOne)
+}
+
+// Notifications (notifications:manage) — strictly recipient-scoped: the
+// permission never grants access to another user's personal notices, so the
+// admin console page shows the signed-in staff member's own inbox.
+
+/**
+ * Lists the authenticated user's notifications (newest first).
+ * @param {{ page?: number, size?: number, type?: string, unreadOnly?: boolean }} params
+ */
+export function listAdminNotifications(params = {}) {
+  const query = {}
+  if (params.page !== undefined && params.page !== null) query.page = params.page
+  if (params.size !== undefined && params.size !== null) query.size = params.size
+  if (params.type && String(params.type).trim() !== '') query.type = String(params.type).trim()
+  if (params.unreadOnly === true) query.unreadOnly = true
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_NOTIFICATIONS, { params: query })
+    .then(response => unwrapPage(response.data && response.data.data))
+}
+
+/** Count of the authenticated user's unread notifications. */
+export function getAdminNotificationUnreadCount() {
+  return apiClient
+    .get(API_ENDPOINTS.ADMIN_NOTIFICATION_UNREAD_COUNT)
+    .then(response => {
+      const data = response.data && response.data.data
+      return data && typeof data.unreadCount === 'number' ? data.unreadCount : 0
+    })
+}
+
+/** Marks one of the authenticated user's notifications as read. */
+export function markAdminNotificationRead(id) {
+  return apiClient
+    .patch(`${API_ENDPOINTS.ADMIN_NOTIFICATIONS}/${id}/read`)
+    .then(unwrapOne)
+}
+
+/** Marks one of the authenticated user's notifications as unread. */
+export function markAdminNotificationUnread(id) {
+  return apiClient
+    .patch(`${API_ENDPOINTS.ADMIN_NOTIFICATIONS}/${id}/unread`)
+    .then(unwrapOne)
+}

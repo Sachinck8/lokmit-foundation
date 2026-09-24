@@ -14,6 +14,10 @@ const NAV_ITEMS = [
   { to: '/admin-panel/expertise', label: 'Expertise' },
   { to: '/admin-panel/projects', label: 'Projects' },
   { to: '/admin-panel/categories', label: 'Categories' },
+  { to: '/admin-panel/employment', label: 'Employment' },
+  { to: '/admin-panel/messages', label: 'Messages' },
+  { to: '/admin-panel/audit-logs', label: 'Audit logs' },
+  { to: '/admin-panel/notifications', label: 'Notifications' },
 ]
 
 /**

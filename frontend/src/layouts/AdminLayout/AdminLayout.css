@@ -207,6 +207,19 @@
 .admin-portal__status--SUSPENDED { background: #fdf6e7; border-color: #f0dfae; color: #8a6116; }
 .admin-portal__status--DELETED { background: #f1f1f1; border-color: #dddddd; color: #555555; }
 
+/* A23 — employment directory, contact messages, notifications. */
+.admin-portal__status--ACTIVELY_LOOKING { background: #e9f7ee; border-color: #bfe4cb; color: #1e6b3a; }
+.admin-portal__status--OPEN_TO_OFFERS { background: #eef2fb; border-color: #ccd8f2; color: #26418f; }
+.admin-portal__status--NOT_LOOKING { background: #f1f1f1; border-color: #dddddd; color: #555555; }
+.admin-portal__status--UNVERIFIED { background: #f1f1f1; border-color: #dddddd; color: #555555; }
+.admin-portal__status--PENDING { background: #fdf6e7; border-color: #f0dfae; color: #8a6116; }
+.admin-portal__status--VERIFIED { background: #e9f7ee; border-color: #bfe4cb; color: #1e6b3a; }
+.admin-portal__status--REJECTED { background: #fdeeee; border-color: #f2c6c6; color: #8f1f1f; }
+.admin-portal__status--INACTIVE { background: #f1f1f1; border-color: #dddddd; color: #555555; }
+.admin-portal__status--NEW { background: #eef2fb; border-color: #ccd8f2; color: #26418f; }
+.admin-portal__status--READ { background: #f4eef8; border-color: #dcc8ea; color: #5d3a78; }
+.admin-portal__status--REPLIED { background: #e9f7ee; border-color: #bfe4cb; color: #1e6b3a; }
+
 /* A21 — dashboard stat cards reuse the facts grid; enquiry/user/job chip
    variants above already cover every status the dashboard renders. */
 .admin-dashboard__stat {

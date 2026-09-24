@@ -21,11 +21,15 @@ import Container from '../components/Container/Container.jsx'
 const PERMISSION_BY_PATH = [
   { prefix: '/admin-panel/applications', permission: 'employment:manage' },
   { prefix: '/admin-panel/jobs', permission: 'employment:manage' },
+  { prefix: '/admin-panel/employment', permission: 'employment:manage' },
   { prefix: '/admin-panel/users', permission: 'users:manage' },
+  { prefix: '/admin-panel/audit-logs', permission: 'users:manage' },
   { prefix: '/admin-panel/content', permission: 'content:manage' },
   { prefix: '/admin-panel/services', permission: 'services:manage' },
   { prefix: '/admin-panel/expertise', permission: 'services:manage' },
   { prefix: '/admin-panel/projects', permission: 'projects:manage' },
+  { prefix: '/admin-panel/messages', permission: 'messages:manage' },
+  { prefix: '/admin-panel/notifications', permission: 'notifications:manage' },
   { prefix: '/admin-panel', permission: 'dashboard:view' },
 ]
 
@@ -41,6 +45,8 @@ const PERMISSION_DESCRIPTIONS = {
   'content:manage': 'website content management',
   'services:manage': 'services and expertise management',
   'projects:manage': 'projects management',
+  'messages:manage': 'contact message management',
+  'notifications:manage': 'your in-app notifications',
 }
 
 export default function RequireAdmin({ children }) {
