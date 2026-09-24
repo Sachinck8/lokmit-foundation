@@ -1,0 +1,84 @@
+# A25 — Local/self-hosted full-stack composition (development & staging aid).
+#
+# NOT a production deployment target: it demonstrates the wiring (database,
+# backend prod profile, frontend static container) so the same images can be
+# promoted to a real environment unchanged.
+#
+# Credentials: every secret arrives through the host environment (.env next
+# to this file, which git ignores). Nothing sensitive is committed here —
+# the variables below are only NAMES.
+#
+#   cp .env.example .env   # then fill DB_PASSWORD, JWT_SECRET, etc.
+#
+# Usage:
+#   docker compose up -d --build
+#   curl -f http://localhost:8080/api/v1/health   (API liveness)
+#   open  http://localhost:8081/                  (frontend)
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lokmit_foundation}
+      POSTGRES_USER: ${POSTGRES_USER:-lokmit_app}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    # No host port published: the database is reachable only on the compose
+    # network (backend -> db:5432). Expose temporarily for debugging via:
+    #   docker compose run --rm -p 5433:5432 db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lokmit_app} -d ${POSTGRES_DB:-lokmit_foundation}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-lokmit_foundation}
+      DB_USERNAME: ${POSTGRES_USER:-lokmit_app}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:8081}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    healthcheck:
+      # Application-level liveness via the existing unauthenticated endpoint.
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      # Same-origin deployment: the platform proxies /api to the backend.
+      # For a split deployment pass the absolute API origin instead, e.g.
+      #   VITE_API_BASE_URL=http://localhost:8080/api/v1
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8081:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  db-data:

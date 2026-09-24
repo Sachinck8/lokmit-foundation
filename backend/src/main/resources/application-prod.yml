@@ -14,7 +14,17 @@
 #   DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET, APP_CORS_ALLOWED_ORIGINS
 # =====================================================================
 
+# Graceful shutdown (A25): on SIGTERM (docker stop / pod termination) the
+# web server stops accepting new requests and waits for in-flight ones so
+# container shutdowns do not drop active user requests.
+server:
+  shutdown: graceful
+  port: ${SERVER_PORT:8080}
+
 spring:
+  lifecycle:
+    timeout-per-shutdown-phase: ${SERVER_SHUTDOWN_TIMEOUT:30s}
+
   # Database: strictly environment-driven, no defaults.
   # A missing variable fails startup with a clear unresolved-placeholder error.
   datasource:

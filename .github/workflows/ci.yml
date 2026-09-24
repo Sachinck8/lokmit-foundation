@@ -1,0 +1,109 @@
+# A25 — CI for the LOKMIT FOUNDATION platform.
+#
+# Scope: verify the project exactly as the repository's own verification
+# does — backend `mvn clean test`, frontend production build via the
+# committed lockfile, a whitespace-hygiene check on the tip commit, and a
+# best-effort scan of TRACKED files for committed secret material.
+#
+# Notes:
+# - No database service is provisioned: the repository's Postgres-backed
+#   integration tests skip themselves cleanly when PostgreSQL is
+#   unreachable (JUnit assumeTrue), so `mvn clean test` reproduces the
+#   656/0/0/13 baseline anywhere. A service container is therefore not
+#   required for reliable CI — add one only if tests stop skipping.
+# - Security posture: least-privilege `contents: read`, pinned major
+#   action versions, no secrets consumed, no artifacts uploaded.
+# - The tracked-file secret scan is a tripwire against accidental
+#   commits (real keys have high-entropy value parts, not the
+#   `CHANGE_ME`-style placeholders used by the *.env.example files).
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend — Maven test (Java 21)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Compile and test
+        working-directory: backend
+        # Integration tests skip cleanly without PostgreSQL; the expected
+        # baseline is 656 tests / 0 failures / 0 errors / 13 skipped.
+        run: mvn -B clean test
+
+  frontend:
+    name: Frontend — production build (Node 22)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies (lockfile)
+        working-directory: frontend
+        run: npm ci
+
+      - name: Production build
+        working-directory: frontend
+        run: npm run build
+
+  hygiene:
+    name: Hygiene — whitespace & committed-secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Whitespace check on the tip commit
+        run: git diff HEAD^ HEAD --check
+
+      - name: Scan tracked files for committed secret material
+        # Patterns intentionally tuned to high-signal secrets (value side,
+        # not the CHANGE_ME-style placeholders in *.env.example): AWS keys,
+        # private key blocks, and hard-coded high-entropy assignment of
+        # secret-like variables. Excludes lockfiles and the minified
+        # frontend bundle where "Secret"/"password" substrings are library
+        # identifiers, not credentials.
+        run: |
+          set -e
+          files=$(git ls-files)
+          violations=0
+
+          if echo "$files" | xargs grep -nE 'AKIA[0-9A-Z]{16}' >/dev/null 2>&1; then
+            echo "::error::AWS access key id committed"; violations=1
+          fi
+          if echo "$files" | xargs grep -n 'BEGIN .*PRIVATE KEY' >/dev/null 2>&1; then
+            echo "::error::private key block committed"; violations=1
+          fi
+          if git grep -nIiE '(secret|password|token|api[_-]?key)[[:space:]]*[:=][[:space:]]*["'"'"'][A-Za-z0-9+/_-]{32,}["'"'"']' \
+              -- ':!frontend/package-lock.json' ':!frontend/dist' >/dev/null 2>&1; then
+            echo "::error::possible hard-coded secret (see matched lines)"; violations=1
+          fi
+
+          if [ "$violations" -ne 0 ]; then
+            exit 1
+          fi
+          echo "No committed secret material detected."

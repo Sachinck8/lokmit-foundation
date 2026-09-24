@@ -1286,6 +1286,120 @@ Phase 4 (authentication & authorization):
 - [x] Swagger/OpenAPI bearer authentication documentation
 - [x] Environment-based security configuration
 
+## Deployment (Docker) & Operations
+
+A25 added production-oriented infrastructure: GitHub Actions CI, backend and
+frontend container images, a local full-stack compose file, and the strict
+`prod` Spring profile (see *Production Configuration* above).
+
+### Prerequisites
+
+- Docker (Engine 24+) with the Compose plugin — for containerized runs
+- Java 21 + Maven — only for running the backend outside Docker
+- Node 20+/npm — only for building the frontend outside Docker
+- PostgreSQL 14+ — unless using the compose `db` service
+- GitHub Actions — CI runs automatically on every push/PR (no secrets required)
+
+### Configuration
+
+All production values are environment variables — never committed:
+
+| Variable | Consumed by | Purpose |
+|----------|-------------|---------|
+| `DB_URL` | backend | JDBC URL, e.g. `jdbc:postgresql://db:5432/lokmit_foundation` |
+| `DB_USERNAME` / `DB_PASSWORD` | backend | Database role credentials |
+| `JWT_SECRET` | backend | JWT signing key (min 32 bytes) |
+| `APP_CORS_ALLOWED_ORIGINS` | backend | Exact frontend origins, comma-separated (a wildcard is rejected at startup) |
+| `SPRING_PROFILES_ACTIVE=prod` | backend | Activates the strict prod profile |
+| `POSTGRES_DB` / `POSTGRES_USER` | compose `db` | Database name / role for the container |
+| `VITE_API_BASE_URL` | frontend image (build arg) | API base; empty = same-origin `/api/v1` behind a reverse proxy |
+
+Local secrets live in a gitignored environment file (see the example files).
+No real credentials appear anywhere in the repository.
+
+### Deployment flow (compose)
+
+1. **Checkout** the repository.
+2. **Configure**: copy the example environment file, then set the database
+   password and JWT signing secret (plus `APP_CORS_ALLOWED_ORIGINS` if the
+   frontend origin differs from `http://localhost:8081`).
+3. **Prepare PostgreSQL**: compose starts a persistent `db` service; for an
+   external database, create the database and a role, then point `DB_URL`
+   at it.
+4. **Build & start services**: `docker compose up -d --build`.
+5. **Allow Flyway migrations**: `V1`-`V17` apply automatically on backend
+   startup (the schema belongs to Flyway; Hibernate only validates).
+6. **Verify the health endpoint**: `curl -f http://localhost:8080/api/v1/health`.
+7. **Verify the frontend**: open `http://localhost:8081/`.
+8. **Verify API connectivity**: sign in through the UI and confirm
+   same-origin `/api/v1` calls succeed in the browser network tab.
+9. **Operate**: `docker compose logs -f backend`, `docker compose ps`.
+
+Non-Docker builds stay exactly as before: `mvn -B clean package` (backend)
+and `npm run build` (frontend).
+
+### Health verification
+
+| Probe | Endpoint | Expected |
+|-------|----------|----------|
+| API liveness (public, for deploy systems) | `GET /api/v1/health` | HTTP 200, `success: true`, `status: UP` |
+| Spring Boot actuator health | `GET /actuator/health` | HTTP 200 (`UP`); authenticated only, details hidden in prod |
+| Frontend container | `GET /healthz` | HTTP 200, body `ok` |
+
+Diagnosis: failure of `/api/v1/health` usually means the JVM is down
+(`docker compose logs backend`); an actuator health failure (authenticated)
+usually means the database is unreachable - check the database URL,
+credentials and `docker compose logs db`.
+
+### Rollback
+
+- **Application image**: redeploy the previous image tag; images are
+  immutable, so rollback is a re-deploy, not a rebuild.
+- **Configuration**: revert environment variables and restart the backend;
+  no rebuild needed.
+- **Database migrations**: Flyway does not auto-rollback, and migrations
+  must never be undone manually or "fixed" with destructive SQL. If a new
+  backend version must be rolled back, deploy the previous image (older
+  code tolerates the newer schema) and, if a schema fix is genuinely
+  required, ship a NEW forward migration (`V18__...`) - after review and
+  a backup.
+
+### Troubleshooting
+
+- **Database connection failure** - check the database URL, username and
+  password variables, network reachability from the backend container, and
+  that the `db` service is healthy (`docker compose ps`).
+- **Migration failure** - read the Flyway entries in `docker compose logs
+  backend`; the failed migration is recorded in `flyway_schema_history`.
+  Fix forward with a corrected migration; never edit an applied one.
+- **JWT configuration failure** - startup fails fast when the JWT signing
+  secret is missing or shorter than 32 bytes; supply a strong random value.
+- **CORS failure** - the browser blocks calls with a CORS error; add the
+  exact frontend origin to `APP_CORS_ALLOWED_ORIGINS` (no trailing slash,
+  no wildcard) and restart the backend.
+- **Frontend/API mismatch** - API 404s from the browser mean the API base
+  origin is wrong: rebuild the frontend image with the correct
+  `VITE_API_BASE_URL` build arg (it is build-time, not runtime).
+- **Container startup failure** - `docker compose logs <service>`;
+  unresolved-placeholder errors indicate a missing required environment
+  variable.
+- **Health-check failure** - see the table above; confirm the specific
+  probe's dependencies (the database for the backend, nothing for
+  `healthz`).
+
+### CI
+
+`.github/workflows/ci.yml` runs on every push and pull request with
+least-privilege permissions (`contents: read`) and no secrets:
+
+- backend: Java 21 + Maven `clean test` (integration tests skip cleanly
+  without PostgreSQL, matching the local 656/0/0/13 baseline)
+- frontend: Node 22 + `npm ci` + production build
+- hygiene: `git diff HEAD^ HEAD --check` and a tracked-file secret tripwire
+
+Production deployment is deliberately NOT automated in A25; CI verifies,
+humans deploy.
+
 ## Conventions & Docs
 
 - `docs/CONVENTIONS.md` — coding, REST, migration, naming and Git rules.
