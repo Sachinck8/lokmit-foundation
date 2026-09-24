@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import apiClient from '../api/client.js'
 import { API_ENDPOINTS } from '../constants/apiEndpoints.js'
-import { setTokens, clearTokens, getRefreshToken } from './tokenStorage.js'
+import { setTokens, clearTokens, getRefreshToken, onSignedOut } from './tokenStorage.js'
 
 const AuthContext = createContext(null)
 
@@ -55,6 +55,24 @@ export function AuthProvider({ children }) {
       active = false
     }
   }, [])
+
+  // A24 hardening: when the shared axios client discards the tokens after a
+  // failed background refresh (expiry / rotation reuse / lockout), the user
+  // state must follow — otherwise the UI keeps rendering an authenticated
+  // shell while every API call fails with 401. Navigation mirrors the
+  // logout() flow so the session ends on the login page; when no user was
+  // signed in (bootstrap failure with a stale token) the redirect is still
+  // the correct landing point for a dead session.
+  useEffect(() => {
+    const unsubscribe = onSignedOut(() => {
+      setUser(null)
+      // replace:true — an expired session must not trap the login page in
+      // the browser history (and logout() already navigates itself, so a
+      // same-target push would only stack a duplicate entry).
+      navigate('/candidate-login', { replace: true })
+    })
+    return unsubscribe
+  }, [navigate])
 
   const value = useMemo(() => ({
     user,

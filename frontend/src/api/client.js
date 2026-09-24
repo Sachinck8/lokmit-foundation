@@ -47,6 +47,8 @@ function beginRefresh() {
         })
         .catch(error => {
           // Rotation reuse detection / expiry / lockout → hard logout.
+          // clearTokens notifies the auth context so the UI does not keep
+          // showing an authenticated shell over a dead session (A24).
           clearTokens()
           throw error
         })

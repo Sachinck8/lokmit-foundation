@@ -16,6 +16,30 @@
 const ACCESS_TOKEN_KEY = 'lokmit.accessToken'
 const REFRESH_TOKEN_KEY = 'lokmit.refreshToken'
 
+/**
+ * Signed-out listeners (A24 hardening): let the auth context react when the
+ * shared axios client discards tokens (background refresh failure / expiry)
+ * so the UI never keeps showing an authenticated shell over a dead session.
+ * Deliberately storage-level — importing AuthContext here would be circular.
+ */
+const signedOutListeners = new Set()
+
+/** Registers a listener invoked after tokens are cleared. Returns an unsubscribe function. */
+export function onSignedOut(listener) {
+  signedOutListeners.add(listener)
+  return () => signedOutListeners.delete(listener)
+}
+
+function notifySignedOut() {
+  signedOutListeners.forEach(listener => {
+    try {
+      listener()
+    } catch {
+      /* a broken listener never blocks token cleanup */
+    }
+  })
+}
+
 /** In-memory mirror so sessionStorage access stays synchronous-free. */
 let memoryAccessToken = null
 let hydrated = false
@@ -77,4 +101,5 @@ export function clearTokens() {
   } catch {
     /* ignore */
   }
+  notifySignedOut()
 }
