@@ -162,6 +162,20 @@ public class SecurityConfig {
                         // as before; no security weakening.
                         .requestMatchers(HttpMethod.GET, ApiPaths.JOBS).permitAll()
                         .requestMatchers(HttpMethod.GET, ApiPaths.JOB).permitAll()
+                        // A26: public CMS browsing — ONLY the read methods on the
+                        // public services/expertise/projects namespaces are anonymous,
+                        // mirroring the A8 jobs pattern (AdminXxxController families
+                        // stay fully authenticated + permission-guarded; no security
+                        // weakening). POST/PATCH/DELETE on these paths remain under
+                        // anyRequest().authenticated() → anonymous callers get 401,
+                        // never a silent mutation path.
+                        .requestMatchers(HttpMethod.GET, ApiPaths.PUBLIC_SERVICES).permitAll()
+                        .requestMatchers(HttpMethod.GET, ApiPaths.PUBLIC_SERVICE).permitAll()
+                        .requestMatchers(HttpMethod.GET, ApiPaths.PUBLIC_SERVICE_CATEGORIES).permitAll()
+                        .requestMatchers(HttpMethod.GET, ApiPaths.PUBLIC_EXPERTISE_AREAS).permitAll()
+                        .requestMatchers(HttpMethod.GET, ApiPaths.PUBLIC_PROJECTS).permitAll()
+                        .requestMatchers(HttpMethod.GET, ApiPaths.PUBLIC_PROJECT).permitAll()
+                        .requestMatchers(HttpMethod.GET, ApiPaths.PUBLIC_PROJECT_CATEGORIES).permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions

@@ -124,6 +124,15 @@ public final class ApiPaths {
     public static final String JOBS = API_V1 + "/jobs";
     public static final String JOB = JOBS + "/{jobId}";
 
+    /** Public CMS browsing APIs (A26) — anonymous, published/active content only. */
+    public static final String PUBLIC_SERVICES = API_V1 + "/services";
+    public static final String PUBLIC_SERVICE = PUBLIC_SERVICES + "/{slug}";
+    public static final String PUBLIC_SERVICE_CATEGORIES = API_V1 + "/service-categories";
+    public static final String PUBLIC_EXPERTISE_AREAS = API_V1 + "/expertise-areas";
+    public static final String PUBLIC_PROJECTS = API_V1 + "/projects";
+    public static final String PUBLIC_PROJECT = PUBLIC_PROJECTS + "/{slug}";
+    public static final String PUBLIC_PROJECT_CATEGORIES = API_V1 + "/project-categories";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

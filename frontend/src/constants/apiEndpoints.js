@@ -4,6 +4,15 @@ export const API_ENDPOINTS = {
   CONTACT_MESSAGES: '/contact-messages',
   // Public job browsing (A8) — mirrors ApiPaths.JOBS / ApiPaths.JOB.
   JOBS: '/jobs',
+  // Public CMS browsing (A26) — mirrors ApiPaths.PUBLIC_* constants.
+  // Anonymous, published/active content only; read-only.
+  PUBLIC_SERVICES: '/services',
+  PUBLIC_SERVICE: (slug) => `/services/${encodeURIComponent(slug)}`,
+  PUBLIC_SERVICE_CATEGORIES: '/service-categories',
+  PUBLIC_EXPERTISE_AREAS: '/expertise-areas',
+  PUBLIC_PROJECTS: '/projects',
+  PUBLIC_PROJECT: (slug) => `/projects/${encodeURIComponent(slug)}`,
+  PUBLIC_PROJECT_CATEGORIES: '/project-categories',
   // Authentication (A10).
   AUTH_LOGIN: '/auth/login',
   AUTH_REFRESH: '/auth/refresh',
