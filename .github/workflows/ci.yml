@@ -76,6 +76,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        # A27: full history so `git diff HEAD^ HEAD --check` can resolve the
+        # tip commit's parent. The default fetch-depth: 1 leaves no HEAD^,
+        # which made this job exit 128 on every run since A25.
+        with:
+          fetch-depth: 0
 
       - name: Whitespace check on the tip commit
         run: git diff HEAD^ HEAD --check

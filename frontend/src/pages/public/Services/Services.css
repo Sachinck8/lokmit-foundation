@@ -162,3 +162,25 @@
   justify-content: center;
   flex-wrap: wrap;
 }
+
+.sv__card-item-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sv__card-item-link:hover {
+  color: var(--color-primary);
+}
+
+/* A27: service detail page — same tokens, single wide card layout. */
+.sv__detail {
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.sv__detail__text {
+  margin: var(--spacing-4) 0 0;
+  white-space: pre-line;
+  line-height: var(--line-height-relaxed);
+}

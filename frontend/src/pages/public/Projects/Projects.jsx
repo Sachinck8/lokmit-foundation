@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import EmptyState from '../../../components/EmptyState/EmptyState.jsx'
 import PageHero from '../../../components/PageHero/PageHero.jsx'
 import Container from '../../../components/Container/Container.jsx'
@@ -77,7 +78,11 @@ export default function Projects() {
               {projects.map(project => (
                 <article key={project.id} className="projects__card">
                   <div className="projects__card-head">
-                    <h3 className="projects__card-title">{project.title}</h3>
+                    <h3 className="projects__card-title">
+                      <Link to={`/projects/${project.slug}`} className="projects__card-link">
+                        {project.title}
+                      </Link>
+                    </h3>
                     {project.projectStatus && (
                       <span className={`projects__status projects__status--${project.projectStatus}`}>
                         {project.projectStatus}

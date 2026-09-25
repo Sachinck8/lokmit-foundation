@@ -97,7 +97,9 @@ export default function Services() {
                             <svg className="sv__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
-                            {item.title}
+                            <Link to={`/services/${item.slug}`} className="sv__card-item-link">
+                              {item.title}
+                            </Link>
                           </li>
                         ))}
                       </ul>

@@ -6,8 +6,10 @@ import About from '../pages/public/About/About.jsx'
 import CompanyProfile from '../pages/public/CompanyProfile/CompanyProfile.jsx'
 import LegalInformation from '../pages/public/LegalInformation/LegalInformation.jsx'
 import Services from '../pages/public/Services/Services.jsx'
+import ServiceDetail from '../pages/public/Services/ServiceDetail.jsx'
 import Expertise from '../pages/public/Expertise/Expertise.jsx'
 import Projects from '../pages/public/Projects/Projects.jsx'
+import ProjectDetail from '../pages/public/Projects/ProjectDetail.jsx'
 import CaseStudies from '../pages/public/CaseStudies/CaseStudies.jsx'
 import Impact from '../pages/public/Impact/Impact.jsx'
 import Clients from '../pages/public/Clients/Clients.jsx'
@@ -103,8 +105,10 @@ const router = createBrowserRouter([
       { path: '/company-profile', element: <CompanyProfile /> },
       { path: '/legal-information', element: <LegalInformation /> },
       { path: '/services', element: <Services /> },
+      { path: '/services/:slug', element: <ServiceDetail /> },
       { path: '/expertise', element: <Expertise /> },
       { path: '/projects', element: <Projects /> },
+      { path: '/projects/:slug', element: <ProjectDetail /> },
       { path: '/case-studies', element: <CaseStudies /> },
       { path: '/impact', element: <Impact /> },
       { path: '/clients', element: <Clients /> },
