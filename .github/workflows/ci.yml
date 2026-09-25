@@ -103,9 +103,23 @@ jobs:
           if echo "$files" | xargs grep -n 'BEGIN .*PRIVATE KEY' >/dev/null 2>&1; then
             echo "::error::private key block committed"; violations=1
           fi
+          # A27.1: the secret-like-assignment rule is split in two. Outside
+          # test sources it is unchanged — any secret-like assignment is a
+          # violation. Inside test sources a match is a violation only when
+          # the line does NOT self-identify as fixture material (TEST_-style
+          # names or test/fixture/dummy/sample values), so real-looking
+          # credentials committed under test paths are still caught while
+          # intentional self-describing fixtures are allowed.
           if git grep -nIiE '(secret|password|token|api[_-]?key)[[:space:]]*[:=][[:space:]]*["'"'"'][A-Za-z0-9+/_-]{32,}["'"'"']' \
-              -- ':!frontend/package-lock.json' ':!frontend/dist' >/dev/null 2>&1; then
+              -- ':!frontend/package-lock.json' ':!frontend/dist' ':!backend/src/test' >/dev/null 2>&1; then
             echo "::error::possible hard-coded secret (see matched lines)"; violations=1
+          fi
+          test_hits=$(git grep -nIiE '(secret|password|token|api[_-]?key)[[:space:]]*[:=][[:space:]]*["'"'"'][A-Za-z0-9+/_-]{32,}["'"'"']' \
+              -- 'backend/src/test' 2>/dev/null \
+              | grep -viE 'test[-_]|fixture|dummy|sample|placeholder|example' || true)
+          if [ -n "$test_hits" ]; then
+            echo "::error::possible hard-coded secret in test sources (non-self-describing):"
+            echo "$test_hits"; violations=1
           fi
 
           if [ "$violations" -ne 0 ]; then
