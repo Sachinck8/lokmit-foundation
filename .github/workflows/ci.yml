@@ -6,11 +6,10 @@
 # best-effort scan of TRACKED files for committed secret material.
 #
 # Notes:
-# - No database service is provisioned: the repository's Postgres-backed
-#   integration tests skip themselves cleanly when PostgreSQL is
-#   unreachable (JUnit assumeTrue), so `mvn clean test` reproduces the
-#   656/0/0/13 baseline anywhere. A service container is therefore not
-#   required for reliable CI — add one only if tests stop skipping.
+# - A28: the backend job provisions a dedicated, disposable PostgreSQL 16
+#   service container, so the Postgres-gated integration tests execute and
+#   `mvn clean test` reproduces the 683/0/0/0 baseline. The container
+#   credentials are CI-only placeholders, not real secrets.
 # - Security posture: least-privilege `contents: read`, pinned major
 #   action versions, no secrets consumed, no artifacts uploaded.
 # - The tracked-file secret scan is a tripwire against accidental
@@ -31,6 +30,27 @@ jobs:
   backend:
     name: Backend — Maven test (Java 21)
     runs-on: ubuntu-latest
+    # A28: fresh dedicated PostgreSQL for the com.lokmit.foundation.db
+    # integration tests. Nothing else runs against this database, so each
+    # test's throwaway schema and Flyway's advisory lock are uncontended.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: lokmit_foundation
+          POSTGRES_USER: lokmit_app
+          POSTGRES_PASSWORD: ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lokmit_app -d lokmit_foundation"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_URL: jdbc:postgresql://localhost:5432/lokmit_foundation
+      DB_USERNAME: lokmit_app
+      DB_PASSWORD: ci_password
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,10 +62,30 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Wait for PostgreSQL readiness
+        # Belt-and-braces after the service's own pg_isready healthcheck:
+        # a slow startup must fail loudly here, never silently skip the
+        # assumeTrue-gated integration tests below. Dependency-free TCP
+        # retry (the runner has no pg_isready client binary); db/user-level
+        # readiness is enforced by the service healthcheck above.
+        run: |
+          set -e
+          for i in $(seq 1 30); do
+            if (echo > /dev/tcp/localhost/5432) 2>/dev/null; then
+              echo "PostgreSQL is accepting connections on localhost:5432"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL ($i/30)..."
+            sleep 2
+          done
+          echo "::error::PostgreSQL did not become ready on localhost:5432 within 60s"
+          exit 1
+
       - name: Compile and test
         working-directory: backend
-        # Integration tests skip cleanly without PostgreSQL; the expected
-        # baseline is 656 tests / 0 failures / 0 errors / 13 skipped.
+        # A28: with the PostgreSQL service container up, the database-gated
+        # integration tests execute; the expected baseline is
+        # 683 tests / 0 failures / 0 errors / 0 skipped.
         run: mvn -B clean test
 
   frontend:

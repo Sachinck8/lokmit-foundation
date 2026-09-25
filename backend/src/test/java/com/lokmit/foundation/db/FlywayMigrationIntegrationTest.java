@@ -3,7 +3,6 @@ package com.lokmit.foundation.db;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.output.MigrateResult;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -41,7 +40,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * the test profile.</p>
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Disabled("Temporarily disabled — Flyway lock contention with the app's own history table; see Javadoc")
 class FlywayMigrationIntegrationTest {
 
     private static final String IT_SCHEMA = "lokmit_it";
