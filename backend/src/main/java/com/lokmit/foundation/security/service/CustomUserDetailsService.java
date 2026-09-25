@@ -21,6 +21,12 @@ import java.util.Set;
 /**
  * Spring Security UserDetailsService that loads users from the database.
  * Maps roles to ROLE_ authorities and permissions to permission authorities.
+ *
+ * <p><strong>Fail-closed account status:</strong> the account is only
+ * {@code enabled} when {@code status} is {@code ACTIVE}. LOCKED, SUSPENDED,
+ * DELETED (and any unexpected status value) produce a disabled principal, so
+ * the JWT authentication filter refuses to authenticate them — deactivating
+ * a user takes effect immediately, without waiting for token expiry.</p>
  */
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -45,7 +51,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPasswordHash() != null ? user.getPasswordHash() : "",
-                true, // enabled
+                "ACTIVE".equals(user.getStatus()), // enabled — fail closed for any non-ACTIVE status
                 true, // accountNonExpired
                 true, // credentialsNonExpired
                 !isAccountLocked(user.getStatus()),

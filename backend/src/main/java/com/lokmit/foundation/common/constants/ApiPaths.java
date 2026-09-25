@@ -21,6 +21,118 @@ public final class ApiPaths {
     /** Public contact enquiries (submission only; management is authenticated). */
     public static final String CONTACT_MESSAGES = API_V1 + "/contact-messages";
 
+    /** Admin dashboard read APIs (A2) — guarded by the dashboard:view permission. */
+    public static final String ADMIN_DASHBOARD = API_V1 + "/admin/dashboard";
+
+    /** Admin user management APIs (A3) — guarded by the users:manage permission. */
+    public static final String ADMIN_USERS = API_V1 + "/admin/users";
+
+    /** Admin CMS management namespace (A4) — guarded by CMS permissions. */
+    public static final String ADMIN_CMS = API_V1 + "/admin/cms";
+    public static final String ADMIN_CMS_SITE_SETTINGS = ADMIN_CMS + "/site-settings";
+    public static final String ADMIN_CMS_WEBSITE_CONTENT = ADMIN_CMS + "/website-content";
+    public static final String ADMIN_CMS_SEO_METADATA = ADMIN_CMS + "/seo-metadata";
+
+    /** Admin services & expertise management APIs (A5) — guarded by services:manage. */
+    public static final String ADMIN_SERVICE_CATEGORIES = API_V1 + "/admin/service-categories";
+    public static final String ADMIN_SERVICES = API_V1 + "/admin/services";
+    public static final String ADMIN_EXPERTISE_AREAS = API_V1 + "/admin/expertise-areas";
+
+    /** Admin projects management APIs (A6) — guarded by projects:manage. */
+    public static final String ADMIN_PROJECT_CATEGORIES = API_V1 + "/admin/project-categories";
+    public static final String ADMIN_PROJECTS = API_V1 + "/admin/projects";
+
+    /** Admin employment foundation APIs (A7.1) — employers, candidates, skills, job categories. */
+    public static final String ADMIN_EMPLOYERS = API_V1 + "/admin/employers";
+    public static final String ADMIN_CANDIDATES = API_V1 + "/admin/candidates";
+    public static final String ADMIN_CANDIDATE_RESUMES = ADMIN_CANDIDATES + "/{candidateId}/resumes";
+    public static final String ADMIN_CANDIDATE_SKILLS = ADMIN_CANDIDATES + "/{candidateId}/skills";
+    public static final String ADMIN_CANDIDATE_SKILL = ADMIN_CANDIDATE_SKILLS + "/{skillId}";
+    // A18 read-only candidate-review surfaces (applications review console).
+    public static final String ADMIN_CANDIDATE_EDUCATIONS =
+            ADMIN_CANDIDATES + "/{candidateId}/educations";
+    public static final String ADMIN_CANDIDATE_EXPERIENCES =
+            ADMIN_CANDIDATES + "/{candidateId}/experiences";
+    public static final String ADMIN_SKILLS = API_V1 + "/admin/skills";
+    public static final String ADMIN_JOB_CATEGORIES = API_V1 + "/admin/job-categories";
+
+    /** Admin job management APIs (A7.2) — jobs and job↔skill requirements. */
+    public static final String ADMIN_JOBS = API_V1 + "/admin/jobs";
+    public static final String ADMIN_JOB_SKILLS = ADMIN_JOBS + "/{jobId}/skills";
+    public static final String ADMIN_JOB_SKILL = ADMIN_JOB_SKILLS + "/{skillId}";
+
+    /** Admin application review APIs (A7.3) — job application lifecycle. */
+    public static final String ADMIN_APPLICATIONS = API_V1 + "/admin/applications";
+
+    /** Admin application history + interview APIs (A7.4). */
+    public static final String ADMIN_APPLICATION_HISTORY =
+            ADMIN_APPLICATIONS + "/{id}/history";
+    public static final String ADMIN_APPLICATION_INTERVIEWS =
+            ADMIN_APPLICATIONS + "/{id}/interviews";
+    public static final String ADMIN_APPLICATION_INTERVIEW =
+            ADMIN_APPLICATION_INTERVIEWS + "/{interviewId}";
+
+    /** Admin notification + audit APIs (A7.5). The outbox has NO public API. */
+    public static final String ADMIN_NOTIFICATIONS = API_V1 + "/admin/notifications";
+    public static final String ADMIN_AUDIT_LOGS = API_V1 + "/admin/audit-logs";
+
+    /** Candidate self-service resume APIs (A7.6.3/A10) — authenticated candidate ownership. */
+    public static final String CANDIDATE_ME_RESUMES = API_V1 + "/candidates/me/resumes";
+
+    /** Candidate self-service profile API (A10) — authenticated candidate ownership. */
+    public static final String CANDIDATE_ME_PROFILE = API_V1 + "/candidates/me/profile";
+
+    /** Candidate self-service application APIs (A9) — authenticated candidate ownership. */
+    public static final String CANDIDATE_ME_APPLICATIONS =
+            API_V1 + "/candidates/me/applications";
+    public static final String CANDIDATE_ME_APPLICATION =
+            CANDIDATE_ME_APPLICATIONS + "/{applicationId}";
+
+    /** Candidate self-service withdrawal (A11) — delegates to ApplicationService.withdraw. */
+    public static final String CANDIDATE_ME_APPLICATION_WITHDRAWAL =
+            CANDIDATE_ME_APPLICATION + "/withdraw";
+
+    /** Candidate self-service status history (A12) — read-only own timeline. */
+    public static final String CANDIDATE_ME_APPLICATION_HISTORY =
+            CANDIDATE_ME_APPLICATION + "/history";
+
+    /** Candidate self-service skills APIs (A11) — existing V8 candidate_skills join. */
+    public static final String CANDIDATE_ME_SKILLS = API_V1 + "/candidates/me/skills";
+    public static final String CANDIDATE_ME_SKILL = CANDIDATE_ME_SKILLS + "/{skillId}";
+
+    /** Candidate self-service education CRUD (A13) — existing V8 candidate_educations. */
+    public static final String CANDIDATE_ME_EDUCATIONS = API_V1 + "/candidates/me/educations";
+
+    /** Candidate self-service experience CRUD (A13) — existing V8 candidate_experiences. */
+    public static final String CANDIDATE_ME_EXPERIENCES = API_V1 + "/candidates/me/experiences";
+
+    /** Candidate self-service notifications (A14) — existing A7.5 user-scoped service. */
+    public static final String CANDIDATE_ME_NOTIFICATIONS =
+            API_V1 + "/candidates/me/notifications";
+
+    /** Candidate self-service interview visibility (A14) — read-only own interviews. */
+    public static final String CANDIDATE_ME_INTERVIEWS = API_V1 + "/candidates/me/interviews";
+    public static final String CANDIDATE_ME_INTERVIEW =
+            CANDIDATE_ME_INTERVIEWS + "/{interviewId}";
+
+    /** Secure resume download API (A7.6.4) — candidate ownership or candidates:manage. */
+    public static final String RESUMES = API_V1 + "/resumes";
+    public static final String RESUME_DOWNLOAD = RESUMES + "/{resumeId}/download";
+    public static final String RESUME = RESUMES + "/{resumeId}";
+
+    /** Public job browsing APIs (A8) — anonymous, published jobs only. */
+    public static final String JOBS = API_V1 + "/jobs";
+    public static final String JOB = JOBS + "/{jobId}";
+
+    /** Public CMS browsing APIs (A26) — anonymous, published/active content only. */
+    public static final String PUBLIC_SERVICES = API_V1 + "/services";
+    public static final String PUBLIC_SERVICE = PUBLIC_SERVICES + "/{slug}";
+    public static final String PUBLIC_SERVICE_CATEGORIES = API_V1 + "/service-categories";
+    public static final String PUBLIC_EXPERTISE_AREAS = API_V1 + "/expertise-areas";
+    public static final String PUBLIC_PROJECTS = API_V1 + "/projects";
+    public static final String PUBLIC_PROJECT = PUBLIC_PROJECTS + "/{slug}";
+    public static final String PUBLIC_PROJECT_CATEGORIES = API_V1 + "/project-categories";
+
     private ApiPaths() {
         throw new AssertionError("Utility class must not be instantiated.");
     }

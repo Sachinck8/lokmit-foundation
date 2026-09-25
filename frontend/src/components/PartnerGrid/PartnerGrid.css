@@ -10,32 +10,30 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: var(--spacing-3);
-  width: 110px;
+  width: 128px;
+  height: 96px;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
 @media (min-width: 720px) {
   .partner-grid__placeholder {
-    width: 128px;
-  }
-}
-
-@media (min-width: 960px) {
-  .partner-grid__placeholder {
-    width: 140px;
+    width: 148px;
   }
 }
 
 .partner-grid__mark {
-  color: var(--color-primary);
-  width: 56px;
-  height: 56px;
-  opacity: 0.85;
+  color: var(--blue-100);
+  width: 40px;
+  height: 40px;
 }
 
 .partner-grid__label {
-  font-size: 0.8rem;
-  color: var(--color-text-light);
-  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+  color: var(--color-muted);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }

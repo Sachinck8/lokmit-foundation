@@ -16,7 +16,6 @@ export default function Disclaimer() {
       <PageHero
         title={legalContent.disclaimer.title}
         subtitle={legalContent.disclaimer.intro}
-        background="linear-gradient(135deg, #0d3d21 0%, #14532d 100%)"
       />
       <Container>
         <Accordion items={disclaimerItems} />

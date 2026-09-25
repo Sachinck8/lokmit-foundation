@@ -1,9 +1,12 @@
 package com.lokmit.foundation.security.service;
 
 import com.lokmit.foundation.security.config.JwtConfig;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,6 +15,9 @@ class JwtTokenProviderTest {
 
     private JwtTokenProvider jwtTokenProvider;
     private static final String TEST_SECRET = "test-secret-key-that-is-at-least-32-bytes-long-for-hs256-algorithm";
+    /** Signing key derived from TEST_SECRET; reused by the expiry test. */
+    private static final SecretKey SIGNING_KEY =
+            Keys.hmacShaKeyFor(TEST_SECRET.getBytes(StandardCharsets.UTF_8));
 
     @BeforeEach
     void setUp() {
@@ -19,7 +25,7 @@ class JwtTokenProviderTest {
         jwtConfig.setSecret(TEST_SECRET);
         jwtConfig.setAccessTokenExpiration(900000); // 15 minutes
         jwtConfig.setRefreshTokenExpiration(604800000); // 7 days
-        jwtTokenProvider = new JwtTokenProvider(jwtConfig);
+        jwtTokenProvider = new JwtTokenProvider(jwtConfig, SIGNING_KEY);
     }
 
     @Test
@@ -112,7 +118,7 @@ class JwtTokenProviderTest {
         expiredConfig.setSecret(TEST_SECRET);
         expiredConfig.setAccessTokenExpiration(-5000);
         expiredConfig.setRefreshTokenExpiration(-5000);
-        JwtTokenProvider expiredProvider = new JwtTokenProvider(expiredConfig);
+        JwtTokenProvider expiredProvider = new JwtTokenProvider(expiredConfig, SIGNING_KEY);
 
         String token = expiredProvider.generateAccessToken(1L, "test@example.com", List.of("ROLE_ADMIN"));
 

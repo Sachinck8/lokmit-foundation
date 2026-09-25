@@ -94,6 +94,25 @@ Secrets and environment-specific values are never hard-coded.
 | `JWT_ACCESS_TOKEN_EXPIRATION` | backend | Access token expiration in ms (default `900000` = 15 min) |
 | `JWT_REFRESH_TOKEN_EXPIRATION` | backend | Refresh token expiration in ms (default `604800000` = 7 days) |
 | `BOOTSTRAP_ADMIN_PASSWORD` | backend | Initial admin password (only used if password_hash is NULL) |
+| `APP_CORS_ALLOWED_ORIGINS` | backend | Comma-separated exact frontend origins for CORS (dev default: `http://localhost:5173,http://localhost:4173`; **required in production**) |
+| `APP_HSTS_ENABLED` | backend | Emit `Strict-Transport-Security` (default `false`; `true` in production) |
+| `APP_HSTS_MAX_AGE_SECONDS` | backend | HSTS max-age in seconds (default `31536000`) |
+| `APP_HSTS_INCLUDE_SUBDOMAINS` | backend | HSTS `includeSubDomains` (default `true`) |
+| `RATE_LIMIT_LOGIN_ENABLED` | backend | Enable login rate limiting (default `true`) |
+| `RATE_LIMIT_LOGIN_CAPACITY` | backend | Login requests per window per client IP (default `10`) |
+| `RATE_LIMIT_LOGIN_WINDOW_SECONDS` | backend | Login rate-limit window in seconds (default `60`) |
+| `RATE_LIMIT_CONTACT_ENABLED` | backend | Enable contact-form rate limiting (default `true`) |
+| `RATE_LIMIT_CONTACT_CAPACITY` | backend | Contact submissions per window per client IP (default `5`) |
+| `RATE_LIMIT_CONTACT_WINDOW_SECONDS` | backend | Contact rate-limit window in seconds (default `60`) |
+| `RATE_LIMIT_MAX_TRACKED_KEYS` | backend | Memory bound: max client IPs tracked per limiter (default `10000`) |
+| `LOGIN_MAX_FAILED_ATTEMPTS` | backend | Failed logins before temporary lockout (default `5`) |
+| `LOGIN_LOCKOUT_DURATION_MINUTES` | backend | Temporary lockout duration in minutes (default `15`) |
+| `REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES` | backend | Refresh-token cleanup interval (default `60`, `0` disables) |
+| `OUTBOX_RELAY_ENABLED` | backend | Enable the outbox relay that materializes in-app notifications (default `true`) |
+| `OUTBOX_RELAY_POLLING_INTERVAL_SECONDS` | backend | Seconds between relay passes (default `30`; `0` disables all relay work — the scheduler fires but no-ops, interval clamped to >= 1s) |
+| `OUTBOX_RELAY_BATCH_SIZE` | backend | Max outbox events claimed per relay pass (default `50`) |
+| `OUTBOX_RELAY_RETRY_BACKOFF_SECONDS` | backend | Base backoff after a failed processing attempt (default `60`, scaled by attempt count) |
+| `OUTBOX_RELAY_MAX_ATTEMPTS` | backend | Attempts before an outbox event is marked FAILED and never retried (default `5`) |
 | `VITE_API_BASE_URL` | frontend | Backend API base path (default `/api/v1`) |
 
 - **`.env.example` files** (root, `backend/`, `frontend/`) document the variables
@@ -126,6 +145,122 @@ Health check (no authentication):
 GET http://localhost:8080/api/v1/health
 ```
 
+## Production Configuration
+
+The backend ships a dedicated **`prod`** Spring profile
+(`backend/src/main/resources/application-prod.yml`). It is strict by design:
+sensitive values have **no defaults**, so startup fails with a clear message
+instead of running with insecure fallbacks.
+
+### Activating the production profile
+
+```bash
+# Either via flag:
+java -jar target/lokmit-foundation-backend-0.1.0-SNAPSHOT.jar --spring.profiles.active=prod
+
+# Or via environment:
+SPRING_PROFILES_ACTIVE=prod java -jar target/lokmit-foundation-backend-0.1.0-SNAPSHOT.jar
+```
+
+### Required environment variables (production)
+
+| Variable | Purpose | Behavior when missing |
+|----------|---------|----------------------|
+| `DB_URL` | Production JDBC URL | Startup fails (`DB_URL` unresolved) |
+| `DB_USERNAME` | Production database role | Startup fails |
+| `DB_PASSWORD` | Production database password | Startup fails |
+| `JWT_SECRET` | JWT signing key (min 32 bytes) | Startup fails fast (I-1) |
+| `APP_CORS_ALLOWED_ORIGINS` | Exact frontend origins, comma-separated | Startup fails |
+
+Set these only in the deployment secret store — never in source control,
+YAML, or documentation. Placeholders live in `backend/.env.example`.
+
+### Rate limiting (I-6)
+
+The two public, high-risk endpoints are rate-limited **per client IP** with
+instance-local, in-memory fixed windows:
+
+| Endpoint | Default limit |
+|----------|---------------|
+| `POST /api/v1/auth/login` | 10 requests / 60 s / IP |
+| `POST /api/v1/contact-messages` | 5 requests / 60 s / IP |
+
+- Exceeding the limit returns **429 Too Many Requests** in the standard API
+  error envelope (`RATE_LIMITED`) with a `Retry-After` header (seconds until
+  the client's window resets). No bucket state is exposed.
+- Only these two method+path pairs are limited — preflights (OPTIONS), the
+  health check, Swagger/OpenAPI, refresh/logout, and all authenticated admin
+  endpoints are untouched.
+- `X-Forwarded-For` is **never** trusted (no trusted-proxy configuration
+  exists); the limiter keys on the servlet remote address. Behind a reverse
+  proxy, the proxy should be the only thing that can reach the backend so the
+  socket address is meaningful, or set `server.forward-headers-strategy` with
+  an explicit trust model.
+- This complements (does not replace) the I-2 per-account login lockout:
+  the limiter protects the endpoint from flooding with rotating identities;
+  I-2 protects individual accounts from password guessing.
+- **Instance-local limitation:** state lives in each JVM. With N instances
+  the effective per-client limit is N × capacity. A distributed store can
+  replace `FixedWindowRateLimiter` later without changing callers.
+
+### Authentication & RBAC model (A1)
+
+- **Model:** `User → roles → permissions`. Roles and permission grants live
+  in the database (seeded in `V2__identity_schema.sql`); permission codes are
+  mirrored as Java constants in `security/Permissions.java`.
+- **Enforcement:** on every request `CustomUserDetailsService` reloads the
+  user from the database and exposes `ROLE_<code>` + each granted permission
+  as Spring Security authorities. JWT `roles` claims are never trusted for
+  authorization — the database is authoritative.
+- **Declarative checks:** management endpoints use
+  `@PreAuthorize("hasAuthority('" + Permissions.X + "')")` — e.g. the contact
+  enquiry management API requires `messages:manage` and the Admin Dashboard
+  read APIs require `dashboard:view` (seeded by V11 to SUPER_ADMIN and
+  ADMIN).
+- **Access levels:** SUPER_ADMIN holds every permission; ADMIN covers
+  day-to-day management (`content:*`, `downloads:manage`, `messages:manage`,
+  `jobs:manage`, `settings:manage`) but **not** `users:manage`; MODERATOR is
+  limited to `jobs:moderate` + `messages:manage`; CANDIDATE/EMPLOYER/CLIENT
+  have no administrative permissions. Anonymous callers reach only the
+  explicit public endpoints.
+- **Account status is enforced per request:** only `ACTIVE` accounts are
+  authenticated. `LOCKED`/`SUSPENDED`/`DELETED` accounts are rejected even
+  with a still-valid access token (fail-closed), so deactivation is
+  immediate.
+- **Errors:** 401 `UNAUTHORIZED` for missing/invalid credentials, 403
+  `FORBIDDEN` for insufficient permissions — both in the standard error
+  envelope; responses never echo tokens or account internals.
+
+### Production guarantees
+
+- **Database:** Flyway owns the schema; Hibernate runs with
+  `ddl-auto: validate` only (`create`/`update`/`create-drop` never appear in
+  production). Missing database variables abort startup; values are never
+  logged.
+- **JWT:** the I-1 fail-fast applies unchanged — missing/blank/short
+  `JWT_SECRET` aborts boot, no fallback secret exists in production.
+- **CORS:** explicit allow-list only (`APP_CORS_ALLOWED_ORIGINS`),
+  `allowCredentials(false)` (Bearer-token API, no cookies), methods limited
+  to `GET/POST/PATCH/OPTIONS`, headers limited to `Authorization` and
+  `Content-Type`. A wildcard origin is rejected at startup.
+- **Security headers:** every response carries `X-Content-Type-Options:
+  nosniff`, `X-Frame-Options: DENY`, a strict CSP (`default-src 'none';
+  frame-ancestors 'none'`, Swagger-UI compatible), `Referrer-Policy:
+  no-referrer`, and a restrictive `Permissions-Policy`; HSTS is enabled in
+  production (`APP_HSTS_ENABLED`, default `true` there) and off in
+  development.
+- **Actuator:** exposure stays `health,info`; health details hidden
+  (`show-details: never`).
+- **Rate limiting:** enabled in every environment with the defaults above;
+  capacities/windows overridable via the `RATE_LIMIT_*` variables.
+
+### CORS in development
+
+The default profile pre-allows the Vite dev server origins
+(`http://localhost:5173`, `http://localhost:4173`) and remains overridable via
+`APP_CORS_ALLOWED_ORIGINS`; the frontend also uses the Vite proxy for same-origin
+calls, so local development needs no extra setup.
+
 Expected response:
 
 ```json
@@ -155,6 +290,935 @@ The backend generates OpenAPI 3 documentation automatically:
 - Errors are mapped centrally by `GlobalExceptionHandler` to stable status
   codes and machine-readable error codes (see `docs/CONVENTIONS.md`).
 - `GET /api/v1/health` intentionally keeps its simple operational payload.
+
+### Admin Dashboard API (A2)
+
+Read-only endpoints under `/api/v1/admin/dashboard`, all guarded by the
+`dashboard:view` permission (anonymous → 401, unauthorized → 403):
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/v1/admin/dashboard/summary` | Platform counts: users (total/active/inactive), candidate & employer profiles, jobs by lifecycle status (DRAFT/PUBLISHED/CLOSED/ARCHIVED), applications, enquiries by status (NEW/READ/REPLIED/ARCHIVED) |
+| `GET /api/v1/admin/dashboard/recent-enquiries?limit=5` | Newest contact enquiries (id, name, email, subject, status, createdAt) |
+| `GET /api/v1/admin/dashboard/recent-users?limit=5` | Newest accounts (no password/token/role material) |
+| `GET /api/v1/admin/dashboard/recent-applications?limit=5` | Newest applications with candidate name and job title (single join, no N+1) |
+
+- `limit` defaults to 5 and is clamped to a maximum of 10 server-side, so a
+  large value can never widen the query.
+- All counts aggregate in PostgreSQL (COUNT queries); no entity rows are
+  loaded into memory and no dashboard tables were added.
+
+### Admin User Management (A3)
+
+Endpoints under `/api/v1/admin/users`, all guarded by the `users:manage`
+permission (V2 seed: SUPER_ADMIN only; ADMIN/MODERATOR get 403 by design):
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/v1/admin/users?page=0&size=20&search=&status=&role=` | Paginated list, newest first. Search matches email/full name; `status` and `role` validate against the seeded domains (unknown values → 400) |
+| `GET /api/v1/admin/users/{id}` | Safe detail view |
+| `PATCH /api/v1/admin/users/{id}/status` | Status-only change (ACTIVE/LOCKED/SUSPENDED/DELETED) |
+| `PUT /api/v1/admin/users/{id}/roles` | Full role replacement |
+
+Server-enforced protections (never left to the frontend):
+
+- **Self-protection** — an administrator cannot move their own account to a
+  non-ACTIVE status or change their own roles (400).
+- **Last-SUPER_ADMIN protection** — disabling the final active SUPER_ADMIN,
+  or removing the SUPER_ADMIN role from it, is rejected (400); the system
+  always keeps at least one active SUPER_ADMIN.
+- **No privilege escalation** — granting SUPER_ADMIN requires the caller to
+  hold `ROLE_SUPER_ADMIN` (403 otherwise), from the database-backed
+  authorities, never a JWT claim.
+- Moving an account out of ACTIVE revokes all its refresh tokens (I-8
+  support), so sessions end immediately alongside the A1 fail-closed filter.
+- Responses are DTOs; password hashes, I-2 brute-force bookkeeping and
+  refresh-token material are structurally absent from every payload.
+
+### Admin CMS Management (A4)
+
+Endpoints under `/api/v1/admin/cms`, mapped to the existing V3 CMS tables —
+no new tables, no schema changes, no new permissions (existing V2 grants
+cover the tiers):
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/cms/site-settings` | `settings:manage` (SUPER_ADMIN, ADMIN) | list (key search + pagination), get by id / unique key, PATCH value/description (key immutable) |
+| `/admin/cms/website-content` | `content:manage` (SUPER_ADMIN, ADMIN, EDITOR) | list (pageKey/sectionKey/status filters), get by id / page+section key, create (always DRAFT), PATCH title/body |
+| `/admin/cms/website-content/{id}/publish`, `/archive`, DELETE | `content:publish` (SUPER_ADMIN, ADMIN) | lifecycle transitions and deletion |
+| `/admin/cms/seo-metadata` | `content:manage` | list (entityType/entityId/search filters), get by id / entity pair, create, PATCH |
+
+Server-enforced rules:
+
+- Content lifecycle mirrors the V3 check constraint: DRAFT → PUBLISHED →
+  ARCHIVED (terminal). New sections always start as DRAFT; archived sections
+  cannot be re-published (409). No invented publishing workflow.
+- Duplicate keys are rejected with 409: unique setting_key,
+  unique (page_key, section_key), unique (entity_type, entity_id) — each
+  pre-checked in the service and backstopped by the database constraints
+  against concurrent creation races.
+- `contentJson` is validated for JSON well-formedness before it reaches the
+  JSONB column (400 on malformed input).
+- Identity keys never move through the API: setting keys and the SEO
+  (entityType, entityId) pair are immutable.
+- DTOs only; timestamps are OffsetDateTime, matching the timestamptz
+  columns.
+
+### Admin Services & Expertise Management (A5)
+
+Endpoints under `/api/v1/admin`, mapped to the existing V4 services-catalog
+tables — no new tables, one new permission:
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/service-categories` | `services:manage` (SUPER_ADMIN, ADMIN) | list (status filter + pagination, display-order sort), get by id, create (always ACTIVE), PATCH name/description/displayOrder/status (slug immutable), DELETE (referencing services are detached, never cascade-deleted — existing FK ON DELETE SET NULL) |
+| `/admin/services` | `services:manage` | list (categoryId/status filters + title/summary search + pagination), get by id, create (always DRAFT; unknown categoryId → 404), PATCH (categoryId null detaches; status changes via dedicated endpoints), `/publish`, `/archive`, DELETE |
+| `/admin/expertise-areas` | `services:manage` | list (status filter + name search + pagination), get by id, create (always DRAFT), PATCH name/description/displayOrder (slug immutable), `/publish`, `/archive`, DELETE |
+
+Server-enforced rules:
+
+- `services:manage` was added in V12 because no V2 permission covers the
+  services catalog; reusing `content:manage` would have granted EDITOR write
+  access to the commercial services catalog, which the seed never intended.
+- Service/expertise lifecycle mirrors the V4 check constraint: DRAFT →
+  PUBLISHED → ARCHIVED (terminal). Archived records cannot change status
+  (409). Category status is the simple ACTIVE/INACTIVE domain.
+- Unique business keys are pre-checked for a clean 409 (category name and
+  slug, service slug, expertise slug) and backstopped by the database
+  constraints against concurrent races.
+- Category references are validated before any write: an unknown categoryId
+  returns 404 — orphaning inserts are impossible.
+- Slugs are immutable through the API (URL identity); partial updates leave
+  omitted fields unchanged, with explicit-null clearing where the column is
+  nullable.
+
+### Admin Projects Management (A6)
+
+Endpoints under `/api/v1/admin`, mapped to the existing V5 projects tables —
+no new tables, one new permission:
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/project-categories` | `projects:manage` (SUPER_ADMIN, ADMIN) | list (status filter + pagination, display-order sort), get by id, create (always ACTIVE), PATCH name/description/displayOrder/status (slug immutable), DELETE (referencing projects are detached, never cascade-deleted — existing FK ON DELETE SET NULL) |
+| `/admin/projects` | `projects:manage` | list (categoryId/status/projectStatus filters + title/summary search + pagination, newest first), get by id, create (always DRAFT; unknown categoryId → 404; end-before-start → 400), PATCH (categoryId null detaches; resulting date pair validated; status changes via dedicated endpoints), `/publish` (stamps published_at), `/archive`, DELETE (owned image metadata removed by the existing FK cascade) |
+| `/admin/projects/{id}/images` | `projects:manage` | list (paginated gallery), POST image metadata (URL reference only — no file upload in A6; unknown project → 404; duplicate URL within the gallery → 409) |
+| `/admin/projects/{projectId}/images/{imageId}` | `projects:manage` | get/PATCH/DELETE image metadata (mismatched project/image pair → 404; owning project immutable) |
+
+Server-enforced rules:
+
+- `projects:manage` was added in V13 because no V2 permission covers the
+  projects domain; reusing `content:manage` would have granted EDITOR write
+  access to the project portfolio, which the seed never intended.
+- Projects carry two independent status dimensions, exactly per the V5
+  constraints: the editorial lifecycle `status` (DRAFT → PUBLISHED →
+  ARCHIVED, terminal; publish stamps `published_at`) and the nullable
+  delivery state `projectStatus` (PLANNING/ONGOING/COMPLETED).
+- `chk_projects_dates` is enforced in the service for every create and
+  partial update, including patches that touch only one side of the pair —
+  the API answers 400 before the database constraint would reject the row.
+- `objectives` is a JSONB column; caller-supplied JSON is validated for
+  well-formedness before any write (400 on malformed input).
+- Unique business keys are pre-checked for a clean 409 (category name and
+  slug, project slug) and backstopped by the database constraints.
+- Image endpoints are METADATA only: `imageUrl` is a caller-supplied URL
+  reference; binary upload, storage and processing are a separate future
+  phase. A project/image mismatch is a 404 — an image is always managed
+  through its owning project.
+
+### Admin Employment Foundation (A7.1)
+
+Endpoints under `/api/v1/admin`, mapped to the existing V8 employment
+tables — no new tables, two new permissions:
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/employers` | `employment:manage` (SUPER_ADMIN, ADMIN) | list (search + verificationStatus/status filters + pagination, newest first), get by id, create (links an EXISTING user; one profile per user, duplicates → 409; unknown user → 404), PATCH (partial; linked user immutable). **NO DELETE endpoint** |
+| `/admin/candidates` | `candidates:manage` (SUPER_ADMIN, ADMIN) | list (search + availability/gender filters + pagination, newest first), get by id, create (links an EXISTING user; one profile per user), PATCH (partial; salary pair min ≤ max validated). **NO DELETE endpoint** |
+| `/admin/candidates/{candidateId}/skills` | `candidates:manage` | list a candidate's skill assignments, POST assign (skillId + optional proficiency BEGINNER/INTERMEDIATE/ADVANCED/EXPERT; unknown candidate/skill → 404; duplicate assignment → 409) |
+| `/admin/candidates/{candidateId}/skills/{skillId}` | `candidates:manage` | DELETE assignment (unknown pair → 404) |
+| `/admin/skills` | `employment:manage` | list (name search + status filter + pagination, name-ordered), get by id, create (duplicate name → 409), PATCH (partial), DELETE (see cascade note below) |
+| `/admin/job-categories` | `employment:manage` | list (name/slug search + status filter + pagination, displayOrder then name), get by id, create (duplicate name or slug → 409), PATCH (slug immutable), DELETE (jobs are detached, never deleted — existing FK ON DELETE SET NULL) |
+
+Server-enforced rules:
+
+- **No employer/candidate hard delete.** The existing V8 foreign keys
+  `fk_employers_user` and `fk_candidates_user` are `ON DELETE CASCADE` into
+  `users`; deleting a profile row would also delete the owning user identity
+  (and transitively `user_roles`, `refresh_tokens`, and other user-owned
+  data). The API therefore exposes create/read/update plus lifecycle fields
+  only — employer `status` (ACTIVE/SUSPENDED) and
+  `verificationStatus` (UNVERIFIED/PENDING/VERIFIED/REJECTED), candidate
+  `availability_status` (ACTIVELY_LOOKING/OPEN_TO_OFFERS/NOT_LOOKING).
+  There is no DELETED state in the schema and none was invented. If profile
+  removal is ever required it must be a separate, explicitly designed
+  identity/data-retention workflow.
+- Profiles always link an existing user (`userId` in create); users are
+  never created implicitly, and `userId` cannot be changed through PATCH.
+- Skill DELETE is intentionally exposed: the V8 FKs
+  `fk_candidate_skills_skill` and `fk_job_skills_skill` are
+  `ON DELETE CASCADE`, so deleting a skill also removes its candidate
+  assignments and job requirements — a documented cleanup semantic.
+- Job-category DELETE detaches jobs (`jobs.category_id` is
+  `ON DELETE SET NULL`); jobs are never deleted.
+- `employment:manage` and `candidates:manage` were added in V14 because the
+  V2 seed covers neither employment profiles nor skills, and reusing
+  `users:manage` or `jobs:manage` would blur distinct administrative
+  domains. Granted only to SUPER_ADMIN and ADMIN; MODERATOR, EDITOR,
+  CANDIDATE, EMPLOYER and CLIENT deliberately receive neither.
+
+### Admin Job Management (A7.2)
+
+Endpoints under `/api/v1/admin/jobs`, mapped to the existing V8 `jobs` and
+`job_skills` tables — no new tables, no new migration, no new permission
+(reuses `employment:manage`, SUPER_ADMIN + ADMIN):
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/jobs` | `employment:manage` | list (employerId/categoryId/status/employmentType/workMode filters + title/slug/location search + pagination, newest first), get by id, create (always DRAFT — status/publishedAt are not writable at creation; duplicate slug → 409; unknown employer/category → 404; salaryMin > salaryMax → 400), PATCH (partial; slug and owning employer immutable; categoryId null detaches; status NOT patchable; resulting salary pair validated), DELETE (job_skills cascade away per V8; the database refuses deletion while job_applications reference the job) |
+| `/admin/jobs/{id}/publish` | `employment:manage` | DRAFT → PUBLISHED, stamps `published_at`; already-published → 409; any other non-draft state → 400 |
+| `/admin/jobs/{id}/close` | `employment:manage` | PUBLISHED → CLOSED; job data fully preserved; other states → 400 |
+| `/admin/jobs/{id}/archive` | `employment:manage` | DRAFT/PUBLISHED/CLOSED → ARCHIVED; terminal (repeat → 409); data preserved |
+| `/admin/jobs/{jobId}/skills` | `employment:manage` | list a job's skill requirements, POST `{"skillId":N}` add (unknown job/skill → 404; duplicate → 409) |
+| `/admin/jobs/{jobId}/skills/{skillId}` | `employment:manage` | DELETE requirement (unknown pair → 404) |
+
+Server-enforced rules:
+
+- The V8 lifecycle model is used exactly: `DRAFT` → `PUBLISHED` → `CLOSED`
+  → `ARCHIVED` (chk_jobs_status). Publish stamps `published_at`. Status is
+  controllable ONLY through the transition endpoints — PATCH cannot change
+  it, so the lifecycle cannot be bypassed. Archive is terminal.
+- The owning employer is immutable and must exist (404 otherwise); no
+  employer or user is ever created implicitly. `fk_jobs_employer` has no
+  ON DELETE action, so the database itself prevents deleting a referenced
+  employer.
+- Slug is the immutable URL identity (project convention); unique slug is
+  pre-checked (409) and backstopped by `uq_jobs_slug` for concurrent races.
+- Category is optional: `fk_jobs_category` is `ON DELETE SET NULL`, so
+  deleting a category (A7.1) detaches jobs, never deletes them; responses
+  safely render a null category.
+- DELETE removes the job row only. Its `job_skills` rows cascade away per
+  V8. `fk_job_applications_job` has NO ON DELETE action — the database
+  refuses to delete a job that already has applications, so deletion is
+  effectively blocked once applications exist (A7.3 will manage them).
+- Employer/category data in job responses is embedded as safe summaries
+  (company name / verification state, category name / slug) — no linked-user
+  identity or security material is ever serialized.
+- Employer/category data in job responses is embedded as safe summaries
+  (company name / verification state, category name / slug) — no linked-user
+  identity or security material is ever serialized.
+- **A7.4+ (application history, interviews, notifications) are NOT
+  implemented** — those capabilities have no API in this phase.
+
+### Admin Application Management (A7.3)
+
+Endpoints under `/api/v1/admin/applications`, mapped to the existing V8
+`job_applications` table — no new tables, no new migration, no new
+permission (reuses `employment:manage`, SUPER_ADMIN + ADMIN):
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/applications` | `employment:manage` | list (jobId/candidateId/employerId/status filters + cover/employer-note search + pagination, newest first; employerId resolved via a single grouped COUNT query on the join path), get by id, PATCH review notes (`employerNote`, optional `resumeId` reference; job/candidate identity immutable; status NOT patchable) |
+| `/admin/applications/{id}/start-review` | `employment:manage` | SUBMITTED → UNDER_REVIEW; other states → 400 |
+| `/admin/applications/{id}/shortlist` | `employment:manage` | UNDER_REVIEW → SHORTLISTED; other states → 400 |
+| `/admin/applications/{id}/decide` | `employment:manage` | terminal HIRED/REJECTED decision (`{"decision":"HIRED"\|"REJECTED","note":optional}`); stamps `decided_at`; already-decided → 409; WITHDRAWN → 400 |
+| `/admin/applications/{id}/withdraw` | `employment:manage` | any pre-decision state → WITHDRAWN; already-decided or already-withdrawn → 409 |
+
+Server-enforced rules:
+
+- The V8 status model is used exactly: `chk_job_applications_status`
+  (SUBMITTED/UNDER_REVIEW/SHORTLISTED/HIRED/REJECTED/WITHDRAWN). Status and
+  `decided_at` are controllable ONLY through the lifecycle endpoints — PATCH
+  cannot change them, so the review lifecycle cannot be bypassed.
+- There is deliberately NO delete endpoint: applications are the project's
+  hiring audit trail; WITHDRAWN/REJECTED lifecycle is the supported
+  retirement path. The V8 FKs give applications no cascade into candidates,
+  users, employers or jobs.
+- Job/candidate identity is immutable (the `uq_job_applications_job_candidate`
+  pair IS the application's identity); no reassignment operation exists.
+- Related data is embedded as safe summaries — the candidate exposes only
+  phone/location/availability, the employer only company name, the job only
+  posting identity. No linked-user email, password hash, lockout or token
+  material is ever serialized.
+- The optional `resumeId` reference maps to the existing
+  `fk_job_applications_resume` (ON DELETE SET NULL); resumes have no JPA
+  entity/management API yet (a later phase) and A7.3 never creates resumes.
+
+### Admin Application History + Interviews (A7.4)
+
+New V15 tables (`application_status_history`, `interviews`) behind the
+existing `employment:manage` permission (SUPER_ADMIN + ADMIN; no new
+permission, no A7.5/A7.6 features):
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/applications/{id}/history` | `employment:manage` | list status history — newest transition first, DB-side pagination (default 20, cap 100); unknown application → 404 |
+| `/admin/applications/{id}/interviews` | `employment:manage` | list (newest `scheduled_at` first) + create (scheduledAt/mode/location/notes) |
+| `/admin/applications/{id}/interviews/{interviewId}` | `employment:manage` | get, PATCH (`scheduledAt`/`mode`/`location`/`status`/`notes` partial), DELETE (CANCELLED only → 409 otherwise) |
+
+Server-enforced rules:
+
+- **Automatic history:** every A7.3 lifecycle transition (start-review,
+  shortlist, decide, withdraw) writes one history row inside the SAME
+  transaction as the status change — a failed history insert rolls the
+  transition back, so a status change without history can never be observed.
+  `previous_status` is NULL only for a hypothetical initial observation; no
+  backfilled records exist for applications created before A7.4.
+- **Actor integrity:** `changed_by` is always the authenticated admin's
+  database user id (via `SecurityUtils`); it is never accepted from request
+  body/query/path and is nullable by design so audit survival is not coupled
+  to user retention.
+- **Interview statuses** (`chk_interviews_status`): SCHEDULED →
+  COMPLETED/CANCELLED/NO_SHOW; COMPLETED, CANCELLED and NO_SHOW are final —
+  changing out of them → 409. New interviews always start SCHEDULED; status
+  is not client-writable at creation.
+- **Interview modes** (`chk_interviews_mode`): ONSITE / REMOTE / PHONE
+  (reuses the V8 work-mode vocabulary).
+- **Terminal applications** (HIRED/REJECTED/WITHDRAWN) reject new interviews
+  with 400; existing interviews stay readable. Creating an interview never
+  changes application status.
+- **Cross-application protection:** a mismatched (applicationId,
+  interviewId) pair is a plain 404 — no existence leak about another
+  application's interviews.
+- **Delete rule:** only CANCELLED interviews may be deleted (409 for
+  SCHEDULED/COMPLETED/NO_SHOW); deletion never touches the application.
+- **Time handling:** `scheduled_at` is TIMESTAMPTZ mapped to
+  `OffsetDateTime`; malformed date-times fail with 400 and offsets are
+  preserved (the API serializes instants normalized to UTC, e.g.
+  `10:30+05:45` → `04:45Z`).
+- History/interview responses expose only schema-backed scheduling/audit
+  data — never User entities, passwords, tokens or lockout fields.
+- **A7.6 — Resume/File Storage — is NOT implemented here; it shipped in the
+  dedicated A7.6 phase (secure upload/download/delete APIs + closeout, see
+  the A7.6.3/A7.6.4/A7.6.5/A7.6.6 sections above).**
+
+### Admin Notifications + Audit Logs + Outbox (A7.5)
+
+V16 adds three tables (`notifications`, `audit_logs`, `outbox_events`) and
+the `notifications:manage` permission (SUPER_ADMIN + ADMIN). MVP delivery is
+**IN-APP ONLY** — no email/SMS/WhatsApp integration and no external
+messaging infrastructure:
+
+| Namespace | Permission | Endpoints |
+|---|---|---|
+| `/admin/notifications` | `notifications:manage` | list own notifications (type/unreadOnly filters + pagination, newest first), unread count, get by id, PATCH mark read / mark unread |
+| `/admin/audit-logs` | `users:manage` (SUPER_ADMIN only) | list audit records (actorUserId/entityType/entityId/action/from-to filters + pagination, newest first), get by id |
+| — | — | the outbox has **no public API**: it is written transactionally by business services and drained by the relay |
+
+Server-enforced rules:
+
+- **Recipient isolation is absolute:** every notification operation is
+  scoped to the authenticated user's database id resolved server-side via
+  `SecurityUtils`; a foreign (id, recipient) pair is a plain 404 with no
+  existence leak. `notifications:manage` authorizes the endpoints but never
+  broadens scoping — no API accepts a client-supplied recipient id.
+- **Audit logs are append-only and immutable:** there is deliberately no
+  create/update/delete endpoint (writes 405). Rows are written by backend
+  services only, in the SAME transaction as the audited action (REQUIRED
+  propagation). Reads are restricted to the SUPER_ADMIN-only `users:manage`
+  authority — `notifications:manage` deliberately does NOT grant audit
+  access.
+- **Actor integrity:** audit `actor_user_id` is always resolved server-side
+  from the authenticated principal (NULL for system actions); it is never
+  accepted from client input and carries no ON DELETE cascade, so audit
+  survival is never coupled to user retention.
+- **No secrets in audit payloads:** `details` is serialized to JSON TEXT
+  with security-sensitive keys redacted (password, token, JWT, secret,
+  credential, authorization — case- and separator-insensitive);
+  unserializable payloads fail the transaction rather than persisting a
+  corrupt record.
+- **Transactional outbox:** every application status transition (A7.3) and
+  interview create/update/cancel/delete (A7.4) additionally writes one
+  `audit_logs` row and one `outbox_events` row inside the SAME transaction —
+  a failed side effect rolls the action back, so events can never reference
+  work that did not happen.
+- **Relay safety:** a scheduled relay claims due PENDING events with
+  `SELECT ... FOR UPDATE SKIP LOCKED` (safe across multiple instances),
+  processes each event in its own transaction (notification insert +
+  PROCESSED commit atomically), marks terminally-broken payloads FAILED, and
+  retries transient failures with `attempts` + bounded `available_at` backoff
+  up to `OUTBOX_RELAY_MAX_ATTEMPTS`. A poison event can never wedge the queue
+  or roll back unrelated events.
+- **Notification vocabulary** (`chk_notifications_type`):
+  APPLICATION_STATUS_CHANGED / INTERVIEW_SCHEDULED / INTERVIEW_UPDATED /
+  INTERVIEW_CANCELLED. The relay only ever creates in-app notification rows
+  — no external delivery occurs in this phase.
+- **No infrastructure additions:** no Kafka/RabbitMQ/Redis/WebSockets, no
+  `ApplicationEventPublisher`/`@TransactionalEventListener` — direct,
+  service-level transactional integration only.
+- Relay behavior is configurable via `OUTBOX_RELAY_*` environment variables
+  (defaults in the table above; `polling-interval-seconds=0` or
+  `enabled=false` disables all relay work — the scheduled method still fires
+  on its interval, clamped to >= 1s, but exits as a no-op, so pending events
+  simply stay queued).
+
+### Candidate Resume Upload API (A7.6.3)
+
+The first candidate self-service employment endpoint. Storage internals
+(resumes_file_blobs, A7.6.1) and byte-level validation (A7.6.2) are
+implementation details and are deliberately not part of the public API
+surface:
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/candidates/me/resumes` | POST | authenticated candidate (ownership) | Upload or replace the caller's resume |
+
+- **Request:** `multipart/form-data` with a single `file` part. PDF, DOC
+  and DOCX only, maximum 5 MiB (`UPLOAD_MAX_FILE_SIZE_BYTES`). Content is
+  validated from the ACTUAL file bytes — a client-declared content type is
+  cross-checked only and never trusted.
+- **Authentication:** the standard stateless JWT bearer chain. Anonymous or
+  invalid-token requests are rejected 401 by the security filter chain.
+- **Ownership (IDOR-safe):** the candidate profile is resolved server-side
+  from the authenticated user's database id; the request has NO candidate id
+  parameter at all. A user without a candidate profile (including admins and
+  employers) receives a plain 404 — no existence leak. No new permission was
+  seeded: self-service ownership is the established authorization model for
+  non-administrative roles.
+- **Behavior:** the previous active resume is deactivated (history rows are
+  retained, `uq_resumes_one_active_per_candidate` always holds). The upload
+  is transactional — a rejected file persists nothing.
+- **Response:** `201 Created` with the standard envelope and a safe DTO (id,
+  candidateId, fileName, fileType as detected from the bytes, fileSizeBytes,
+  active, createdAt, checksumSha256). `storageKey`, `fileUrl` and any blob
+  or provider information are never exposed.
+- **Errors:** 400 (missing/empty file or filename, invalid
+  PDF/DOC/DOCX content, invalid filename, MIME/content contradiction),
+  404 (no candidate profile), 413 `PAYLOAD_TOO_LARGE` (over 5 MiB). All
+  errors use the standard error envelope with the existing `ErrorCodes`.
+
+### Resume Download API (A7.6.4)
+
+Secure binary retrieval of stored resumes. Storage internals (blob table,
+storage keys) remain implementation details and never appear in responses,
+headers or logs:
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/resumes/{resumeId}/download` | GET | candidate ownership or `candidates:manage` | Download one resume's stored bytes |
+
+- **Authentication:** standard stateless JWT bearer chain; anonymous or
+  invalid-token requests are rejected 401 before any authorization logic.
+- **Authorization (IDOR-safe):** the resume id is the only client input.
+  A candidate may download ONLY their own currently ACTIVE resume; a
+  foreign or inactive resume is a plain 404, indistinguishable from a
+  nonexistent one. Administrators with the existing `candidates:manage`
+  permission (V14 seed: SUPER_ADMIN + ADMIN) may download any resume
+  including inactive ones (case-review semantics) — no broad new
+  permission was created. Employers/clients/moderators get no access:
+  authentication alone grants nothing, and ownership cannot be overridden
+  by any request parameter.
+- **Binary response:** the stored bytes with a content type derived from
+  the server-validated upload metadata (`application/pdf`,
+  `application/msword`, or the DOCX wordprocessingml type) — never from a
+  client header. Served as an attachment with an RFC 5987/6266-safe
+  `Content-Disposition` (percent-encoded `filename*` plus an ASCII
+  fallback), so header injection via filenames is impossible.
+- **Caching:** `Cache-Control: no-store` and `Pragma: no-cache` — resume
+  bytes are never publicly or privately cacheable.
+- **Integrity:** the SHA-256 recorded at upload (A7.6.2) is re-verified
+  against the loaded bytes before serving; a mismatch or a missing
+  checksum fails closed with a safe 500 — bytes are never served
+  unverified.
+- **Errors:** 401 (unauthenticated), 404 (nonexistent, foreign, inactive,
+  or bytes-missing resume — masked), 500 `INTERNAL_ERROR` (storage or
+  integrity failure, generic message, no internals). No error ever exposes
+  storage keys, blob details, or exception internals.
+
+### Resume Delete API (A7.6.5)
+
+Secure deletion completing the candidate resume lifecycle. Same
+authorization model as download; storage internals never appear in
+responses or errors:
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/resumes/{resumeId}` | DELETE | candidate ownership or `candidates:manage` | Delete one resume (metadata + stored bytes) |
+
+- **Authentication:** standard stateless JWT bearer chain; anonymous or
+  invalid-token requests are rejected 401 before any authorization logic.
+- **Authorization (IDOR-safe):** identical to download. A candidate may
+  delete ONLY their own currently ACTIVE resume; a foreign or inactive
+  resume is a plain 404, indistinguishable from a nonexistent one. The
+  resume id is the only client input — `candidateId`/`userId` parameters
+  cannot override ownership. Administrators with the existing
+  `candidates:manage` permission may delete any resume (active or
+  inactive). No new permission was created.
+- **Lifecycle behavior (physical deletion):** the resume metadata row and
+  the stored bytes are removed together; the V17 foreign key
+  (`ON DELETE CASCADE`) removes the blob row in the SAME database
+  transaction, and the provider-neutral storage delete runs through the
+  A7.6.1 FileStorage abstraction (an idempotent no-op for the database
+  provider; the cleanup hook for a future external provider). A failure
+  rolls back the whole operation — metadata and bytes can never become
+  silently inconsistent. Deleting the active resume leaves the candidate
+  with zero active resumes (a valid state); a new upload afterwards works
+  exactly as before. No soft-delete state or new enum was introduced.
+- **Response:** `204 No Content` (matching the existing deletion
+  convention). No body, no storage internals.
+- **Repeated DELETE:** the second call finds no row and returns the
+  established 404 — no second deletion state exists.
+- **Errors:** 401 (unauthenticated), 404 (nonexistent, foreign, or
+  inactive resume — masked), 500 `INTERNAL_ERROR` (storage failure,
+  generic message). No error exposes storage keys, blob details, SQL, or
+  stack traces.
+
+### Resume Epic Closeout (A7.6.6)
+
+A7.6 closed out with: admin candidate resume listing
+(`GET /api/v1/admin/candidates/{candidateId}/resumes`, `candidates:manage`,
+paginated, metadata-only); an `updateReview` resume-ownership guard
+(rejecting cross-candidate resumeIds server-side); resume lifecycle audit +
+outbox events through the existing A7.5 services (downloads are
+intentionally NOT audited — they are high-frequency reads); and
+authenticated resume-upload rate limiting reusing the I-6 limiter
+(`RATE_LIMIT_RESUME_UPLOAD_*`, default 30 requests/60s per client IP).
+
+### Public Jobs API + /jobs Integration (A8)
+
+A8 opens the job domain to anonymous website visitors. No schema change,
+no new permission, and no security weakening: the admin job management
+family (A7.2) keeps working exactly as before.
+
+- **Endpoints** (both anonymous, read-only):
+  - `GET /api/v1/jobs` — published jobs, newest first. Pagination via the
+    standard `page`/`size` params (default 20, cap 100) and the standard
+    `PageResponse` envelope. Supported filters, all backed by existing
+    schema fields: `categoryId`, `employmentType`, `workMode` and keyword
+    `search` over title/slug/work location.
+  - `GET /api/v1/jobs/{jobId}` — one published job, including its public
+    skills list and safe employer/category summaries.
+- **Visibility rules:** only jobs in the `PUBLISHED` lifecycle state are
+  public. DRAFT, CLOSED and ARCHIVED jobs are invisible — the detail
+  endpoint answers unknown and non-public ids with the identical 404, so
+  it never reveals whether an unpublished job exists. Listings can never
+  contain them because the repository query itself is status-filtered.
+- **Public DTO:** a dedicated `PublicJobResponse` (never the entity, never
+  the admin DTO). It omits status and record-management timestamps and
+  renders the employer as its company name only — no verification
+  workflow, linked user, or security fields.
+- **Security:** the security chain permits ONLY `GET` on the public job
+  collection and single-job paths anonymously (the same method-specific
+  matcher pattern as the public contact form). POST/PATCH/PUT/DELETE on
+  `/api/v1/jobs/**` remain authenticated, and all admin job endpoints keep
+  their `employment:manage` `@PreAuthorize`.
+- **Frontend /jobs:** the existing public jobs page now consumes the real
+  API (no mock data): loading skeleton, error state with retry, empty
+  state when no jobs are published or filters match nothing, search +
+  employment type + work mode controls, and pagination. Each listing
+  links to a new `/jobs/:jobId` detail page built with the same design
+  system. Job browsing requires no login. If the database has no
+  published jobs, the page shows its empty state.
+
+### Candidate Application Submission API (A9)
+
+The first candidate self-service application endpoints, built entirely on
+the existing A7.3 application domain, A7.4 history, A7.5 audit/outbox and
+A7.6 resume ownership conventions. No schema change, no new permission, no
+security weakening — the candidate path is covered by the existing
+`anyRequest().authenticated()` rule, and all A7.3 admin application APIs
+keep working exactly as before.
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/candidates/me/applications` | POST | authenticated candidate (ownership) | Submit an application for a published job |
+| `/candidates/me/applications` | GET | authenticated candidate (ownership) | List own applications (paginated, newest first) |
+| `/candidates/me/applications/{applicationId}` | GET | authenticated candidate (ownership) | Get one own application |
+
+- **Authentication:** the standard stateless JWT bearer chain; anonymous
+  or invalid-token requests are rejected 401 by the security filter chain.
+- **Ownership (IDOR-safe):** the candidate profile is resolved server-side
+  from the authenticated user's database id via the same A7.6.3 ownership
+  service the resume API uses — the request contract has NO candidateId
+  field at all, so application ownership can never be spoofed from the
+  body, query, path or multipart data. A user without a candidate profile
+  (admins, employers, clients) receives a plain 404.
+- **Published-job rule:** applications may target only jobs in the
+  `PUBLISHED` state — exactly the A8 public-visibility rule. Unknown AND
+  non-published (DRAFT/CLOSED/ARCHIVED) jobs produce the identical 404, so
+  the endpoint never reveals whether a hidden job exists.
+- **Resume ownership:** the optional `resumeId` must reference one of the
+  caller's OWN currently ACTIVE resumes (ownership-scoped lookup with the
+  A7.6 404-masking convention); a foreign, inactive or nonexistent resume
+  is the same plain 404. Application submission never touches resume
+  storage or bytes.
+- **Duplicate rule:** the existing `uq_job_applications_job_candidate`
+  constraint is enforced at the application layer as a 409 `CONFLICT`
+  before any write.
+- **Status & workflow:** new applications use the existing initial
+  `SUBMITTED` status (no new status was invented). Submission writes — in
+  ONE transaction — the application row, an A7.4 initial history row
+  (`previous_status` NULL, its documented initial-observation case), an
+  A7.5 audit row and one outbox event using the existing
+  `APPLICATION_STATUS_CHANGED` vocabulary (null → SUBMITTED is a status
+  change); no new notification type was seeded. A failed side effect rolls
+  back the whole submission — no partial creation.
+- **Response:** `201 Created` with the standard envelope and a dedicated
+  candidate-facing DTO (application id, job summary by public identity,
+  resumeId, coverNote, status, applied/decided/created/updated timestamps).
+  Candidate, employer and admin-review fields (`employerNote`) are
+  deliberately absent — no other candidate's data, no employer internals,
+  no storage internals, no audit/outbox payloads.
+- **Read APIs:** the list is scoped server-side to the authenticated
+  candidate (a candidateId query parameter does not exist and cannot
+  override ownership); a foreign application id returns the same plain 404
+  as a nonexistent one — no existence leak.
+- **Errors:** 400 (missing/invalid fields, page cap), 404 (unknown or
+  non-published job — masked, foreign/unknown application, no candidate
+  profile), 409 (duplicate application), 401 (unauthenticated). All use
+  the standard error envelope with the existing `ErrorCodes`.
+
+### Candidate Portal + Authentication Integration (A10)
+
+A10 connects the frontend to the real authentication API and delivers the
+first authenticated candidate experience. No new permission, no migration,
+no security weakening: the entire candidate surface keeps running on the
+established JWT bearer chain and server-side ownership resolution.
+
+Backend additions (smallest possible self-service gaps):
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/candidates/me/profile` | GET | authenticated candidate (ownership) | Own profile (reuses `CandidateResponse`) |
+| `/candidates/me/profile` | PATCH | authenticated candidate (ownership) | Partial update of own profile fields |
+| `/candidates/me/resumes` | GET | authenticated candidate (ownership) | Own resume metadata list (reuses `ResumeResponse`) |
+
+- **Ownership:** all three resolve the candidate server-side from the
+  authenticated user's database id via the existing A7.6.3 ownership
+  service — no candidateId request field exists anywhere on the candidate
+  surface, so nothing can be redirected at another candidate. A user
+  without a candidate profile receives the plain masked 404.
+- **No duplication:** the profile PATCH reuses the admin API's
+  `CandidateService.updateCandidate` (same DTO, same validation, same
+  salary-range rule); the resume list reuses the safe `ResumeResponse` —
+  no storage keys, file URLs or blob internals.
+
+Frontend integration:
+
+- **Authentication flow:** the existing `POST /api/v1/auth/login` (JWT),
+  `POST /auth/refresh` (rotation + reuse detection preserved) and
+  `POST /auth/logout` (server-side revocation). Access tokens are kept in
+  `sessionStorage`, refresh tokens in `localStorage`; no password is ever
+  persisted, and tokens travel only to the same-origin `/api` backend.
+  A single-flight axios interceptor refreshes once on 401 and replays the
+  request; failed refreshes clear the session.
+- **Protected routes:** `/candidate`, `/candidate/profile`,
+  `/candidate/resumes`, `/candidate/applications`,
+  `/candidate/applications/:applicationId` — guarded by a
+  `RequireCandidate` wrapper that preserves the intended path in
+  `?returnTo=` when redirecting anonymous visitors to `/candidate-login`
+  and explains the restriction to authenticated non-candidate roles.
+- **Candidate portal:** a dashboard (live profile identity, total
+  application count, two most recent applications, active-resume status,
+  quick actions — no fabricated statistics), profile view/edit, resume
+  management (upload with client+server validation errors, download of the
+  active resume, delete with confirmation), paginated application list and
+  application detail (masked 404 for foreign ids).
+- **Apply-to-job flow:** the public `/jobs/:jobId` page now offers real
+  application submission for signed-in candidates (A9 contract, own ACTIVE
+  resume selection, clear 409 duplicate message, login signpost with
+  `returnTo` for anonymous visitors). Public browsing is unchanged.
+
+### Candidate Self-Service Essentials (A11)
+
+A11 completes the candidate self-service surface using only existing
+domain structures — no migration, no new permission, no SecurityConfig
+change. The candidate is always resolved server-side from the JWT user id
+(A7.6.3 ownership service); no candidateId field exists on any candidate
+request contract.
+
+New endpoints:
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/candidates/me/skills` | GET | authenticated candidate (ownership) | Own skill assignments (reuses `CandidateSkillResponse`) |
+| `/candidates/me/skills` | POST | authenticated candidate (ownership) | Assign an ACTIVE catalog skill to self (`CandidateSkillRequest`) |
+| `/candidates/me/skills/{skillId}` | DELETE | authenticated candidate (ownership) | Remove own skill assignment (204) |
+| `/candidates/me/skills/catalog` | GET | authenticated candidate (ownership) | Read-only ACTIVE skill catalog (safe `SkillResponse`) |
+| `/candidates/me/applications/{id}/withdraw` | POST | authenticated candidate (ownership) | Withdraw own pre-decision application |
+
+- **Skills:** assignments reuse the existing V8 `candidate_skills` join
+  and the admin `CandidateSkillService` (duplicate → 409, unknown → 404,
+  proficiency CHECK vocabulary unchanged). Candidates can only select
+  from the backend's own ACTIVE catalog — they cannot create skills. The
+  admin `CandidateSkillController` (candidates:manage) is untouched.
+- **Withdrawal:** ownership is enforced first (foreign/unknown ids return
+  the identical masked 404), then the existing A7.3
+  `ApplicationService.withdraw` runs unchanged — WITHDRAWN status,
+  decided/already-withdrawn 409 rules, A7.4 history row, audit record and
+  outbox event are all the existing workflow's behavior in one
+  transaction. Nothing about the lifecycle was invented or duplicated.
+- **Applied-job indicator:** the public job detail page shows signed-in
+  candidates their existing application state (status chip + link to the
+  application) by reusing the candidate's own paginated applications API
+  — no new backend endpoint, no database flag, no visibility change to
+  the A8 public job APIs. After a successful submission the page updates
+  immediately. Anonymous visitors keep the login signpost; authenticated
+  non-candidates keep the neutral notice.
+
+### Candidate Application History + Status Breakdown (A12)
+
+A12 adds two focused candidate-facing reads on existing structures —
+no migration, no new statuses, no permission or SecurityConfig change.
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/candidates/me/applications/{id}/history` | GET | authenticated candidate (ownership) | Own application's status timeline (paginated, newest first) |
+
+- **History:** the ownership gate runs BEFORE any history query — a
+  foreign or unknown application id returns the same plain 404 as the
+  other candidate endpoints (no existence leak). Rows come from the
+  existing A7.4 repository read (`findByApplicationIdOrderByChangedAtDesc`,
+  `PageParams`/`PageResponse`). A dedicated candidate-safe DTO exposes
+  ONLY `previousStatus`, `newStatus` and `changedAt` — the actor user id
+  (`changedBy`), the database row id and the admin free-text note are
+  never serialized to the candidate. The admin `ApplicationHistoryController`
+  (employment:manage) is untouched.
+- **Status breakdown:** the candidate dashboard tallies the candidate's
+  own live applications from the EXISTING paginated
+  `GET /candidates/me/applications` response (real SUBMITTED / UNDER_REVIEW /
+  SHORTLISTED / HIRED / REJECTED / WITHDRAWN counts, zeros included).
+  No new aggregate endpoint was needed; `totalItems` keeps the total exact
+  at any volume, and the panel notes when a tally covers only the most
+  recent page. No statistics are fabricated.
+
+### Candidate Education + Experience Self-Service (A13)
+
+A13 activates the two schema-ready V8 tables that had no Java layer —
+`candidate_educations` and `candidate_experiences` — with full candidate
+self-service CRUD. No migration, no new permission, no SecurityConfig
+change.
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/candidates/me/educations` | GET/POST | authenticated candidate (ownership) | List / add own education records |
+| `/candidates/me/educations/{id}` | PATCH/DELETE | authenticated candidate (ownership) | Update / delete own record |
+| `/candidates/me/experiences` | GET/POST | authenticated candidate (ownership) | List / add own experience records |
+| `/candidates/me/experiences/{id}` | PATCH/DELETE | authenticated candidate (ownership) | Update / delete own record |
+
+- **Ownership:** the standard pattern — candidate resolved server-side
+  from the JWT user id (A7.6.3 ownership service); no candidateId field
+  exists on any request contract; foreign and unknown record ids return
+  the identical plain 404; a user without a candidate profile gets the
+  same 404 as the other self-service APIs.
+- **Validation:** per contract — education requires institution, degree,
+  startYear (year range 1950–2100; grade ≤100 chars); experience requires
+  companyName, jobTitle, startDate (ISO dates; description ≤20000 chars).
+  V8 columns are nullable, so requiredness lives purely in the validation
+  layer — no schema change.
+- **Frontend:** the candidate profile page gains Education and Experience
+  sections (list, add, edit, delete, loading/empty/error states) on the
+  existing portal design system via `candidateService`.
+
+### Candidate Notifications + Interview Visibility (A14)
+
+A14 completes the candidate-facing read surface over the existing A7.5
+notification and A7.4 interview infrastructure. No migration, no new
+notification type, no interview-status change, no SecurityConfig change,
+and no change to outbox event generation or the admin controllers.
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/candidates/me/notifications` | GET | authenticated user | Own notifications, newest first, optional `type` / `unreadOnly` filters, paginated |
+| `/candidates/me/notifications/unread-count` | GET | authenticated user | Own unread count |
+| `/candidates/me/notifications/{id}` | GET | authenticated user (ownership) | One own notification; foreign/unknown = same 404 |
+| `/candidates/me/notifications/{id}/read` | PATCH | authenticated user (ownership) | Mark own notification read (idempotent) |
+| `/candidates/me/interviews?applicationId=` | GET | authenticated candidate (ownership) | Interviews for one own application, scheduledAt desc |
+| `/candidates/me/interviews/{interviewId}` | GET | authenticated candidate (ownership) | One own interview; foreign/unknown = same 404 |
+
+- **Notifications:** a thin candidate route over the existing
+  `NotificationService`, which already scopes every method to the
+  authenticated user's database id via `SecurityUtils` — no recipientId or
+  candidateId request field exists anywhere. Mark-unread is intentionally
+  not exposed to candidates. Outbox-generated
+  `APPLICATION_STATUS_CHANGED` and interview notifications continue to
+  flow unchanged.
+- **Interviews:** read-only. Ownership flows interview → application →
+  candidate, enforced at query level (V15 has no direct candidateId on
+  interviews). The candidate-safe DTO omits the admin `updatedAt`
+  bookkeeping field; scheduled time uses the existing `OffsetDateTime`
+  ISO-8601 serialization with no timezone semantics change. No candidate
+  creation, editing, cancellation or rescheduling exists.
+- **Frontend:** two new portal pages — `My Interviews` (per-application
+  interview list for the candidate's own applications) and
+  `Notifications` (paginated list with unread emphasis and mark-read) —
+  plus nav entries, following the existing design system via
+  `candidateService`.
+
+### Candidate Notification Surfacing (A16)
+
+A16 is a frontend-only presentation phase over the existing A14
+notification APIs — no backend change, no migration, no auth change.
+
+- **Unread badge:** the candidate portal shell fetches the existing
+  `GET /candidates/me/notifications/unread-count` on layout mount (and
+  again when the candidate navigates to the Notifications page) and shows
+  a badge on the Notifications nav item. Zero hides the badge; a failed
+  request silently degrades to no badge and never blocks the portal.
+  After a mark-read action the page refreshes the badge through the
+  layout — no page reload.
+- **Deep links:** notifications whose `entityType`/`entityId` resolve to
+  a portal route are clickable (whole row, keyboard accessible).
+  `JOB_APPLICATION` opens `/candidate/applications/{entityId}`;
+  `INTERVIEW` opens the interviews page. Unknown/missing/invalid entity
+  data leaves the notification non-actionable — no crash, no malformed
+  route. Clicking an unread notification marks it read first (existing
+  mark-read behavior), keeping one request per action.
+
+### Admin Applications Review Console (A18)
+
+A18 Stage 1 turns the existing employment backend into a usable,
+authenticated admin frontend for application review. No new permission,
+no migration, no auth change; backend additions are minimal and additive.
+
+- **Admin console shell:** new `RequireAdmin` guard (checks the
+  `employment:manage` permission exposed by `/auth/me` - UX only, backend
+  `@PreAuthorize` remains the security boundary), a minimal `AdminLayout`
+  with an Applications nav item and staff sign-out, and protected routes
+  `/admin-panel/applications` + `/admin-panel/applications/:applicationId`.
+  The `/admin-panel` placeholder now links to the live console; the login
+  page routes staff honoring an `/admin-panel` returnTo straight there.
+- **Applications list:** paginated, backend-filtered (status + note
+  search) table with candidate name/email (new A18 identity enrichment),
+  job, employer, status chip, applied date and resume availability.
+- **Application detail/review:** single page assembling the existing
+  surfaces - application facts, candidate identity/profile panel, the
+  candidate's skills/education/experience (new read-only admin endpoints,
+  see below), resume metadata with secure download through the existing
+  authenticated endpoint, status-history timeline, interviews, and the
+  backend-authoritative status transitions (start review, shortlist,
+  decide HIRED/REJECTED, withdraw) with confirmation dialogs and explicit
+  401/403/404/409/400 error handling. Terminal states offer no actions.
+- **Candidate identity enrichment:** `ApplicationResponse.CandidateSummary`
+  now carries the linked user's full name + contact email (plus the
+  candidate's own summary/expected-salary columns) so a reviewer can reach
+  the applicant. No other user material is exposed - the DTO-leak test
+  matrix still asserts no password/lockout/token/role fields appear.
+- **Read-only candidate profile endpoints (admin):**
+  `GET /admin/candidates/{candidateId}/educations` and `/experiences`
+  (joining the existing skills endpoint), all `candidates:manage`-guarded,
+  reusing the A13 services/DTOs read-only; unknown candidate -> 404.
+  The self-service list() methods gained the same explicit unknown-
+  candidate guard (no behavior change for candidates).
+- **Tests:** `AdminCandidateProfileReadSecurityTest` (admin success,
+  anonymous 401, candidate 403, unknown candidate 404, enrichment leaks
+  no security internals); the A7.3 DTO-safety test now asserts the
+  intended review identity fields while still forbidding security
+  internals. Backend suite: 656 tests, 0 failures, 13 PostgreSQL-gated
+  skips; backend package and frontend production build both succeed.
+
+### Admin Jobs Management (A19)
+
+A19 completes the employment console's second core surface: staff-side
+job lifecycle management. Backend-only work becomes usable - **zero
+backend changes**: every endpoint consumed already existed since A7/A8
+and remains `employment:manage`-protected (`@PreAuthorize` is still the
+security boundary). No migration, no new permission, no auth change.
+
+- **Jobs list:** protected route `/admin-panel/jobs` over the existing
+  `GET /admin/jobs` - paginated, backend-filtered (status, employment
+  type, work mode, title/slug/location search) table showing job,
+  employer, category, type, mode, status chip, openings and deadline.
+  "New job" opens the create form (`/admin-panel/jobs/new`).
+- **Job detail / create / edit:** `/admin-panel/jobs/:jobId` - full
+  facts view, description/requirements, lifecycle actions,
+  skill-requirement management and a change-tracked edit form. New jobs
+  are created as DRAFT (backend rule); slug and owning employer are
+  immutable (backend rule); the PATCH payload contains only changed
+  fields so the backend's explicit-null clears (requirements, location,
+  salary pair, deadline, category detach) stay intentional.
+- **Lifecycle actions mirror the backend exactly:** publish (DRAFT ->
+  PUBLISHED, stamps published_at), close (PUBLISHED -> CLOSED), archive
+  (DRAFT/PUBLISHED/CLOSED -> ARCHIVED, terminal), delete (DRAFT only,
+  permanent). Destructive actions are confirmation-gated; invalid
+  transitions never render as buttons; backend 400/404/409 responses
+  are surfaced with clear messages and the state is re-read from the
+  server after every action.
+- **Skill requirements:** assign/remove through the existing
+  `/admin/jobs/{jobId}/skills` endpoints (duplicate -> 409 surfaced),
+  choosing from the existing `/admin/skills` catalog.
+- **States:** loading skeletons, retryable error panels, empty states
+  (with-filters and no-jobs variants), job-not-found, and explicit form
+  error messages - no silent failures, no fabricated data. Published
+  jobs are labeled as publicly visible on /jobs.
+- **Verification:** backend suite unchanged and green (656 tests, 0
+  failures, 0 errors, 13 PostgreSQL-gated skips - no backend surface
+  changed); frontend production build succeeds.
+
+### Admin Interview Management UI (A20)
+
+A20 completes the employment review loop: staff-side interview
+management inside the A18 application detail page. **Frontend-only -
+zero backend changes**: the interview APIs, notification/outbox chain,
+statuses and permissions are unchanged from A7.4.
+
+- **Where:** `/admin-panel/applications/:applicationId` -> Interviews
+  section. Schedule form (date/time, ONSITE/REMOTE/PHONE mode, optional
+  location/meeting link and notes), per-interview Edit/reschedule form,
+  status actions and delete for cancelled records.
+- **Backend rules mirrored exactly:** new interviews always start
+  SCHEDULED and require a non-terminal application (the schedule form is
+  hidden for HIRED/REJECTED/WITHDRAWN and existing interviews become
+  read-only); only a SCHEDULED interview can be marked COMPLETED,
+  NO_SHOW or CANCELLED (closed states are final, 409); only CANCELLED
+  interviews can be deleted (confirm-gated, 409 otherwise). The UI never
+  invents transitions - the backend remains authoritative.
+- **APIs reused (no new endpoints/permissions):**
+  `GET/POST /admin/applications/{id}/interviews` and
+  `GET/PATCH/DELETE /admin/applications/{id}/interviews/{interviewId}`
+  (`employment:manage`). `adminService.js` gained thin wrappers only
+  (`scheduleInterview`, `updateInterview`, `setInterviewStatus`,
+  `deleteInterview`) over the shared axios client.
+- **Notifications:** unchanged - the backend already enqueues
+  INTERVIEW_SCHEDULED / INTERVIEW_UPDATED / INTERVIEW_CANCELLED outbox
+  events; the UI shows only resulting state and never fabricates
+  notification info.
+- **States:** pending-disabled mutation buttons (no duplicate
+  submissions), server-side reload after every mutation, 400/401/403/
+  404/409 handling with clear messages, retryable section errors, empty
+  state, and the existing interview status chips (no CSS redesign).
+- **Verification:** backend suite unchanged and green (656 tests, 0
+  failures, 0 errors, 13 PostgreSQL-gated skips); frontend production
+  build succeeds.
+
+### Admin Dashboard & Users UI (A21)
+
+A21 extends the admin console with its natural landing page and the
+user-management surface. **Frontend-only — zero backend changes**: the A2
+dashboard APIs, the A3 user APIs, the permission model and the database
+schema are all unchanged.
+
+- **Dashboard (`/admin-panel`):** now a real operational overview built on
+  the existing read-only A2 APIs (`dashboard:view`): platform totals
+  (users, candidates, employers, applications, jobs, new enquiries), jobs
+  by lifecycle status, enquiries by status, and recent
+  applications/enquiries/accounts (default 5 rows, backend-capped at 10).
+  Every figure and row comes from the API; recent-activity lists load
+  independently so one failing list degrades gracefully with per-section
+  retry instead of blanking the page. Deep links into the applications and
+  users consoles.
+- **Users (`/admin-panel/users`):** management UI over the existing A3
+  APIs (`users:manage`): paginated list with backend-side search (email or
+  full name), status and role filters; account status changes
+  (ACTIVE/SUSPENDED/LOCKED, confirm-gated) via
+  `PATCH /admin/users/{id}/status`; full role replacement (including
+  removing all roles) via `PUT /admin/users/{id}/roles`. Only the safe
+  `AdminUserResponse` fields are ever displayed — no password hashes,
+  tokens or lockout bookkeeping. There is deliberately **no create-user
+  flow** (the backend exposes none) and no DELETED quick-action (a
+  lifecycle decision, not a routine toggle). Backend protections
+  (self-demotion, last-SUPER_ADMIN) remain authoritative and their
+  messages are surfaced.
+- **Routing/guard:** `/admin-panel` moved from the public placeholder page
+  into the protected console as the dashboard; `RequireAdmin` is now
+  permission-aware (employment:manage for applications/jobs, users:manage
+  for users, dashboard:view for the dashboard) while every admin API stays
+  secured server-side by `@PreAuthorize` — the frontend guard remains UX
+  only. Navigation gained Dashboard (exact-match) and Users; Applications
+  and Jobs are untouched. No new routes were added to the public tree and
+  no public pages changed.
+- **Verification:** backend suite unchanged and green (656 tests, 0
+  failures, 0 errors, 13 PostgreSQL-gated skips — no backend surface
+  changed); frontend production build succeeds.
 
 ## Frontend Setup & Run
 
@@ -221,6 +1285,120 @@ Phase 4 (authentication & authorization):
 - [x] Comprehensive test suite (JWT, password, auth, authorization)
 - [x] Swagger/OpenAPI bearer authentication documentation
 - [x] Environment-based security configuration
+
+## Deployment (Docker) & Operations
+
+A25 added production-oriented infrastructure: GitHub Actions CI, backend and
+frontend container images, a local full-stack compose file, and the strict
+`prod` Spring profile (see *Production Configuration* above).
+
+### Prerequisites
+
+- Docker (Engine 24+) with the Compose plugin — for containerized runs
+- Java 21 + Maven — only for running the backend outside Docker
+- Node 20+/npm — only for building the frontend outside Docker
+- PostgreSQL 14+ — unless using the compose `db` service
+- GitHub Actions — CI runs automatically on every push/PR (no secrets required)
+
+### Configuration
+
+All production values are environment variables — never committed:
+
+| Variable | Consumed by | Purpose |
+|----------|-------------|---------|
+| `DB_URL` | backend | JDBC URL, e.g. `jdbc:postgresql://db:5432/lokmit_foundation` |
+| `DB_USERNAME` / `DB_PASSWORD` | backend | Database role credentials |
+| `JWT_SECRET` | backend | JWT signing key (min 32 bytes) |
+| `APP_CORS_ALLOWED_ORIGINS` | backend | Exact frontend origins, comma-separated (a wildcard is rejected at startup) |
+| `SPRING_PROFILES_ACTIVE=prod` | backend | Activates the strict prod profile |
+| `POSTGRES_DB` / `POSTGRES_USER` | compose `db` | Database name / role for the container |
+| `VITE_API_BASE_URL` | frontend image (build arg) | API base; empty = same-origin `/api/v1` behind a reverse proxy |
+
+Local secrets live in a gitignored environment file (see the example files).
+No real credentials appear anywhere in the repository.
+
+### Deployment flow (compose)
+
+1. **Checkout** the repository.
+2. **Configure**: copy the example environment file, then set the database
+   password and JWT signing secret (plus `APP_CORS_ALLOWED_ORIGINS` if the
+   frontend origin differs from `http://localhost:8081`).
+3. **Prepare PostgreSQL**: compose starts a persistent `db` service; for an
+   external database, create the database and a role, then point `DB_URL`
+   at it.
+4. **Build & start services**: `docker compose up -d --build`.
+5. **Allow Flyway migrations**: `V1`-`V17` apply automatically on backend
+   startup (the schema belongs to Flyway; Hibernate only validates).
+6. **Verify the health endpoint**: `curl -f http://localhost:8080/api/v1/health`.
+7. **Verify the frontend**: open `http://localhost:8081/`.
+8. **Verify API connectivity**: sign in through the UI and confirm
+   same-origin `/api/v1` calls succeed in the browser network tab.
+9. **Operate**: `docker compose logs -f backend`, `docker compose ps`.
+
+Non-Docker builds stay exactly as before: `mvn -B clean package` (backend)
+and `npm run build` (frontend).
+
+### Health verification
+
+| Probe | Endpoint | Expected |
+|-------|----------|----------|
+| API liveness (public, for deploy systems) | `GET /api/v1/health` | HTTP 200, `success: true`, `status: UP` |
+| Spring Boot actuator health | `GET /actuator/health` | HTTP 200 (`UP`); authenticated only, details hidden in prod |
+| Frontend container | `GET /healthz` | HTTP 200, body `ok` |
+
+Diagnosis: failure of `/api/v1/health` usually means the JVM is down
+(`docker compose logs backend`); an actuator health failure (authenticated)
+usually means the database is unreachable - check the database URL,
+credentials and `docker compose logs db`.
+
+### Rollback
+
+- **Application image**: redeploy the previous image tag; images are
+  immutable, so rollback is a re-deploy, not a rebuild.
+- **Configuration**: revert environment variables and restart the backend;
+  no rebuild needed.
+- **Database migrations**: Flyway does not auto-rollback, and migrations
+  must never be undone manually or "fixed" with destructive SQL. If a new
+  backend version must be rolled back, deploy the previous image (older
+  code tolerates the newer schema) and, if a schema fix is genuinely
+  required, ship a NEW forward migration (`V18__...`) - after review and
+  a backup.
+
+### Troubleshooting
+
+- **Database connection failure** - check the database URL, username and
+  password variables, network reachability from the backend container, and
+  that the `db` service is healthy (`docker compose ps`).
+- **Migration failure** - read the Flyway entries in `docker compose logs
+  backend`; the failed migration is recorded in `flyway_schema_history`.
+  Fix forward with a corrected migration; never edit an applied one.
+- **JWT configuration failure** - startup fails fast when the JWT signing
+  secret is missing or shorter than 32 bytes; supply a strong random value.
+- **CORS failure** - the browser blocks calls with a CORS error; add the
+  exact frontend origin to `APP_CORS_ALLOWED_ORIGINS` (no trailing slash,
+  no wildcard) and restart the backend.
+- **Frontend/API mismatch** - API 404s from the browser mean the API base
+  origin is wrong: rebuild the frontend image with the correct
+  `VITE_API_BASE_URL` build arg (it is build-time, not runtime).
+- **Container startup failure** - `docker compose logs <service>`;
+  unresolved-placeholder errors indicate a missing required environment
+  variable.
+- **Health-check failure** - see the table above; confirm the specific
+  probe's dependencies (the database for the backend, nothing for
+  `healthz`).
+
+### CI
+
+`.github/workflows/ci.yml` runs on every push and pull request with
+least-privilege permissions (`contents: read`) and no secrets:
+
+- backend: Java 21 + Maven `clean test` (integration tests skip cleanly
+  without PostgreSQL, matching the local 656/0/0/13 baseline)
+- frontend: Node 22 + `npm ci` + production build
+- hygiene: `git diff HEAD^ HEAD --check` and a tracked-file secret tripwire
+
+Production deployment is deliberately NOT automated in A25; CI verifies,
+humans deploy.
 
 ## Conventions & Docs
 

@@ -62,4 +62,22 @@ public class SecurityUtils {
 
         return null;
     }
+
+    /**
+     * Checks whether the current authentication holds a specific authority
+     * (permission code or ROLE_*). Authorities are always database-backed,
+     * materialized per request by CustomUserDetailsService — never read
+     * from client input or JWT claims.
+     *
+     * @param authority the authority code to check (e.g. a Permissions constant)
+     * @return true when the current authentication carries the authority
+     */
+    public boolean hasAuthority(String authority) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(authority));
+    }
 }

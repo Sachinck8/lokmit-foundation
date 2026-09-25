@@ -1,17 +1,21 @@
 import { createBrowserRouter } from 'react-router-dom'
 import PublicLayout from '../layouts/PublicLayout/PublicLayout.jsx'
+import CandidateLayout from '../layouts/CandidateLayout/CandidateLayout.jsx'
 import Home from '../pages/public/Home/Home.jsx'
 import About from '../pages/public/About/About.jsx'
 import CompanyProfile from '../pages/public/CompanyProfile/CompanyProfile.jsx'
 import LegalInformation from '../pages/public/LegalInformation/LegalInformation.jsx'
 import Services from '../pages/public/Services/Services.jsx'
+import ServiceDetail from '../pages/public/Services/ServiceDetail.jsx'
 import Expertise from '../pages/public/Expertise/Expertise.jsx'
 import Projects from '../pages/public/Projects/Projects.jsx'
+import ProjectDetail from '../pages/public/Projects/ProjectDetail.jsx'
 import CaseStudies from '../pages/public/CaseStudies/CaseStudies.jsx'
 import Impact from '../pages/public/Impact/Impact.jsx'
 import Clients from '../pages/public/Clients/Clients.jsx'
 import Careers from '../pages/public/Careers/Careers.jsx'
 import Jobs from '../pages/public/Jobs/Jobs.jsx'
+import JobDetail from '../pages/public/Jobs/JobDetail.jsx'
 import Downloads from '../pages/public/Downloads/Downloads.jsx'
 import Gallery from '../pages/public/Gallery/Gallery.jsx'
 import News from '../pages/public/News/News.jsx'
@@ -26,13 +30,65 @@ import CookiePolicy from '../pages/public/CookiePolicy/CookiePolicy.jsx'
 import ClientLogin from '../pages/public/ClientLogin/ClientLogin.jsx'
 import EmployerLogin from '../pages/public/EmployerLogin/EmployerLogin.jsx'
 import CandidateLogin from '../pages/public/CandidateLogin/CandidateLogin.jsx'
-import AdminPanel from '../pages/public/AdminPanel/AdminPanel.jsx'
 import NotFound from '../pages/public/NotFound/NotFound.jsx'
 import VisionMission from '../pages/public/About/VisionMission/VisionMission.jsx'
 import Objectives from '../pages/public/About/Objectives/Objectives.jsx'
 import Values from '../pages/public/About/Values/Values.jsx'
 import DirectorsMessage from '../pages/public/About/DirectorsMessage/DirectorsMessage.jsx'
 import Team from '../pages/public/About/Team/Team.jsx'
+import CandidateDashboard from '../pages/candidate/CandidateDashboard.jsx'
+import CandidateProfile from '../pages/candidate/CandidateProfile.jsx'
+import CandidateResumes from '../pages/candidate/CandidateResumes.jsx'
+import CandidateApplications from '../pages/candidate/CandidateApplications.jsx'
+import CandidateApplicationDetail from '../pages/candidate/CandidateApplicationDetail.jsx'
+import CandidateNotifications from '../pages/candidate/CandidateNotifications.jsx'
+import CandidateInterviews from '../pages/candidate/CandidateInterviews.jsx'
+import RequireCandidate from '../auth/RequireCandidate.jsx'
+import RequireAdmin from '../auth/RequireAdmin.jsx'
+import AdminLayout from '../layouts/AdminLayout/AdminLayout.jsx'
+import AdminApplications from '../pages/admin/AdminApplications.jsx'
+import AdminApplicationDetail from '../pages/admin/AdminApplicationDetail.jsx'
+import AdminJobs from '../pages/admin/AdminJobs.jsx'
+import AdminJobDetail from '../pages/admin/AdminJobDetail.jsx'
+import AdminDashboard from '../pages/admin/AdminDashboard.jsx'
+import AdminUsers from '../pages/admin/AdminUsers.jsx'
+import AdminContent from '../pages/admin/AdminContent.jsx'
+import AdminServices from '../pages/admin/AdminServices.jsx'
+import AdminExpertise from '../pages/admin/AdminExpertise.jsx'
+import AdminProjects from '../pages/admin/AdminProjects.jsx'
+import AdminCategories from '../pages/admin/AdminCategories.jsx'
+import AdminEmployment from '../pages/admin/AdminEmployment.jsx'
+import AdminMessages from '../pages/admin/AdminMessages.jsx'
+import AuditLogs from '../pages/admin/AuditLogs.jsx'
+import AdminNotifications from '../pages/admin/AdminNotifications.jsx'
+
+const candidateRoutes = [
+  { path: '/candidate', element: <CandidateDashboard /> },
+  { path: '/candidate/profile', element: <CandidateProfile /> },
+  { path: '/candidate/resumes', element: <CandidateResumes /> },
+  { path: '/candidate/applications', element: <CandidateApplications /> },
+  { path: '/candidate/applications/:applicationId', element: <CandidateApplicationDetail /> },
+  { path: '/candidate/interviews', element: <CandidateInterviews /> },
+  { path: '/candidate/notifications', element: <CandidateNotifications /> },
+]
+
+const adminRoutes = [
+  { path: '/admin-panel', element: <AdminDashboard /> },
+  { path: '/admin-panel/applications', element: <AdminApplications /> },
+  { path: '/admin-panel/applications/:applicationId', element: <AdminApplicationDetail /> },
+  { path: '/admin-panel/jobs', element: <AdminJobs /> },
+  { path: '/admin-panel/jobs/:jobId', element: <AdminJobDetail /> },
+  { path: '/admin-panel/users', element: <AdminUsers /> },
+  { path: '/admin-panel/content', element: <AdminContent /> },
+  { path: '/admin-panel/services', element: <AdminServices /> },
+  { path: '/admin-panel/expertise', element: <AdminExpertise /> },
+  { path: '/admin-panel/projects', element: <AdminProjects /> },
+  { path: '/admin-panel/categories', element: <AdminCategories /> },
+  { path: '/admin-panel/employment', element: <AdminEmployment /> },
+  { path: '/admin-panel/messages', element: <AdminMessages /> },
+  { path: '/admin-panel/audit-logs', element: <AuditLogs /> },
+  { path: '/admin-panel/notifications', element: <AdminNotifications /> },
+]
 
 const router = createBrowserRouter([
   {
@@ -49,13 +105,16 @@ const router = createBrowserRouter([
       { path: '/company-profile', element: <CompanyProfile /> },
       { path: '/legal-information', element: <LegalInformation /> },
       { path: '/services', element: <Services /> },
+      { path: '/services/:slug', element: <ServiceDetail /> },
       { path: '/expertise', element: <Expertise /> },
       { path: '/projects', element: <Projects /> },
+      { path: '/projects/:slug', element: <ProjectDetail /> },
       { path: '/case-studies', element: <CaseStudies /> },
       { path: '/impact', element: <Impact /> },
       { path: '/clients', element: <Clients /> },
       { path: '/careers', element: <Careers /> },
       { path: '/jobs', element: <Jobs /> },
+      { path: '/jobs/:jobId', element: <JobDetail /> },
       { path: '/downloads', element: <Downloads /> },
       { path: '/gallery', element: <Gallery /> },
       { path: '/news', element: <News /> },
@@ -70,9 +129,26 @@ const router = createBrowserRouter([
       { path: '/client-login', element: <ClientLogin /> },
       { path: '/employer-login', element: <EmployerLogin /> },
       { path: '/candidate-login', element: <CandidateLogin /> },
-      { path: '/admin-panel', element: <AdminPanel /> },
       { path: '*', element: <NotFound /> },
     ],
+  },
+  {
+    path: '/',
+    element: (
+      <RequireCandidate>
+        <CandidateLayout />
+      </RequireCandidate>
+    ),
+    children: candidateRoutes,
+  },
+  {
+    path: '/',
+    element: (
+      <RequireAdmin>
+        <AdminLayout />
+      </RequireAdmin>
+    ),
+    children: adminRoutes,
   },
 ])
 

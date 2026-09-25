@@ -3,7 +3,6 @@ package com.lokmit.foundation.db;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.output.MigrateResult;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -22,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Integration test for the full Flyway migration chain (V1–V8).
+ * Integration test for the full Flyway migration chain (V1–V16).
  *
  * <p>Runs the migrations against a throwaway schema {@code lokmit_it} in the
  * configured development database, asserts that every expected table exists,
@@ -41,12 +40,11 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * the test profile.</p>
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Disabled("Temporarily disabled — Flyway lock contention with the app's own history table; see Javadoc")
 class FlywayMigrationIntegrationTest {
 
     private static final String IT_SCHEMA = "lokmit_it";
-    private static final int EXPECTED_MIGRATIONS = 8;
-    private static final int EXPECTED_TABLES = 42; // 41 domain tables + flyway_schema_history
+    private static final int EXPECTED_MIGRATIONS = 17;
+    private static final int EXPECTED_TABLES = 48; // 47 domain tables + flyway_schema_history
 
     private static final String URL = resolve("DB_URL",
             "jdbc:postgresql://localhost:5432/lokmit_foundation");
@@ -75,6 +73,14 @@ class FlywayMigrationIntegrationTest {
             "employers", "candidates", "resumes", "skills", "candidate_skills",
             "candidate_educations", "candidate_experiences", "job_categories",
             "jobs", "job_skills", "job_applications",
+            // V15 application history + interviews (A7.4)
+            "application_status_history", "interviews",
+            // V16 notifications + audit + outbox (A7.5)
+            "notifications", "audit_logs", "outbox_events",
+            // V17 resume file storage foundation (A7.6.1)
+            "resumes_file_blobs",
+            // V14 employment permissions (no new tables)
+
             // managed by Flyway
             "flyway_schema_history");
 

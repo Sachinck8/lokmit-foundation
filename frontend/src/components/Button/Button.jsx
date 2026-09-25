@@ -1,6 +1,12 @@
 import { forwardRef } from 'react'
 import './Button.css'
 
+/**
+ * Design-system button.
+ * variant: primary | secondary | outline | ghost | dark-outline
+ * size:    small | medium | large
+ * Renders an <a> when `href` is provided, otherwise a <button>.
+ */
 const Button = forwardRef(function Button({
   children,
   variant = 'primary',
@@ -20,26 +26,24 @@ const Button = forwardRef(function Button({
     className,
   ].filter(Boolean).join(' ')
 
-  const buttonProps = {
-    ref,
-    className: classNames,
-    type,
-    disabled: disabled || false,
-    onClick,
-    'aria-label': ariaLabel,
-    ...props,
-  }
-
   if (href) {
     return (
-      <a href={href} className={classNames} {...props}>
+      <a href={href} className={classNames} aria-label={ariaLabel} onClick={onClick} {...props}>
         {children}
       </a>
     )
   }
 
   return (
-    <button {...buttonProps}>
+    <button
+      ref={ref}
+      type={type}
+      className={classNames}
+      onClick={onClick}
+      disabled={disabled || false}
+      aria-label={ariaLabel}
+      {...props}
+    >
       {children}
     </button>
   )
