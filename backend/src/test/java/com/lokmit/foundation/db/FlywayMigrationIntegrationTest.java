@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Integration test for the full Flyway migration chain (V1–V16).
+ * Integration test for the full Flyway migration chain (V1–V17).
  *
  * <p>Runs the migrations against a throwaway schema {@code lokmit_it} in the
  * configured development database, asserts that every expected table exists,
@@ -32,12 +32,11 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * are not configured — {@code mvn clean verify} stays green in CI without a
  * database.</p>
  *
- * <p>NOTE: Currently disabled because Flyway acquires an exclusive advisory lock
- * on the public schema's flyway_schema_history table during migrate(), which
- * conflicts with the lock held by the application's own Flyway instance (or a
- * previous run's leftover lock). Re-enable once the integration test uses a
- * fully isolated database or the app's Flyway auto-config is disabled during
- * the test profile.</p>
+ * <p>NOTE: The throwaway schema is pre-created via plain JDBC before Flyway runs
+ * (the same convention as the resume storage and upload lifecycle integration
+ * tests). If Flyway itself created the schema, it would record an internal
+ * "Flyway Schema Creation" marker row in flyway_schema_history, so the raw
+ * history-row count would be 18 instead of the 17 real migrations.</p>
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FlywayMigrationIntegrationTest {
@@ -85,7 +84,7 @@ class FlywayMigrationIntegrationTest {
             "flyway_schema_history");
 
     @BeforeAll
-    static void requireDatabase() {
+    static void requireDatabase() throws SQLException {
         boolean reachable = false;
         try (Connection ignored = DriverManager.getConnection(URL, USER, PASSWORD)) {
             reachable = true;
@@ -94,6 +93,19 @@ class FlywayMigrationIntegrationTest {
         }
         assumeTrue(reachable,
                 "PostgreSQL not reachable or credentials not configured — Flyway integration test skipped");
+
+        // Pre-create the throwaway schema with plain JDBC (the same convention as
+        // ResumeStorageMigrationIntegrationTest and
+        // ResumeUploadLifecycleIntegrationTest): Flyway must find it already
+        // existing. If Flyway created the schema itself it would record an internal
+        // "<< Flyway Schema Creation >>" marker row (version NULL, type SCHEMA) in
+        // flyway_schema_history, so the raw history-row count would be 18 instead
+        // of the 17 real migrations. It also means clean() will not drop the
+        // schema (Flyway only drops schemas it created itself).
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             Statement statement = connection.createStatement()) {
+            statement.execute("CREATE SCHEMA IF NOT EXISTS " + IT_SCHEMA);
+        }
     }
 
     @Test
