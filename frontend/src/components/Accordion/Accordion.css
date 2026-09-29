@@ -18,6 +18,12 @@
   border-radius: var(--radius-md);
   background: var(--color-surface);
   overflow: hidden;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.accordion__item:has(.accordion__trigger--open) {
+  border-color: var(--blue-100);
+  box-shadow: var(--shadow-sm);
 }
 
 .accordion__trigger {
@@ -38,11 +44,11 @@
 }
 
 .accordion__trigger:hover {
-  background: var(--color-bg-alt);
+  background: var(--blue-50);
 }
 
 .accordion__trigger:focus-visible {
-  outline: 3px solid var(--color-primary-light);
+  outline: 3px solid var(--color-secondary-light);
   outline-offset: -3px;
 }
 
@@ -64,8 +70,8 @@
 }
 
 .accordion__panel {
-  padding: 0 var(--spacing-5) var(--spacing-5);
-  border-top: 1px solid var(--color-border);
+  padding: var(--spacing-4) var(--spacing-5) var(--spacing-5);
+  border-top: 1px solid var(--color-border-light);
   animation: accordionFadeIn 0.18s ease;
 }
 

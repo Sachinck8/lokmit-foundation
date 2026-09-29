@@ -2,33 +2,39 @@ import { Link } from 'react-router-dom'
 import Button from '../Button/Button.jsx'
 import './CtaSection.css'
 
-export default function CtaSection({ background, title, subtitle, primaryCta, secondaryCta, align = 'center' }) {
+/**
+ * Full-width premium CTA band.
+ * Renders real route links for primaryCta/secondaryCta ({ label, to }).
+ */
+export default function CtaSection({ title, subtitle, primaryCta, secondaryCta, eyebrow, align = 'center' }) {
+  const isCentered = align === 'center'
+
   return (
-    <section
-      className={`cta-section${background ? ' cta-section--dark' : ''}`}
-      style={background ? { background } : undefined}
-    >
-      <div className="cta-section__content" style={{ textAlign: align }}>
-        <h2 className="cta-section__title" style={background ? undefined : { color: 'var(--color-text)' }}>{title}</h2>
+    <section className="cta-section">
+      <div className={`cta-section__content${isCentered ? ' cta-section__content--centered' : ''}`}>
+        {eyebrow && <p className="cta-section__eyebrow">{eyebrow}</p>}
+        <h2 className="cta-section__title">{title}</h2>
         {subtitle && (
-          <p className="cta-section__subtitle" style={background ? undefined : { color: 'var(--color-text-light)' }}>{subtitle}</p>
+          <p className="cta-section__subtitle">{subtitle}</p>
         )}
-        <div className="cta-section__actions" style={{ justifyContent: align === 'center' ? 'center' : 'flex-start' }}>
-          {primaryCta && (
-            <Link to={primaryCta.to}>
-              <Button variant="primary" size="large">
-                {primaryCta.label}
-              </Button>
-            </Link>
-          )}
-          {secondaryCta && (
-            <Link to={secondaryCta.to}>
-              <Button variant="outline" size="large" className="cta-section__secondary">
-                {secondaryCta.label}
-              </Button>
-            </Link>
-          )}
-        </div>
+        {(primaryCta || secondaryCta) && (
+          <div className="cta-section__actions">
+            {primaryCta && (
+              <Link to={primaryCta.to}>
+                <Button variant="secondary" size="large">
+                  {primaryCta.label}
+                </Button>
+              </Link>
+            )}
+            {secondaryCta && (
+              <Link to={secondaryCta.to}>
+                <Button variant="dark-outline" size="large">
+                  {secondaryCta.label}
+                </Button>
+              </Link>
+            )}
+          </div>
+        )}
       </div>
     </section>
   )

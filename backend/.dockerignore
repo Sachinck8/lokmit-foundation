@@ -1,0 +1,28 @@
+# Keep the build context minimal and free of local/secret material.
+# Only pom.xml and src/ are consumed by the multi-stage build.
+
+target/
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# Local environment files — never enter an image layer.
+.env
+.env.*
+!.env.example
+
+# Logs and temporary files
+*.log
+logs/
+tmp/
+
+# Scratch files (repository-root artifacts; excluded defensively)
+a7.6.1.diff
+a7.6.1.patch
+
+# Docker files themselves are not needed inside the image
+Dockerfile
+.dockerignore

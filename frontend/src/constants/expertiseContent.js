@@ -3,7 +3,6 @@ export const expertiseContent = {
     title: 'Expertise & Sectors',
     subtitle:
       'Experience across skill development, livelihood, CSR, government-linked programs, and organizational development.',
-    background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
   },
   expertise: [
     'DDU-GKY 2.0',
@@ -24,8 +23,11 @@ export const expertiseContent = {
     { title: 'Rural Development', description: 'Rural livelihood and development-oriented initiatives.' },
     { title: 'Organizational Development', description: 'Organizational development and process standardization.' },
   ],
-  disclaimerNote:
-    'The contents above describe areas of organizational expertise. They do not imply official government affiliation, authorization, partnership, or endorsement unless stated otherwise in writing by the relevant authority.',
+  disclaimer: {
+    label: 'Disclaimer',
+    text:
+      'The contents above describe areas of organizational expertise. They do not imply official government affiliation, authorization, partnership, or endorsement unless stated otherwise in writing by the relevant authority.',
+  },
   cta: {
     title: 'Explore Our Services in Detail',
     primaryCta: { label: 'Our Services', to: '/services' },

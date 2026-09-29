@@ -1,0 +1,28 @@
+# Keep the build context minimal and free of local/secret material.
+node_modules/
+dist/
+.vite/
+
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# Local environment files — never enter an image layer or build output.
+.env
+.env.*
+!.env.example
+
+# Logs and temporary files
+*.log
+npm-debug.log*
+
+# Scratch files (repository-root artifacts; excluded defensively)
+a7.6.1.diff
+a7.6.1.patch
+
+# Docker files themselves are not needed inside the image
+Dockerfile
+.dockerignore

@@ -1,34 +1,12 @@
-.clients-page__partners {
-  padding: var(--spacing-8) 0;
-  background: var(--color-bg-alt);
+.clients__section {
+  padding-top: var(--spacing-10);
 }
 
-.clients-page__partners-label {
+.clients__note {
+  margin: var(--spacing-6) auto 0;
+  max-width: 640px;
   text-align: center;
-  margin-bottom: var(--spacing-6);
-}
-
-.clients-page__section-title {
-  margin: 0 0 var(--spacing-3);
-  font-size: clamp(1.5rem, 2.6vw, 1.8rem);
-}
-
-.clients-page__section-subtitle {
-  color: var(--color-text-light);
-  font-size: 1rem;
-  max-width: 480px;
-  margin: 0 auto;
-  line-height: var(--line-height-relaxed);
-}
-
-.clients-page__note {
-  padding: var(--spacing-6) 0;
-}
-
-.clients-page__note-text {
-  color: var(--color-text-light);
-  max-width: 620px;
-  margin: 0 auto;
-  text-align: center;
+  color: var(--color-muted);
+  font-size: 0.85rem;
   line-height: var(--line-height-relaxed);
 }

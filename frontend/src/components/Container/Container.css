@@ -1,21 +1,22 @@
 .container {
   width: 100%;
-  padding-left: var(--spacing-4);
-  padding-right: var(--spacing-4);
+  max-width: var(--container-max);
   margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
-@media (min-width: 560px) {
+@media (max-width: 640px) {
   .container {
-    padding-left: var(--spacing-6);
-    padding-right: var(--spacing-6);
+    padding-left: 18px;
+    padding-right: 18px;
   }
 }
 
-.container--default {
-  max-width: var(--container-max);
+.container--narrow {
+  max-width: var(--container-narrow);
 }
 
 .container--wide {
-  max-width: 1440px;
+  max-width: 1360px;
 }

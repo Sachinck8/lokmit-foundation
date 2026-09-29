@@ -3,7 +3,6 @@ package com.lokmit.foundation.db;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.output.MigrateResult;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -22,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Integration test for the full Flyway migration chain (V1–V8).
+ * Integration test for the full Flyway migration chain (V1–V17).
  *
  * <p>Runs the migrations against a throwaway schema {@code lokmit_it} in the
  * configured development database, asserts that every expected table exists,
@@ -33,20 +32,18 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * are not configured — {@code mvn clean verify} stays green in CI without a
  * database.</p>
  *
- * <p>NOTE: Currently disabled because Flyway acquires an exclusive advisory lock
- * on the public schema's flyway_schema_history table during migrate(), which
- * conflicts with the lock held by the application's own Flyway instance (or a
- * previous run's leftover lock). Re-enable once the integration test uses a
- * fully isolated database or the app's Flyway auto-config is disabled during
- * the test profile.</p>
+ * <p>NOTE: The throwaway schema is pre-created via plain JDBC before Flyway runs
+ * (the same convention as the resume storage and upload lifecycle integration
+ * tests). If Flyway itself created the schema, it would record an internal
+ * "Flyway Schema Creation" marker row in flyway_schema_history, so the raw
+ * history-row count would be 18 instead of the 17 real migrations.</p>
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Disabled("Temporarily disabled — Flyway lock contention with the app's own history table; see Javadoc")
 class FlywayMigrationIntegrationTest {
 
     private static final String IT_SCHEMA = "lokmit_it";
-    private static final int EXPECTED_MIGRATIONS = 8;
-    private static final int EXPECTED_TABLES = 42; // 41 domain tables + flyway_schema_history
+    private static final int EXPECTED_MIGRATIONS = 17;
+    private static final int EXPECTED_TABLES = 48; // 47 domain tables + flyway_schema_history
 
     private static final String URL = resolve("DB_URL",
             "jdbc:postgresql://localhost:5432/lokmit_foundation");
@@ -75,11 +72,19 @@ class FlywayMigrationIntegrationTest {
             "employers", "candidates", "resumes", "skills", "candidate_skills",
             "candidate_educations", "candidate_experiences", "job_categories",
             "jobs", "job_skills", "job_applications",
+            // V15 application history + interviews (A7.4)
+            "application_status_history", "interviews",
+            // V16 notifications + audit + outbox (A7.5)
+            "notifications", "audit_logs", "outbox_events",
+            // V17 resume file storage foundation (A7.6.1)
+            "resumes_file_blobs",
+            // V14 employment permissions (no new tables)
+
             // managed by Flyway
             "flyway_schema_history");
 
     @BeforeAll
-    static void requireDatabase() {
+    static void requireDatabase() throws SQLException {
         boolean reachable = false;
         try (Connection ignored = DriverManager.getConnection(URL, USER, PASSWORD)) {
             reachable = true;
@@ -88,6 +93,19 @@ class FlywayMigrationIntegrationTest {
         }
         assumeTrue(reachable,
                 "PostgreSQL not reachable or credentials not configured — Flyway integration test skipped");
+
+        // Pre-create the throwaway schema with plain JDBC (the same convention as
+        // ResumeStorageMigrationIntegrationTest and
+        // ResumeUploadLifecycleIntegrationTest): Flyway must find it already
+        // existing. If Flyway created the schema itself it would record an internal
+        // "<< Flyway Schema Creation >>" marker row (version NULL, type SCHEMA) in
+        // flyway_schema_history, so the raw history-row count would be 18 instead
+        // of the 17 real migrations. It also means clean() will not drop the
+        // schema (Flyway only drops schemas it created itself).
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             Statement statement = connection.createStatement()) {
+            statement.execute("CREATE SCHEMA IF NOT EXISTS " + IT_SCHEMA);
+        }
     }
 
     @Test

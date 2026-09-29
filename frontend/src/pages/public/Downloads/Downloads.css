@@ -1,42 +1,40 @@
-.downloads-page__categories {
-  padding: var(--spacing-8) 0;
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border-light);
-  border-bottom: 1px solid var(--color-border-light);
+.downloads__section {
+  padding-top: var(--spacing-10);
 }
 
-.downloads-page__categories-title {
-  margin: 0 0 var(--spacing-5);
-  font-size: clamp(1.4rem, 2.6vw, 1.75rem);
+.downloads__categories {
   text-align: center;
-  color: var(--color-text);
+  margin-bottom: var(--spacing-8);
 }
 
-.downloads-page__categories-list {
+.downloads__categories-title {
+  margin-bottom: var(--spacing-5);
+  font-size: 1.15rem;
+  color: var(--blue-800);
+}
+
+.downloads__categories-list {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-3);
+  gap: var(--spacing-2);
   justify-content: center;
 }
 
 .downloads__category-tag {
-  background: var(--color-bg-alt);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-light);
-  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--blue-50);
+  border: 1px solid var(--blue-100);
+  color: var(--blue-800);
+  padding: 8px 16px;
   border-radius: var(--radius-full);
-  font-size: 0.9rem;
-  font-weight: var(--font-weight-medium);
+  font-size: 0.88rem;
+  font-weight: var(--font-weight-semibold);
 }
 
-.downloads-page__note {
-  padding: var(--spacing-6) 0;
-}
-
-.downloads-page__note-text {
-  color: var(--color-text-light);
-  max-width: 620px;
-  margin: 0 auto;
+.downloads__note {
+  margin: var(--spacing-6) auto 0;
+  max-width: 640px;
   text-align: center;
+  color: var(--color-muted);
+  font-size: 0.85rem;
   line-height: var(--line-height-relaxed);
 }

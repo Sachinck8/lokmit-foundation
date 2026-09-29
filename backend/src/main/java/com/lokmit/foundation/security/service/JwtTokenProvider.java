@@ -6,20 +6,24 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
-import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 /**
  * Service for generating and validating JWT tokens.
+ *
+ * <p>The HS256 signing key is resolved once at startup by
+ * {@link com.lokmit.foundation.security.config.JwtKeyConfig}, which enforces
+ * the environment-aware secret policy (fail-fast in production, development
+ * fallback otherwise). This class only consumes the resolved key — token
+ * generation, validation and claim handling are unchanged.</p>
  */
 @Service
 public class JwtTokenProvider {
@@ -29,25 +33,9 @@ public class JwtTokenProvider {
     private final JwtConfig jwtConfig;
     private final SecretKey signingKey;
 
-    public JwtTokenProvider(JwtConfig jwtConfig) {
+    public JwtTokenProvider(JwtConfig jwtConfig, SecretKey signingKey) {
         this.jwtConfig = jwtConfig;
-        this.signingKey = createSigningKey(jwtConfig.getSecret());
-    }
-
-    /**
-     * Creates a signing key from the configured secret.
-     */
-    private SecretKey createSigningKey(String secret) {
-        if (secret == null || secret.isBlank()) {
-            // Fallback for development - in production, JWT_SECRET must be set
-            LOG.warn("JWT_SECRET is not set. Using a development-only key. DO NOT use in production.");
-            return Keys.hmacShaKeyFor("dev-only-key-that-is-at-least-32-bytes-long-for-hs256!".getBytes(StandardCharsets.UTF_8));
-        }
-        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
-        if (keyBytes.length < 32) {
-            throw new IllegalArgumentException("JWT_SECRET must be at least 32 bytes (256 bits) for HS256");
-        }
-        return Keys.hmacShaKeyFor(keyBytes);
+        this.signingKey = signingKey;
     }
 
     /**

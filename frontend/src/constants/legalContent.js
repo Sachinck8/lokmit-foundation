@@ -137,15 +137,15 @@ export const legalContent = {
     sections: [
       {
         heading: 'What Are Cookies',
-        body: 'Cookies are small data files stored on your device when you visit a website. They help websites function and remember certain information.',
+        body: 'Cookies are small data files stored on your device when you visit a website. Similar browser-storage technologies (such as local storage) work the same way. This policy describes how this website uses them.',
       },
       {
         heading: 'How We Use Cookies',
-        body: 'We use cookies where necessary for website functionality, navigation, and basic analytics. We do not use cookies for purposes beyond what is disclosed in this policy.',
+        body: 'This website does not use tracking or advertising cookies and does not run third-party analytics. For the signed-in portal, the site stores your sign-in tokens in browser storage so you can stay signed in during use. These storage entries contain no password and are removed when you sign out.',
       },
       {
         heading: 'Managing Cookies',
-        body: 'You can manage or disable cookies through your browser settings. Disabling cookies may affect certain website features.',
+        body: 'You can clear or block site data through your browser settings. Clearing stored sign-in data will sign you out of the portal; the public website remains fully usable.',
       },
       {
         heading: 'Updates to This Policy',

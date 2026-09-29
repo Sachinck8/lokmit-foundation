@@ -1,0 +1,168 @@
+# A25 — CI for the LOKMIT FOUNDATION platform.
+#
+# Scope: verify the project exactly as the repository's own verification
+# does — backend `mvn clean test`, frontend production build via the
+# committed lockfile, a whitespace-hygiene check on the tip commit, and a
+# best-effort scan of TRACKED files for committed secret material.
+#
+# Notes:
+# - A28: the backend job provisions a dedicated, disposable PostgreSQL 16
+#   service container, so the Postgres-gated integration tests execute and
+#   `mvn clean test` reproduces the 683/0/0/0 baseline. The container
+#   credentials are CI-only placeholders, not real secrets.
+# - Security posture: least-privilege `contents: read`, pinned major
+#   action versions, no secrets consumed, no artifacts uploaded.
+# - The tracked-file secret scan is a tripwire against accidental
+#   commits (real keys have high-entropy value parts, not the
+#   `CHANGE_ME`-style placeholders used by the *.env.example files).
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend — Maven test (Java 21)
+    runs-on: ubuntu-latest
+    # A28: fresh dedicated PostgreSQL for the com.lokmit.foundation.db
+    # integration tests. Nothing else runs against this database, so each
+    # test's throwaway schema and Flyway's advisory lock are uncontended.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: lokmit_foundation
+          POSTGRES_USER: lokmit_app
+          POSTGRES_PASSWORD: ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lokmit_app -d lokmit_foundation"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_URL: jdbc:postgresql://localhost:5432/lokmit_foundation
+      DB_USERNAME: lokmit_app
+      DB_PASSWORD: ci_password
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Wait for PostgreSQL readiness
+        # Belt-and-braces after the service's own pg_isready healthcheck:
+        # a slow startup must fail loudly here, never silently skip the
+        # assumeTrue-gated integration tests below. Dependency-free TCP
+        # retry (the runner has no pg_isready client binary); db/user-level
+        # readiness is enforced by the service healthcheck above.
+        run: |
+          set -e
+          for i in $(seq 1 30); do
+            if (echo > /dev/tcp/localhost/5432) 2>/dev/null; then
+              echo "PostgreSQL is accepting connections on localhost:5432"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL ($i/30)..."
+            sleep 2
+          done
+          echo "::error::PostgreSQL did not become ready on localhost:5432 within 60s"
+          exit 1
+
+      - name: Compile and test
+        working-directory: backend
+        # A28: with the PostgreSQL service container up, the database-gated
+        # integration tests execute; the expected baseline is
+        # 683 tests / 0 failures / 0 errors / 0 skipped.
+        run: mvn -B clean test
+
+  frontend:
+    name: Frontend — production build (Node 22)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies (lockfile)
+        working-directory: frontend
+        run: npm ci
+
+      - name: Production build
+        working-directory: frontend
+        run: npm run build
+
+  hygiene:
+    name: Hygiene — whitespace & committed-secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        # A27: full history so `git diff HEAD^ HEAD --check` can resolve the
+        # tip commit's parent. The default fetch-depth: 1 leaves no HEAD^,
+        # which made this job exit 128 on every run since A25.
+        with:
+          fetch-depth: 0
+
+      - name: Whitespace check on the tip commit
+        run: git diff HEAD^ HEAD --check
+
+      - name: Scan tracked files for committed secret material
+        # Patterns intentionally tuned to high-signal secrets (value side,
+        # not the CHANGE_ME-style placeholders in *.env.example): AWS keys,
+        # private key blocks, and hard-coded high-entropy assignment of
+        # secret-like variables. Excludes lockfiles and the minified
+        # frontend bundle where "Secret"/"password" substrings are library
+        # identifiers, not credentials.
+        run: |
+          set -e
+          files=$(git ls-files)
+          violations=0
+
+          if echo "$files" | xargs grep -nE 'AKIA[0-9A-Z]{16}' >/dev/null 2>&1; then
+            echo "::error::AWS access key id committed"; violations=1
+          fi
+          if echo "$files" | xargs grep -n 'BEGIN .*PRIVATE KEY' >/dev/null 2>&1; then
+            echo "::error::private key block committed"; violations=1
+          fi
+          # A27.1: the secret-like-assignment rule is split in two. Outside
+          # test sources it is unchanged — any secret-like assignment is a
+          # violation. Inside test sources a match is a violation only when
+          # the line does NOT self-identify as fixture material (TEST_-style
+          # names or test/fixture/dummy/sample values), so real-looking
+          # credentials committed under test paths are still caught while
+          # intentional self-describing fixtures are allowed.
+          if git grep -nIiE '(secret|password|token|api[_-]?key)[[:space:]]*[:=][[:space:]]*["'"'"'][A-Za-z0-9+/_-]{32,}["'"'"']' \
+              -- ':!frontend/package-lock.json' ':!frontend/dist' ':!backend/src/test' >/dev/null 2>&1; then
+            echo "::error::possible hard-coded secret (see matched lines)"; violations=1
+          fi
+          test_hits=$(git grep -nIiE '(secret|password|token|api[_-]?key)[[:space:]]*[:=][[:space:]]*["'"'"'][A-Za-z0-9+/_-]{32,}["'"'"']' \
+              -- 'backend/src/test' 2>/dev/null \
+              | grep -viE 'test[-_]|fixture|dummy|sample|placeholder|example' || true)
+          if [ -n "$test_hits" ]; then
+            echo "::error::possible hard-coded secret in test sources (non-self-describing):"
+            echo "$test_hits"; violations=1
+          fi
+
+          if [ "$violations" -ne 0 ]; then
+            exit 1
+          fi
+          echo "No committed secret material detected."

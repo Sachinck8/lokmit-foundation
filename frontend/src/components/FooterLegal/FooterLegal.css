@@ -1,7 +1,7 @@
 .footer-legal {
   margin-top: var(--spacing-8);
   padding: var(--spacing-6) 0;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-light);
 }
 
 .footer-legal__text {
@@ -9,6 +9,7 @@
   font-size: 0.9rem;
   line-height: var(--line-height-relaxed);
   margin: 0 0 var(--spacing-4);
+  text-align: center;
 }
 
 .footer-legal__actions {

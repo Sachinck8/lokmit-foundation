@@ -1,55 +1,81 @@
+/* ============================================================
+   LOKMIT FOUNDATION — Design System Foundation
+   Palette: deep blue (trust) · professional green (growth) ·
+   subtle gold (premium accent) · white / soft neutrals.
+   ============================================================ */
+
 :root {
-  /* Primary palette - Forest green */
-  --color-primary: #14532d;
-  --color-primary-light: #16a34a;
-  --color-primary-dark: #0d3d21;
+  /* --- Brand: deep blue (primary, trust/professionalism) --- */
+  --blue-900: #081a29;
+  --blue-800: #0c2438;
+  --blue-700: #123452;
+  --blue-600: #1b4670;
+  --blue-500: #25598a;
+  --blue-100: #dbe7f2;
+  --blue-50: #eef4f9;
 
-  /* Neutral palette */
-  --color-text: #1f2937;
-  --color-text-light: #4b5563;
-  --color-muted: #6b7280;
-  --color-border: #e2e8f0;
-  --color-border-light: #f1f5f9;
+  /* --- Brand: professional green (growth/implementation) --- */
+  --green-800: #14532d;
+  --green-700: #166534;
+  --green-600: #15803d;
+  --green-500: #1a7f46;
+  --green-100: #d7ecdd;
+  --green-50: #eef7f0;
 
-  /* Background palette */
-  --color-bg: #f8fafc;
-  --color-bg-alt: #f1f5f9;
+  /* --- Gold accent (used sparingly) --- */
+  --gold-500: #c9a227;
+  --gold-600: #a8861b;
+  --gold-100: #f6ecd2;
+
+  /* --- Semantic aliases --- */
+  --color-primary: var(--blue-700);
+  --color-primary-dark: var(--blue-800);
+  --color-primary-light: var(--blue-500);
+  --color-secondary: var(--green-700);
+  --color-secondary-dark: var(--green-800);
+  --color-secondary-light: var(--green-500);
+  --color-accent: var(--gold-500);
+
+  /* --- Neutrals --- */
+  --color-text: #17212b;
+  --color-text-light: #3f4d5a;
+  --color-muted: #64748b;
+  --color-border: #dde5ec;
+  --color-border-light: #e9eef4;
+
+  /* --- Backgrounds --- */
+  --color-bg: #f7f9fb;
+  --color-bg-alt: #eff3f7;
   --color-surface: #ffffff;
+  --color-panel-alt: #f4f7fa;
 
-  /* Accent colors */
-  --color-accent: #b8860b;
-  --color-accent-light: #d4a017;
-  --color-success: #16a34a;
-  --color-error: #b91c1c;
+  /* --- Status --- */
+  --color-success: var(--green-600);
+  --color-error: #b42318;
 
-  /* Corporate neutrals */
-  --color-ink: #0f2a1c;
-  --color-ink-soft: #203a28;
-  --color-panel: #ffffff;
-  --color-panel-alt: #f6f8f6;
-
-  /* Typography */
-  --font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  /* --- Typography --- */
+  --font-family: 'Manrope', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
   --font-size-xs: 0.75rem;
-  --font-size-sm: 0.85rem;
+  --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
-  --font-size-md: 1.1rem;
-  --font-size-lg: 1.25rem;
-  --font-size-xl: 1.5rem;
-  --font-size-2xl: 1.875rem;
-  --font-size-3xl: 2.25rem;
-  --font-size-4xl: 3rem;
-  --font-size-5xl: 3.75rem;
+  --font-size-md: 1.0625rem;
+  --font-size-lg: 1.1875rem;
+  --font-size-xl: 1.375rem;
+  --font-size-2xl: 1.625rem;
+  --font-size-3xl: 2rem;
+  --font-size-4xl: 2.5rem;
+  --font-size-5xl: 3.25rem;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
-  --line-height-tight: 1.1;
-  --line-height-snug: 1.25;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.75;
+  --font-weight-extrabold: 800;
+  --line-height-tight: 1.15;
+  --line-height-snug: 1.3;
+  --line-height-normal: 1.55;
+  --line-height-relaxed: 1.7;
 
-  /* Spacing */
+  /* --- Spacing scale --- */
   --spacing-0: 0;
   --spacing-1: 0.25rem;
   --spacing-2: 0.5rem;
@@ -66,31 +92,34 @@
   --spacing-24: 6rem;
   --spacing-32: 8rem;
 
-  /* Border radius */
-  --radius-sm: 4px;
+  /* --- Border radius --- */
+  --radius-sm: 5px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
-  --radius-2xl: 24px;
+  --radius-2xl: 22px;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.06);
-  --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.1), 0 20px 48px rgba(0, 0, 0, 0.08);
+  /* --- Shadows (layered, restrained) --- */
+  --shadow-xs: 0 1px 2px rgba(12, 36, 56, 0.06);
+  --shadow-sm: 0 1px 3px rgba(12, 36, 56, 0.07), 0 2px 8px rgba(12, 36, 56, 0.05);
+  --shadow-md: 0 2px 6px rgba(12, 36, 56, 0.06), 0 8px 20px rgba(12, 36, 56, 0.07);
+  --shadow-lg: 0 4px 12px rgba(12, 36, 56, 0.08), 0 16px 40px rgba(12, 36, 56, 0.1);
+  --shadow-xl: 0 8px 24px rgba(12, 36, 56, 0.12), 0 28px 64px rgba(12, 36, 56, 0.12);
 
-  /* Transitions */
+  /* --- Transitions --- */
   --transition-fast: 0.15s ease;
-  --transition-base: 0.2s ease;
-  --transition-slow: 0.3s ease;
+  --transition-base: 0.22s ease;
+  --transition-slow: 0.32s ease;
 
-  /* Layout */
-  --container-max: 1240px;
-  --section-spacing: 72px;
-  --section-spacing-mobile: 44px;
-  --section-padding: 72px;
-  --section-padding-mobile: 44px;
+  /* --- Layout --- */
+  --container-max: 1200px;
+  --container-narrow: 880px;
+  --header-height: 72px;
+  --section-spacing: 88px;
+  --section-spacing-mobile: 56px;
+  --section-padding: var(--section-spacing);
+  --section-padding-mobile: var(--section-spacing-mobile);
 }
 
 *,
@@ -118,7 +147,6 @@ body {
   background-color: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-image: radial-gradient(circle at top, rgba(20, 83, 45, 0.02), transparent 60%);
 }
 
 h1,
@@ -131,25 +159,23 @@ h6 {
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
   color: var(--color-text);
+  letter-spacing: -0.015em;
 }
 
 h1 {
-  font-size: clamp(2rem, 4.6vw, 3.1rem);
-  letter-spacing: -0.02em;
+  font-size: clamp(2.1rem, 4.6vw, 3.25rem);
 }
 
 h2 {
-  font-size: clamp(1.5rem, 3.2vw, 2.15rem);
-  letter-spacing: -0.01em;
+  font-size: clamp(1.55rem, 3vw, 2.15rem);
 }
 
 h3 {
-  font-size: clamp(1.18rem, 2.2vw, 1.45rem);
-  letter-spacing: -0.01em;
+  font-size: clamp(1.15rem, 2vw, 1.35rem);
 }
 
 h4 {
-  font-size: 1.125rem;
+  font-size: 1.075rem;
 }
 
 p {
@@ -173,7 +199,10 @@ video {
   display: block;
 }
 
-button {
+button,
+input,
+select,
+textarea {
   font-family: inherit;
 }
 
@@ -184,19 +213,19 @@ ol {
   list-style: none;
 }
 
-/* Focus states */
+/* --- Focus states: always visible, brand-consistent --- */
 :focus-visible {
-  outline: 3px solid var(--color-primary-light);
+  outline: 3px solid var(--color-secondary-light);
   outline-offset: 2px;
+  border-radius: 2px;
 }
 
-/* Selection */
 ::selection {
-  background-color: var(--color-primary);
-  color: var(--color-surface);
+  background-color: var(--blue-600);
+  color: #ffffff;
 }
 
-/* Scrollbar */
+/* --- Scrollbar --- */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -207,7 +236,7 @@ ol {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: #c3ced9;
   border-radius: var(--radius-full);
   border: 2px solid var(--color-bg-alt);
 }
@@ -216,8 +245,71 @@ ol {
   background: var(--color-muted);
 }
 
-/* Utility classes */
-.visually-hidden {
+/* ============================================================
+   Layout primitives
+   ============================================================ */
+
+.section {
+  padding: var(--section-spacing-mobile) 0;
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding: var(--section-padding) 0;
+  }
+}
+
+.section--alt {
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.section--tinted {
+  background-color: var(--color-panel-alt);
+}
+
+.section--dark {
+  background:
+    radial-gradient(1100px 420px at 85% -10%, rgba(26, 127, 70, 0.16), transparent 60%),
+    var(--blue-800);
+  color: #ffffff;
+}
+
+.section--dark h1,
+.section--dark h2,
+.section--dark h3,
+.section--dark h4 {
+  color: #ffffff;
+}
+
+.section--dark p {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.container--narrow {
+  max-width: var(--container-narrow);
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0 18px;
+  }
+}
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+
+.visually-hidden,
+.sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -233,116 +325,28 @@ ol {
   text-align: center;
 }
 
-.text-left {
-  text-align: left;
-}
-
-.text-right {
-  text-align: right;
-}
-
 .text-muted {
   color: var(--color-muted);
 }
 
-.text-primary {
-  color: var(--color-primary);
-}
-
-.dark-bg {
-  background-color: var(--color-primary);
-  color: var(--color-surface);
-}
-
-.dark-bg h1,
-.dark-bg h2,
-.dark-bg h3,
-.dark-bg h4 {
-  color: var(--color-surface);
-}
-
-.dark-bg .text-muted {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.section {
-  padding: var(--section-padding-mobile) 0;
-}
-
-@media (min-width: 768px) {
-  .section {
-    padding: var(--section-padding) 0;
-  }
-}
-
-.section--alt {
-  background-color: var(--color-panel-alt);
-}
-
-.section--dark {
-  background-color: var(--color-primary);
-  color: var(--color-surface);
-}
-
-.section--dark h1,
-.section--dark h2,
-.section--dark h3,
-.section--dark h4 {
-  color: var(--color-surface);
-}
-
-.section--dark .text-muted {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.container {
-  width: 100%;
-  max-width: var(--container-max);
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-.container--narrow {
-  max-width: 980px;
-}
-
-.container--wide {
-  max-width: 1280px;
-}
-
-@media (max-width: 640px) {
-  .container {
-    padding: 0 18px;
-  }
-}
-
-/* Lists */
-.list-clean {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.list-clean li {
-  padding: 10px 0;
-  border-bottom: 1px solid var(--color-border-light);
-}
-
-.list-clean li:last-child {
-  border-bottom: 0;
-}
-
-
-/* Display variants */
-.sr-only {
+/* Skip link for keyboard users */
+.skip-link {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
+  top: -48px;
+  left: 12px;
+  z-index: 100;
+  background: var(--blue-800);
+  color: #ffffff;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  font-size: 0.9rem;
+  transition: top var(--transition-fast);
+}
+
+.skip-link:focus {
+  top: 12px;
+  color: #ffffff;
 }
 
 @media (prefers-reduced-motion: reduce) {

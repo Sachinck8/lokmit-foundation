@@ -11,31 +11,32 @@ export default function Careers() {
       <PageHero
         title={careersContent.hero.title}
         subtitle={careersContent.hero.subtitle}
-        background="linear-gradient(135deg, #0d3d21 0%, #14532d 100%)"
       />
 
       <Container>
-        <section className="careers-page__intro">
-          <h2 className="careers-page__intro-title">Building a Mission-Aligned Team</h2>
-          <p className="careers-page__intro-text">{careersContent.intro}</p>
+        <section className="section careers__intro">
+          <h2 className="careers__intro-title">Building a Mission-Aligned Team</h2>
+          <p className="careers__intro-text">{careersContent.intro}</p>
         </section>
 
-        <section className="careers-page__status">
-          <div className="careers-page__status-label">
-            <span className="careers-page__status-pill">{careersContent.status.label}</span>
+        <section className="section section--tinted careers__status">
+          <div className="careers__status-panel">
+            <span className="careers__status-pill">{careersContent.status.label}</span>
+            <p className="careers__status-text">{careersContent.status.description}</p>
           </div>
-          <p className="careers-page__status-text">{careersContent.status.description}</p>
         </section>
 
-        <section className="careers-page__related">
-          <h3 className="careers-page__related-title">{careersContent.related.label}</h3>
-          <ul className="careers-page__related-list">
+        <section className="section careers__related">
+          <h3 className="careers__related-title">{careersContent.related.label}</h3>
+          <div className="careers__related-actions">
             {careersContent.related.items.map(item => (
-              <li key={item.to}>
-                <Link to={item.to} className="careers-page__related-link">{item.label}</Link>
-              </li>
+              <Link key={`${item.label}-${item.to}`} to={item.to}>
+                <Button variant={item.to === '/contact' ? 'primary' : 'outline'} size="medium">
+                  {item.label}
+                </Button>
+              </Link>
             ))}
-          </ul>
+          </div>
         </section>
       </Container>
     </div>

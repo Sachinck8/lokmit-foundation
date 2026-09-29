@@ -3,7 +3,6 @@ import PageHero from '../../../components/PageHero/PageHero.jsx'
 import Container from '../../../components/Container/Container.jsx'
 import Icon from '../../../components/Icon/Icon.jsx'
 import { contactContent } from '../../../constants/contactContent.js'
-import { company } from '../../../constants/siteIdentity.js'
 import { submitEnquiry as submitEnquiryToApi } from '../../../services/contactService.js'
 import './Contact.css'
 
@@ -96,37 +95,34 @@ export default function Contact() {
       <PageHero
         title={hero.title}
         subtitle={hero.subtitle}
-        background={hero.background}
       />
 
       <Container>
         <div className="contact-page__layout">
           <div className="contact-page__info">
-            <address className="contact-page__address">
-              <span className="contact-page__org-name">{info.name}</span>
-              <p className="contact-page__org-lines">{info.address}</p>
-              <p className="contact-page__org-email">
-                Email: <a href={`mailto:${info.email}`}>{info.email}</a>
-              </p>
-              <p className="contact-page__org-director">
-                Director: {info.director}, {info.directorTitle}
-              </p>
-            </address>
+            <div className="contact-page__info-card">
+              <span className="contact-page__info-icon" aria-hidden="true">
+                <Icon name="mapPin" />
+              </span>
+              <h2 className="contact-page__info-title">Registered Office</h2>
+              <address className="contact-page__address">
+                <span className="contact-page__org-name">{info.name}</span>
+                <p className="contact-page__org-lines">{info.address}</p>
+              </address>
+            </div>
+
+            <div className="contact-page__info-card">
+              <span className="contact-page__info-icon" aria-hidden="true">
+                <Icon name="mail" />
+              </span>
+              <h2 className="contact-page__info-title">Email</h2>
+              <a href={`mailto:${info.email}`} className="contact-page__email-link">{info.email}</a>
+              <p className="contact-page__director">Director: {info.director}</p>
+            </div>
 
             {note && (
               <p className="contact-page__note">{note}</p>
             )}
-
-            <div className="contact-page__quick-links">
-              <a href={`mailto:${info.email}`} className="contact-page__quick-link">
-                <Icon name="mail" />
-                Email Us
-              </a>
-              <a href={`/contact#form`} className="contact-page__quick-link">
-                <Icon name="link" />
-                Use Contact Form
-              </a>
-            </div>
           </div>
 
           <div className="contact-page__form" id="form">
@@ -140,6 +136,7 @@ export default function Contact() {
               </div>
             )}
             <form className="contact-page__form-inner" onSubmit={submitEnquiry} noValidate>
+              <div className="contact-page__field-row">
                 <div className="contact-page__field">
                   <label className="contact-page__label" htmlFor="contact-name">
                     {form.fields.name.label}
@@ -183,11 +180,13 @@ export default function Contact() {
                     <p id="contact-email-error" className="contact-page__field-error">{getFieldError('email', formState.email)}</p>
                   )}
                 </div>
+              </div>
 
+              <div className="contact-page__field-row">
                 <div className="contact-page__field">
                   <label className="contact-page__label" htmlFor="contact-phone">
                     {form.fields.phone.label}
-                    {form.fields.phone.required && <span className="contact-page__required" aria-hidden="true">*</span>}
+                    {!form.fields.phone.required && <span className="contact-page__optional">(optional)</span>}
                   </label>
                   <input
                     id="contact-phone"
@@ -224,60 +223,61 @@ export default function Contact() {
                     <p id="contact-category-error" className="contact-page__field-error">{getFieldError('category', formState.category)}</p>
                   )}
                 </div>
+              </div>
 
-                <div className="contact-page__field">
-                  <label className="contact-page__label" htmlFor="contact-subject">
-                    {form.fields.subject.label}
-                    {form.fields.subject.required && <span className="contact-page__required" aria-hidden="true">*</span>}
-                  </label>
-                  <input
-                    id="contact-subject"
-                    name="subject"
-                    type="text"
-                    value={formState.subject}
-                    onChange={(e) => updateField('subject', e.target.value)}
-                    placeholder={form.fields.subject.placeholder}
-                    className={`contact-page__input${isFieldInvalid('subject', formState.subject) ? ' contact-page__input--invalid' : ''}`}
-                    aria-invalid={isFieldInvalid('subject', formState.subject)}
-                    aria-describedby={isFieldInvalid('subject', formState.subject) ? 'contact-subject-error' : undefined}
-                    required={form.fields.subject.required}
-                  />
-                  {isFieldInvalid('subject', formState.subject) && (
-                    <p id="contact-subject-error" className="contact-page__field-error">{getFieldError('subject', formState.subject)}</p>
-                  )}
-                </div>
-
-                <div className="contact-page__field">
-                  <label className="contact-page__label" htmlFor="contact-message">
-                    {form.fields.message.label}
-                    {form.fields.message.required && <span className="contact-page__required" aria-hidden="true">*</span>}
-                  </label>
-                  <textarea
-                    id="contact-message"
-                    name="message"
-                    rows={6}
-                    value={formState.message}
-                    onChange={(e) => updateField('message', e.target.value)}
-                    placeholder={form.fields.message.placeholder}
-                    className={`contact-page__textarea${isFieldInvalid('message', formState.message) ? ' contact-page__textarea--invalid' : ''}`}
-                    aria-invalid={isFieldInvalid('message', formState.message)}
-                    aria-describedby={isFieldInvalid('message', formState.message) ? 'contact-message-error' : undefined}
-                    required={form.fields.message.required}
-                  />
-                  {isFieldInvalid('message', formState.message) && (
-                    <p id="contact-message-error" className="contact-page__field-error">{getFieldError('message', formState.message)}</p>
-                  )}
-                </div>
-
-                {error && (
-                  <p className="contact-page__form-error" role="alert">{error}</p>
+              <div className="contact-page__field">
+                <label className="contact-page__label" htmlFor="contact-subject">
+                  {form.fields.subject.label}
+                  {form.fields.subject.required && <span className="contact-page__required" aria-hidden="true">*</span>}
+                </label>
+                <input
+                  id="contact-subject"
+                  name="subject"
+                  type="text"
+                  value={formState.subject}
+                  onChange={(e) => updateField('subject', e.target.value)}
+                  placeholder={form.fields.subject.placeholder}
+                  className={`contact-page__input${isFieldInvalid('subject', formState.subject) ? ' contact-page__input--invalid' : ''}`}
+                  aria-invalid={isFieldInvalid('subject', formState.subject)}
+                  aria-describedby={isFieldInvalid('subject', formState.subject) ? 'contact-subject-error' : undefined}
+                  required={form.fields.subject.required}
+                />
+                {isFieldInvalid('subject', formState.subject) && (
+                  <p id="contact-subject-error" className="contact-page__field-error">{getFieldError('subject', formState.subject)}</p>
                 )}
+              </div>
 
-                <button type="submit" className="contact-page__submit" disabled={submitting}>
-                  {submitting ? 'Sending…' : form.submit}
-                </button>
+              <div className="contact-page__field">
+                <label className="contact-page__label" htmlFor="contact-message">
+                  {form.fields.message.label}
+                  {form.fields.message.required && <span className="contact-page__required" aria-hidden="true">*</span>}
+                </label>
+                <textarea
+                  id="contact-message"
+                  name="message"
+                  rows={6}
+                  value={formState.message}
+                  onChange={(e) => updateField('message', e.target.value)}
+                  placeholder={form.fields.message.placeholder}
+                  className={`contact-page__textarea${isFieldInvalid('message', formState.message) ? ' contact-page__textarea--invalid' : ''}`}
+                  aria-invalid={isFieldInvalid('message', formState.message)}
+                  aria-describedby={isFieldInvalid('message', formState.message) ? 'contact-message-error' : undefined}
+                  required={form.fields.message.required}
+                />
+                {isFieldInvalid('message', formState.message) && (
+                  <p id="contact-message-error" className="contact-page__field-error">{getFieldError('message', formState.message)}</p>
+                )}
+              </div>
 
-                <p className="contact-page__privacy-note">{form.privacyNote}</p>
+              {error && (
+                <p className="contact-page__form-error" role="alert">{error}</p>
+              )}
+
+              <button type="submit" className="contact-page__submit" disabled={submitting}>
+                {submitting ? 'Sending…' : form.submit}
+              </button>
+
+              <p className="contact-page__privacy-note">{form.privacyNote}</p>
             </form>
           </div>
         </div>

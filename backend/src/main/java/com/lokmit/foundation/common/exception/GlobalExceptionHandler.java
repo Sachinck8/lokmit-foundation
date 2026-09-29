@@ -149,6 +149,20 @@ public class GlobalExceptionHandler {
                 "HTTP method not supported: " + ex.getMethod());
     }
 
+    @ExceptionHandler(com.lokmit.foundation.common.exception.PayloadTooLargeException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePayloadTooLarge(
+            com.lokmit.foundation.common.exception.PayloadTooLargeException ex) {
+        return build(HttpStatus.PAYLOAD_TOO_LARGE, ErrorCodes.PAYLOAD_TOO_LARGE, ex.getMessage());
+    }
+
+    // A7.6.4: safe server error for storage load/integrity failures — the
+    // message is a fixed generic string, so no storage internals can leak.
+    @ExceptionHandler(com.lokmit.foundation.common.exception.InternalStorageException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInternalStorage(
+            com.lokmit.foundation.common.exception.InternalStorageException ex) {
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCodes.INTERNAL_ERROR, ex.getMessage());
+    }
+
     @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnsupportedMediaType(
             org.springframework.web.HttpMediaTypeNotSupportedException ex) {
